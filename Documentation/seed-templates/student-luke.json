@@ -16,75 +16,75 @@
 
   "courses": [
     {
-      "_term": "Spring 2026 (currently in-progress · Jan 20 – May 15, 2026)",
+      "_term": "Spring 2026",
       "courseId": "CPRE-1850",
       "academicTerm": 202604,
-      "status": "InProgress",
-      "grade": null
+      "status": "Complete",
+      "grade": "C"
     },
     {
       "courseId": "CHEM-1670",
       "academicTerm": 202604,
-      "status": "InProgress",
-      "grade": null
+      "status": "Complete",
+      "grade": "B"
     },
     {
       "courseId": "MATH-1650",
       "academicTerm": 202604,
-      "status": "InProgress",
-      "grade": null
+      "status": "Complete",
+      "grade": "C-"
     },
     {
       "courseId": "CPRE-1660",
       "academicTerm": 202604,
-      "status": "InProgress",
-      "grade": null
+      "status": "Complete",
+      "grade": "B"
     },
     {
       "courseId": "ENGL-2500",
       "academicTerm": 202604,
-      "status": "InProgress",
-      "grade": null
+      "status": "Complete",
+      "grade": "A"
     },
 
     {
-      "_term": "Fall 2026 (planned · Aug – Dec 2026)",
+      "_term": "Fall 2025",
       "courseId": "MATH-1430",
-      "academicTerm": 202702,
-      "status": "Planned",
-      "grade": null
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "B"
     },
     {
       "courseId": "ENGR-1010",
-      "academicTerm": 202702,
-      "status": "Planned",
-      "grade": null
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "A"
     },
     {
       "courseId": "LIB-1600",
-      "academicTerm": 202702,
-      "status": "Planned",
-      "grade": null
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "A"
     },
     {
       "courseId": "ENGL-1500",
-      "academicTerm": 202702,
-      "status": "Planned",
-      "grade": null
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "A"
     },
     {
       "courseId": "HDFS-2390",
-      "academicTerm": 202702,
-      "status": "Planned",
-      "grade": null,
-      "_sourceNote": "Source row read 'Cons Issues' — actual ISU code is HDFS 2390 (Human Development & Family Studies — Consumer Issues). Not yet in isu-catalog.json."
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "B",
+      "_sourceNote": ""
     },
     {
       "courseId": "PHIL-2010",
-      "academicTerm": 202702,
-      "status": "Planned",
-      "grade": null,
-      "_sourceNote": "Source row read 'Phil 1010' — actual ISU code is PHIL 2010 (Introduction to Philosophy; PHIL 1010 does not exist). Not yet in isu-catalog.json."
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "B",
+      "_sourceNote": ""
     }
   ]
 }
