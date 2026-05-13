@@ -413,8 +413,8 @@
   .compare ul { margin: 0; padding-left: 18px; font-size: 11.5px; color: #455a64; line-height: 1.55; }
 </style>
 
-<h2>AI styling — pass 2 (cleaner, charcoal + gold accent)</h2>
-<p class="subtitle">Killed the purple gradients and chat-app aesthetic. AI now uses a single restrained accent (charcoal #1f3b5d + brand gold #ffc555) that's "of the same family" as the rest of the UI. Less ornament, more typography-driven.</p>
+<h2>UI v1 — final desktop layout (canonical mockup)</h2>
+<p class="subtitle">Locked-in patterns: three-column responsive layout, sidebar with flow switcher + progress + insights, AI integration via purple-gradient + ✦ sparkle accent (consistent across topbar, sem-row chips, tile badges, panel border, suggestion cards). Reference for all UI v1 implementation work — see <a href="../../specs/2026-05-13-ui-v1-design.md">../../specs/2026-05-13-ui-v1-design.md</a>.</p>
 
 <div class="frame" style="padding: 0; background:#eceff1;">
   <div class="app">
@@ -616,32 +616,6 @@
   </div>
 </div>
 
-<div class="compare">
-  <div>
-    <h4>What changed from v3 → v4</h4>
-    <ul>
-      <li>Killed purple-to-blue gradients everywhere</li>
-      <li>Single accent color: charcoal <code>#1f3b5d</code> + brand gold <code>#ffc555</code> (matches existing topbar)</li>
-      <li>"AI" replaces ✦ as the visual mark — small uppercase tag in a charcoal/gold pill</li>
-      <li>No chat bubbles — flat typographic conversation</li>
-      <li>Suggestion cards use a 3px left-border accent (gold for recommended, charcoal on hover) instead of full-color background</li>
-      <li>Right panel border is thin grey, not 2px purple</li>
-      <li>AI-tagged tiles get a tiny "AI" corner badge — no big colored ring competing with red/blue/yellow semantic colors</li>
-      <li>Action buttons are flat charcoal, not gradient pills</li>
-    </ul>
-  </div>
-  <div>
-    <h4>Stuff to push back on</h4>
-    <ul>
-      <li>"AI" tag too plain? Could use a more distinctive mark (sparkle, asterisk, etc.)</li>
-      <li>Charcoal/gold accent feels "newspaper editorial" — could try a different accent (teal? indigo with restraint?)</li>
-      <li>Could drop the scope pill from header and just rely on the "Sem 2 · Spring 2026" subtitle</li>
-      <li>Panel could be even more minimal — maybe drop the panel-meta line</li>
-      <li>Quick-ask chips look generic — could be removed for cleanliness, or restyled</li>
-    </ul>
-  </div>
-</div>
-
 <p style="margin-top:16px;font-size:12px;color:#666;">
-Refresh the browser. If this lands, we lock the AI styling and move on. If it still feels off, tell me what direction (e.g., "more like Linear" / "warmer" / "different accent color") and I'll iterate.
+This is the canonical UI v1 desktop mockup. See the spec at <code>docs/superpowers/specs/2026-05-13-ui-v1-design.md</code> for the locked-in design rationale, color system, component inventory, and 35 acceptance criteria.
 </p>
