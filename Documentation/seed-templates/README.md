@@ -150,17 +150,23 @@ Trees nest arbitrarily deep. Use `null` if the course has no prereqs.
   "name": "Cyber Security Engineering",
   "catalogYear": "2025-26",
   "totalCreditsRequired": 125,
+  "notes": [
+    "This flowchart is only a guide. ..."
+  ],
   "slots": [
     {
       "semester": 1,                   // 1..8
       "kind": "FixedClass",            // "FixedClass" or "CategoryChoice"
       "classId": "MATH-1650",          // present when kind = FixedClass
       "category": null,                // present when kind = CategoryChoice
+      "name": "Calc I",                // chart's short name (for UI tiles)
       "requiredCredits": 4,
+      "creditNote": null,              // "R cr", "3/4cr" if applicable
       "minGrade": "C-",                // grade required to earn in this slot, or null
+      "classNote": null,               // "Soph Class", "Junior Class", "29 Core Cr" annotations
       "displayOrder": 1,               // position within the row, for layout
-      "prereqs": [],                   // optional self-contained mirror of catalog
-      "coreqs": []                     // optional self-contained mirror of catalog
+      "recommendedPairing": ["MATH-1650"]  // optional: chart's red-solid lines
+                                       // (curriculum's "take together" hint, not enforced)
     }
   ]
 }
@@ -170,7 +176,9 @@ Trees nest arbitrarily deep. Use `null` if the course has no prereqs.
 - `"FixedClass"` — a specific course assigned to this semester (e.g., Math 1650 in Sem 1). Set `classId`.
 - `"CategoryChoice"` — a placeholder slot like the chart's "Gen Ed Elective 3cr" cells. Set `category`.
 
-The `prereqs`/`coreqs` arrays on a slot are **optional, denormalized mirrors of the catalog** — they make the flow file self-contained for human reading. The importer validates them against `Course.Prereqs`/`Course.Coreqs` and warns if they diverge.
+**No `prereqs` or `coreqs` on slots** — those are universal facts about a course, so they live in the catalog (`Course.Prereqs`). Hard coreqs from the catalog are encoded as `acceptConcurrent: true` flags within prereq trees (ISU's "credit or concurrent enrollment in X" phrasing).
+
+**`recommendedPairing`** captures the chart's **red-solid lines** — courses the curriculum recommends taking together (e.g., CprE 1850 + Math 1650). These are *soft hints*: the catalog allows you to take CprE 1850 without Math 1650 (placement satisfies the prereq), but the flow recommends pairing them. The cascade engine treats a broken pairing as a warning, not a blocker — offering to keep the pair together when one moves.
 
 ### Realistic flow examples
 
@@ -180,21 +188,21 @@ The `prereqs`/`coreqs` arrays on a slot are **optional, denormalized mirrors of 
   "semester": 1,
   "kind": "FixedClass",
   "classId": "MATH-1650",
+  "name": "Calc I",
   "requiredCredits": 4,
   "minGrade": "C-",
   "displayOrder": 1
 }
 
-// Fixed course with a coreq (mirrored from catalog for self-containment)
+// Fixed course with chart-recommended pairing
 {
   "semester": 1,
   "kind": "FixedClass",
   "classId": "CPRE-1850",
+  "name": "CprE Prob Solv",
   "requiredCredits": 3,
-  "minGrade": null,
   "displayOrder": 3,
-  "prereqs": [],
-  "coreqs": ["MATH-1650"]
+  "recommendedPairing": ["MATH-1650"]   // chart's red-solid line; soft hint
 }
 
 // Engr 1010 — registration only, 0 credit
@@ -202,8 +210,9 @@ The `prereqs`/`coreqs` arrays on a slot are **optional, denormalized mirrors of 
   "semester": 1,
   "kind": "FixedClass",
   "classId": "ENGR-1010",
+  "name": "Orientation",
   "requiredCredits": 0,
-  "minGrade": null,
+  "creditNote": "R cr",
   "displayOrder": 2
 }
 
@@ -211,7 +220,7 @@ The `prereqs`/`coreqs` arrays on a slot are **optional, denormalized mirrors of 
 {
   "semester": 1,
   "kind": "CategoryChoice",
-  "category": "GenEd",
+  "category": "GenEdElective",
   "requiredCredits": 3,
   "displayOrder": 5
 }
@@ -233,10 +242,11 @@ The `prereqs`/`coreqs` arrays on a slot are **optional, denormalized mirrors of 
 When the importer loads these files (described in design spec §10 open items), it will:
 
 1. Ensure every `classId` referenced from a flow exists in the catalog.
-2. Validate that any `prereqs`/`coreqs` written on a flow slot match the canonical entry in the catalog (warn if divergent — likely a stale flow file).
-3. Verify that every prereq/coreq tree's leaf `classId`s exist in the catalog.
+2. Verify that every prereq tree's leaf `classId` references a course that exists in the catalog.
+3. Verify every `recommendedPairing` entry references a course that exists in the catalog and is also referenced by another slot in the same flow.
 4. Reject duplicate `classId` entries in the catalog.
 5. Reject duplicate `(semester, displayOrder)` pairs within a single flow.
+6. Sum the per-slot `requiredCredits` and warn if it doesn't match `totalCreditsRequired`.
 
 If you want to test data partway through, you can submit a partial catalog + partial flow — the importer will tell you what's missing.
 

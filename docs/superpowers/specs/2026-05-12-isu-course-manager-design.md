@@ -185,14 +185,19 @@ class FlowchartSlot {             // table: flowchart_slots
   string? ClassNote;              // "Soph Class", "Junior Class", "Requires 29 Core Credits"
   int DisplayOrder;
   string? DisplayName;            // optional override of Course.Name for this slot's tile
+  List<Guid> RecommendedPairing;  // chart's red-solid lines: this flow recommends taking
+                                  //   these courses in the same semester. Soft hint to the
+                                  //   cascade engine (warning, not a hard block).
 }
 
 enum SlotKind { FixedClass, CategoryChoice }
 ```
 
+**No `Prereqs` or `Coreqs` on `FlowchartSlot`** — those live on `Course` (Tier 1, the catalog) as the single source of truth. The catalog's prereq trees encode hard coreqs via `acceptConcurrent: true` flags on `PrereqCourse` nodes (matching ISU's "credit or concurrent enrollment in X" phrasing). The flow's `RecommendedPairing` captures the chart's *curriculum-recommended* pairings that aren't catalog-enforced (e.g., CprE 1850 + Math 1650: catalog allows either-or via placement, chart recommends taking them together).
+
 `DegreeFlow` also gets a top-level `Notes: List<string>` for the chart's caveat list ("This flowchart is only a guide…", etc.).
 
-**Self-contained file format** (denormalized for human reading):
+**File format:**
 
 ```jsonc
 // flow-cybe-2025-26.json
@@ -201,18 +206,24 @@ enum SlotKind { FixedClass, CategoryChoice }
   "name": "Cyber Security Engineering",
   "catalogYear": "2025-26",
   "totalCreditsRequired": 125,
+  "notes": [
+    "This flowchart is only a guide. ...",
+    "Lab and lecture must be passed in the same semester ..."
+  ],
   "slots": [
-    { "semester": 1, "classId": "MATH-1650", "requiredCredits": 4, "minGrade": "C-",
-      "prereqs": [], "coreqs": [] },
-    { "semester": 1, "classId": "CPRE-1850", "requiredCredits": 3,
-      "prereqs": [], "coreqs": ["MATH-1650"] },
-    { "semester": 1, "category": "GenEd", "requiredCredits": 3 },
+    { "semester": 1, "kind": "FixedClass", "classId": "MATH-1650",
+      "name": "Calc I", "requiredCredits": 4, "minGrade": "C-", "displayOrder": 1 },
+    { "semester": 1, "kind": "FixedClass", "classId": "CPRE-1850",
+      "name": "CprE Prob Solv", "requiredCredits": 3, "displayOrder": 3,
+      "recommendedPairing": ["MATH-1650"] },
+    { "semester": 1, "kind": "CategoryChoice", "category": "GenEdElective",
+      "requiredCredits": 3, "displayOrder": 5 },
     // ...
   ]
 }
 ```
 
-Importer normalizes on seed: ensures each `classId` exists in `courses`, validates the file's prereqs against `Course.Prereqs`, inserts `DegreeFlow` + `FlowchartSlot` rows.
+**No `prereqs` or `coreqs` per slot** — those live on `Course` (Tier 1). Importer ensures each `classId` exists in `courses`, then inserts `DegreeFlow` + `FlowchartSlot` rows.
 
 ### Tier 3: Student Plan (the user's xref)
 
@@ -279,12 +290,13 @@ class WhatIfMajorSwitched  : CascadeTrigger { Guid NewDegreeFlowId; }
    - Core-credit gates (`PrereqCoreCredits`, e.g. CprE 4910's "29 Core Cr") are evaluated against the running total of credits earned in courses tagged with the program's core categories.
 3. For each affected `PlanItem`, find `earliestValidSemester` — the first semester ≥ current where:
    - All prereqs are completed (or scheduled in an earlier semester).
-   - Coreqs are scheduled in the same or earlier semester.
+   - Hard coreqs (catalog-derived `acceptConcurrent: true` references) are scheduled in the same or earlier semester.
    - Grade requirements on prereqs are satisfiable.
    - **Term-offering constraint**: the candidate semester's term (Fall/Spring/Summer) is in `Course.TypicallyOffered` (if non-empty). If the candidate term is unavailable, advance to the next valid term.
 4. Topologically order moves so dependencies are placed before dependents.
 5. Detect resulting per-semester state — emit `FillGapDecision` for under-credit semesters, `SemesterOverload` warning for over-credit semesters.
-6. Return the `CascadeProposal` — never mutate persistent state.
+6. **Soft-pairing pass**: for every PlanItem in a `RecommendedPairing`, check whether its paired item is still in the same semester. If not, emit `RecommendedPairingBroken` warning and offer a `ReunitePairing` decision (move the orphan to keep the pairing intact). User can accept or override.
+7. Return the `CascadeProposal` — never mutate persistent state.
 
 **Semester-to-term mapping:** `CascadeOptions` carries the `StartTerm` (Fall or Spring) and the engine alternates from there. E.g., `StartTerm = Fall` → Sem 1 = Fall, Sem 2 = Spring, Sem 3 = Fall, etc. Summer is never auto-assigned but the user can manually place items in Summer slots.
 
@@ -317,7 +329,7 @@ class ConfirmOverloadDecision: DecisionPoint {
 }
 
 class Warning { WarningKind Kind; string Message; List<Guid> RelatedPlanItemIds; }
-enum WarningKind { SemesterOverload, GraduationPushed, GradeRequirementUnmet, NoValidSemester }
+enum WarningKind { SemesterOverload, GraduationPushed, GradeRequirementUnmet, NoValidSemester, RecommendedPairingBroken }
 
 // Supporting types referenced by DecisionPoint subclasses:
 class SlotOption {              // a generic flowchart-slot suggestion to fill a gap
@@ -366,6 +378,10 @@ class MovableItem {             // a PlanItem the user could defer to alleviate 
 **Cross-listing equivalence:**
 - **AC-19** Student took `EE 4910` (a cross-listing of `CPRE 4910`) → engine treats CPRE 4910 slot as filled by EE 4910 PlanItem; downstream prereqs referencing CPRE 4910 are satisfied.
 - **AC-20** Slot references `CYBE 2310`; student has CPRE 2310 in their PlanItems → overlay correctly maps CPRE 2310 to the slot.
+
+**Soft pairings (recommendedPairing):**
+- **AC-26** CprE 1850 (Sem 1) has `recommendedPairing: [MATH-1650]`. User skips Math 1650 from Sem 1 → catalog allows CprE 1850 to remain (placement OR Math 1430 OR Math 1650). Engine emits `RecommendedPairingBroken` warning + `ReunitePairing` decision suggesting CprE 1850 also move to wherever Math 1650 went. User can accept (move both) or override (leave CprE 1850 in Sem 1).
+- **AC-27** Hard coreq from catalog (e.g., PHYS 2310 ↔ PHYS 2310L via `acceptConcurrent`) → enforced as a hard placement constraint, NOT a soft pairing warning. Cascade engine *blocks* placements that violate it.
 
 **Term offerings:**
 - **AC-21** Cascade tries to place COMS 3110 (Fall-only) into a Spring semester → engine advances to next Fall term and reports the move with reason "term-offering constraint."
@@ -587,6 +603,8 @@ Recording the journey for context in future sessions:
 | 17 | Term-offering data promoted into POC scope | Real ISU has Fall-only courses (COMS 3110, ENGL 3140) — cascade engine that ignores this would suggest invalid placements |
 | 18 | New prereq node types: `PrereqClassification`, `PrereqCoreCredits` | Catalog encodes "Sophomore classification" and "29 Core Cr" gates that aren't expressible as course prereqs |
 | 19 | Schema extensions adopted from user's flow file: `Notes`, `CreditNote`, `ClassNote`, slot-level `DisplayName` | Preserves chart's display nuance (R cr, 3/4cr, "Soph Class") and supports concise UI tiles vs. full official names |
+| 20 | `Prereqs` and `Coreqs` removed from `FlowchartSlot` — catalog (`Course.Prereqs`) is the single source of truth | Once we had the actual catalog, duplicating prereqs in the flow created drift risk with no real benefit; catalog encodes hard coreqs via `acceptConcurrent` flags |
+| 21 | Flow keeps soft `RecommendedPairing` (renamed from coreqs) for the chart's red-solid lines | Captures curriculum-recommended pairings (e.g., CprE 1850 + Math 1650) that aren't catalog-enforced; engine emits a `RecommendedPairingBroken` warning + offers a `ReunitePairing` decision |
 
 ## 11. Open items for the implementation plan
 
