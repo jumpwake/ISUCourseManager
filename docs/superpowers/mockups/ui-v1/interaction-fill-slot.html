@@ -1,0 +1,367 @@
+<style>
+  body, .frame { background: #f6f7f9; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr 360px;     /* sidebar | main | picker */
+    grid-template-rows: 56px 1fr;
+    grid-template-areas:
+      "topbar topbar topbar"
+      "sidebar main picker";
+    height: 760px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    font-size: 13px;
+    color: #1f2328;
+  }
+
+  .topbar {
+    grid-area: topbar; background: #1f3b5d; color: #f0f4f8;
+    display: flex; align-items: center; padding: 0 16px; gap: 16px;
+  }
+  .topbar .brand { font-weight: 700; font-size: 14px; }
+  .topbar .brand .accent { color: #ffc555; }
+  .topbar .student { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cfd8dc; }
+  .topbar .student .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ffc555; color: #1f3b5d; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+
+  /* SIDEBAR (left) — collapsed for this mockup */
+  .sidebar {
+    grid-area: sidebar; background: #fafbfc; border-right: 1px solid #e0e0e0;
+    padding: 12px; font-size: 11px; color: #5a6573;
+  }
+  .side-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: #8895a4; font-weight: 700; margin-bottom: 6px; }
+  .flow-card { border: 1px solid #d0d7de; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; background: #fff; }
+  .flow-card.active { background: #e3f2fd; border-color: #1976d2; }
+  .flow-card .flow-name { font-weight: 700; font-size: 12px; color: #1f2328; }
+  .flow-card .flow-meta { font-size: 10px; color: #8895a4; margin-top: 2px; }
+
+  /* MAIN */
+  .main { grid-area: main; overflow-y: auto; padding: 0; }
+  .main-header {
+    background: #fff; padding: 12px 16px; border-bottom: 1px solid #e0e0e0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .main-header h1 { font-size: 14px; margin: 0; flex-grow: 1; }
+  .main-header .meta { font-size: 11px; color: #8895a4; }
+
+  /* Tiles */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 78px; min-height: 44px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; cursor: pointer;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+
+  /* Empty slot variants */
+  .tile.unfulfilled-degree {
+    background: repeating-linear-gradient(45deg, #fff5f5, #fff5f5 6px, #ffe5e5 6px, #ffe5e5 12px);
+    border-color: #ef9a9a; color: #c62828; border-style: dashed;
+  }
+  .tile.unfulfilled-degree small { color: #c62828; opacity: .8; }
+
+  .tile.empty-space {
+    background: #fff;
+    border: 2px dashed #b0bec5; color: #607d8b;
+    font-weight: 700; font-size: 14px;
+  }
+  .tile.empty-space small { font-size: 9px; font-weight: 400; margin-top: 0; }
+
+  .tile.elective-empty {
+    background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f0f0f0 6px, #f0f0f0 12px);
+    border-color: #cfd8dc; color: #607d8b; border-style: dashed;
+  }
+  .tile.selected {
+    box-shadow: 0 0 0 3px #1976d2, 0 4px 12px rgba(25,118,210,.4);
+    transform: scale(1.04);
+  }
+
+  /* Sem rows */
+  .sem-row {
+    padding: 8px 16px; border-bottom: 1px dashed #e0e0e0;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  }
+  .sem-label {
+    width: 90px; font-size: 11px; color: #455a64; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sem-label small { display: block; font-weight: 400; color: #999; }
+  .sem-credits {
+    margin-left: auto; padding-left: 8px;
+    font-size: 10px; color: #888; white-space: nowrap;
+  }
+
+  /* PICKER PANEL (right) */
+  .picker {
+    grid-area: picker;
+    background: #fff;
+    border-left: 2px solid #1976d2;
+    overflow-y: auto;
+    box-shadow: -4px 0 12px rgba(0,0,0,.06);
+    display: flex; flex-direction: column;
+  }
+  .picker-header {
+    background: #e3f2fd;
+    padding: 12px 16px;
+    border-bottom: 1px solid #90caf9;
+  }
+  .picker-header .breadcrumb {
+    font-size: 11px; color: #1565c0;
+    margin-bottom: 4px;
+  }
+  .picker-header h2 {
+    font-size: 14px; margin: 0; color: #0d47a1;
+  }
+  .picker-header .ctx {
+    font-size: 11px; color: #455a64; margin-top: 4px;
+  }
+  .picker-close {
+    float: right; cursor: pointer; color: #1565c0; font-weight: 700;
+  }
+
+  .picker-body {
+    padding: 12px 16px; flex-grow: 1; overflow-y: auto;
+  }
+  .picker-section { margin-bottom: 16px; }
+  .picker-section h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    color: #5a6573; font-weight: 700;
+    margin: 0 0 6px 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .picker-section h3 .badge {
+    background: #e0e0e0; color: #455a64;
+    font-size: 9px; padding: 1px 5px; border-radius: 8px;
+    font-weight: 700;
+  }
+  .picker-section h3.recommended .badge { background: #4caf50; color: white; }
+
+  .pick-card {
+    border: 1px solid #d0d7de; border-radius: 5px;
+    padding: 8px 10px; margin-bottom: 6px;
+    cursor: pointer; background: #fff;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pick-card:hover { background: #f8f9fa; border-color: #1976d2; }
+  .pick-card.recommended { background: #e8f5e9; border-color: #66bb6a; }
+  .pick-card.recommended:hover { background: #c8e6c9; }
+  .pick-card .pick-content { flex-grow: 1; }
+  .pick-card .pick-name { font-weight: 700; font-size: 12px; color: #1f2328; }
+  .pick-card .pick-meta { font-size: 10px; color: #5a6573; margin-top: 2px; }
+  .pick-card .pick-from {
+    font-size: 9px; color: #ef6c00; margin-top: 3px; font-style: italic;
+  }
+  .pick-card .pick-action {
+    font-size: 10px; color: #1976d2;
+    padding: 2px 8px; border: 1px solid #90caf9; border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .picker-search {
+    width: 100%; padding: 6px 10px; border: 1px solid #d0d7de;
+    border-radius: 4px; font-size: 12px; margin-bottom: 8px;
+    box-sizing: border-box;
+  }
+  .picker-footer {
+    padding: 12px 16px; border-top: 1px solid #e0e0e0;
+    display: flex; gap: 8px; justify-content: flex-end;
+    background: #fafbfc;
+  }
+  .picker-footer .btn {
+    padding: 6px 12px; font-size: 12px; border-radius: 4px;
+    border: 1px solid #d0d7de; background: #fff; cursor: pointer;
+  }
+  .picker-footer .btn.primary { background: #1976d2; color: white; border-color: #1565c0; }
+  .picker-footer .btn.ghost { border-color: transparent; color: #5a6573; }
+</style>
+
+<h2>Interaction #1: Click an empty slot → Sidebar picker opens</h2>
+<p class="subtitle">Luke's scenario: Math 1650 was deferred to Sem 2 (CprE 1850 cascaded with it as coreq). Sem 1 now has 2 unfulfilled DegreeClass slots (red striped). Luke clicks the first empty slot to fill it.</p>
+
+<div class="frame" style="padding: 12px; background:#eceff1;">
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="side-label">My degree flows</div>
+      <div class="flow-card active">
+        <div class="flow-name">Cyber Security Engr</div>
+        <div class="flow-meta">2025-26 · 28/125 cr</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="main-header">
+        <h1>Cyber Security Engineering — 2025-26</h1>
+        <div class="meta">Active · 28 / 125 cr</div>
+      </div>
+      <div class="row-layout">
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small></div>
+          <span class="tile unfulfilled-degree selected">⚠ Math 1650<small>moved to Sem 2 — click to fill</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile unfulfilled-degree">⚠ CprE 1850<small>moved to Sem 2 — click to fill</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+          <div class="sem-credits">9cr (low)</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small></div>
+          <span class="tile inprogress math">Math 1650<small>4cr · ⤴ moved here</small></span>
+          <span class="tile inprogress cpre">CprE 1850<small>3cr · ⤴ moved here</small></span>
+          <span class="tile inprogress math">Math 1660<small>4cr · planned</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+          <div class="sem-credits">23cr (HEAVY!)</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 5<small>Fall 2027</small></div>
+          <span class="tile planned gened">Gen Ed (3cr)<small>could move forward</small></span>
+          <span class="tile planned cybe">Cyb E 3310<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 3810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 3090<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 3100<small>3cr</small></span>
+          <div class="sem-credits">16cr</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 6<small>Spring 2028</small></div>
+          <span class="tile planned gened">Gen Ed (3cr)<small>could move forward</small></span>
+          <span class="tile elective-empty">CybE Elec<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 3080<small>4cr</small></span>
+          <span class="tile planned coms">Com S 3110<small>3cr</small></span>
+          <span class="tile planned engl">Engl 3140<small>3cr</small></span>
+          <div class="sem-credits">16cr</div>
+        </div>
+        <div style="padding:12px 16px;font-size:11px;color:#999;font-style:italic;">… (other semesters omitted) …</div>
+      </div>
+    </div>
+
+    <!-- PICKER -->
+    <div class="picker">
+      <div class="picker-header">
+        <span class="picker-close">×</span>
+        <div class="breadcrumb">Sem 1 · Fall 2025</div>
+        <h2>Fill this slot</h2>
+        <div class="ctx">Originally: <strong>Math 1650 · Calc I</strong> (now in Sem 2)</div>
+      </div>
+      <div class="picker-body">
+        <input type="text" class="picker-search" placeholder="Search catalog…" />
+
+        <div class="picker-section">
+          <h3 class="recommended">Recommended <span class="badge">Best fit</span></h3>
+          <div class="pick-card recommended">
+            <div class="pick-content">
+              <div class="pick-name">↩ Move Math 1650 back here</div>
+              <div class="pick-meta">Calculus I · 4cr · Math · A-grade required: C-</div>
+              <div class="pick-from">undoes the Sem 1 → Sem 2 deferral</div>
+            </div>
+            <div class="pick-action">Restore</div>
+          </div>
+        </div>
+
+        <div class="picker-section">
+          <h3>Pull from a later semester <span class="badge">2 candidates</span></h3>
+          <div class="pick-card">
+            <div class="pick-content">
+              <div class="pick-name">Gen Ed (Sem 5)</div>
+              <div class="pick-meta">3cr · GenEdElective · placeholder, not yet picked</div>
+              <div class="pick-from">currently Sem 5 (Fall 2027) → would move to Sem 1</div>
+            </div>
+            <div class="pick-action">Pull forward</div>
+          </div>
+          <div class="pick-card">
+            <div class="pick-content">
+              <div class="pick-name">Gen Ed (Sem 6)</div>
+              <div class="pick-meta">3cr · GenEdElective · placeholder, not yet picked</div>
+              <div class="pick-from">currently Sem 6 (Spring 2028) → would move to Sem 1</div>
+            </div>
+            <div class="pick-action">Pull forward</div>
+          </div>
+        </div>
+
+        <div class="picker-section">
+          <h3>Add a new course from the catalog <span class="badge">filtered</span></h3>
+          <div class="pick-card">
+            <div class="pick-content">
+              <div class="pick-name">Math 1430 · Pre-Calculus</div>
+              <div class="pick-meta">3cr · Math · prereq: placement</div>
+              <div class="pick-from">prepares for Math 1650; not in your flow but valid</div>
+            </div>
+            <div class="pick-action">Add</div>
+          </div>
+          <div class="pick-card">
+            <div class="pick-content">
+              <div class="pick-name">PSYCH 2300 · Intro to Psych</div>
+              <div class="pick-meta">3cr · Psych · GenEd-eligible · no prereq</div>
+            </div>
+            <div class="pick-action">Add</div>
+          </div>
+          <div class="pick-card">
+            <div class="pick-content">
+              <div class="pick-name">SPAN 1010 · Spanish I</div>
+              <div class="pick-meta">5cr · Lang · GenEd-eligible · no prereq</div>
+            </div>
+            <div class="pick-action">Add</div>
+          </div>
+          <div style="text-align:center; font-size:11px; color:#1976d2; padding:6px; cursor:pointer;">+ See 18 more matches</div>
+        </div>
+
+        <div class="picker-section">
+          <h3>Or…</h3>
+          <div class="pick-card" style="background:#fafbfc;">
+            <div class="pick-content">
+              <div class="pick-name">Leave this slot empty</div>
+              <div class="pick-meta">Sem 1 will run at 9 credits (lower than the 15-credit target)</div>
+            </div>
+            <div class="pick-action">Skip</div>
+          </div>
+        </div>
+      </div>
+      <div class="picker-footer">
+        <button class="btn ghost">Cancel</button>
+        <button class="btn primary">Apply selection</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">Two questions to react to</h3>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="empty-slot-style" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Empty slot visual treatment</h3>
+      <p>I used a red-striped "⚠ Math 1650 — moved to Sem 2" tile to make the empty space clearly identifiable AND retain context (you can see what was supposed to be there). Alternatives: blank dashed box with just "+", or a faded/greyed-out version of the original tile. Pick this option if the red-striped treatment works.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="picker-sections" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Picker organized into 4 sections</h3>
+      <p>Recommended (restore the original) / Pull from later semester / Add from catalog / Leave empty. This matches Luke's actual flow and makes "pull forward" a first-class option. Pick if this structure works.</p>
+    </div>
+  </div>
+</div>

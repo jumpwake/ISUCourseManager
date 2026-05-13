@@ -1,0 +1,499 @@
+<style>
+  body, .frame { background: #f6f7f9; }
+  .scenario-label {
+    background: #1f3b5d; color: white; padding: 8px 16px;
+    font-size: 13px; font-weight: 700;
+    border-radius: 6px 6px 0 0; margin-top: 24px;
+  }
+  .scenario-label .desc { font-weight: 400; color: #cfd8dc; font-size: 12px; margin-left: 8px; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr 380px;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas:
+      "topbar topbar topbar"
+      "sidebar main panel";
+    height: 700px;
+    border: 1px solid #d0d7de;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    background: #fff;
+    font-size: 13px;
+    color: #1f2328;
+  }
+  .app.no-panel {
+    grid-template-columns: 240px 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "sidebar main";
+  }
+  .app.no-panel .panel { display: none; }
+
+  /* TOPBAR */
+  .topbar {
+    grid-area: topbar; background: #1f3b5d; color: #f0f4f8;
+    display: flex; align-items: center; padding: 0 16px; gap: 16px;
+  }
+  .topbar .brand { font-weight: 700; font-size: 14px; }
+  .topbar .brand .accent { color: #ffc555; }
+  .topbar .ai-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border: none;
+    padding: 6px 12px; border-radius: 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 8px rgba(124,58,237,.3);
+  }
+  .topbar .ai-btn .icon { font-size: 13px; }
+  .topbar .student { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cfd8dc; }
+  .topbar .student .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ffc555; color: #1f3b5d; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    grid-area: sidebar; background: #fafbfc; border-right: 1px solid #e0e0e0;
+    padding: 12px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .side-section { font-size: 11px; }
+  .side-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+    color: #8895a4; font-weight: 700; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .flow-card {
+    border: 1px solid #d0d7de; border-radius: 6px;
+    padding: 8px 10px; margin-bottom: 6px;
+    cursor: pointer; background: #fff;
+  }
+  .flow-card.active { background: #e3f2fd; border-color: #1976d2; box-shadow: 0 0 0 2px rgba(25,118,210,.15); }
+  .flow-card.pending { background: #fff8e1; border-color: #ffb300; border-style: dashed; }
+  .flow-card .flow-name { font-weight: 700; font-size: 12px; color: #1f2328; }
+  .flow-card .flow-meta { font-size: 10px; color: #8895a4; margin-top: 2px; }
+  .flow-card .flow-progress {
+    margin-top: 4px; font-size: 10px; color: #5a6573;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .flow-card .flow-progress .bar { flex-grow: 1; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+  .flow-card .flow-progress .fill { height: 100%; background: #66bb6a; }
+  .flow-card .flow-status {
+    display: inline-block; padding: 1px 6px; border-radius: 8px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .flow-card.active .flow-status { background: #1976d2; color: white; }
+  .flow-card.pending .flow-status { background: #ffb300; color: #5a4500; }
+
+  /* MAIN */
+  .main { grid-area: main; overflow-y: auto; padding: 0; background: #fff; }
+  .main-header {
+    background: #fff; padding: 10px 16px; border-bottom: 1px solid #e0e0e0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .main-header h1 { font-size: 14px; margin: 0; flex-grow: 1; }
+  .main-header .meta { font-size: 11px; color: #8895a4; }
+  .main-header .ai-flow-btn {
+    background: white; color: #5b21b6;
+    border: 1px solid #c4b5fd; padding: 4px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .main-header .ai-flow-btn:hover { background: #faf5ff; }
+
+  /* Sem rows + AI scope icon */
+  .sem-row {
+    padding: 8px 16px; border-bottom: 1px dashed #e0e0e0;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    position: relative;
+  }
+  .sem-row:hover { background: #fafbfc; }
+  .sem-row.scoped { background: #faf5ff; box-shadow: inset 4px 0 0 #7c3aed; }
+  .sem-label {
+    width: 90px; font-size: 11px; color: #455a64; font-weight: 700;
+    flex-shrink: 0; line-height: 1.3; position: relative;
+  }
+  .sem-label small { display: block; font-weight: 400; color: #999; }
+  .sem-label .credits { display: block; margin-top: 2px; font-size: 11px; font-weight: 700; color: #1565c0; }
+  .sem-label .ai-scope-btn {
+    position: absolute; top: -2px; right: 0;
+    background: white; border: 1px solid #c4b5fd; color: #7c3aed;
+    width: 18px; height: 18px; border-radius: 50%;
+    font-size: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.4; transition: opacity .15s;
+  }
+  .sem-row:hover .ai-scope-btn,
+  .sem-row.scoped .ai-scope-btn { opacity: 1; }
+  .sem-row.scoped .ai-scope-btn {
+    background: #7c3aed; color: white; border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124,58,237,.2);
+  }
+
+  /* Tiles */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 78px; min-height: 44px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; cursor: pointer; position: relative;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+  .tile.elective-empty {
+    background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f0f0f0 6px, #f0f0f0 12px);
+    border-color: #cfd8dc; color: #607d8b; border-style: dashed;
+  }
+  .tile.ai-suggested {
+    box-shadow: 0 0 0 2px #7c3aed;
+    background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
+    border-color: #c4b5fd;
+  }
+  .tile.ai-suggested::before {
+    content: "✦"; position: absolute; top: -6px; right: -6px;
+    background: #7c3aed; color: white;
+    width: 16px; height: 16px; border-radius: 50%;
+    font-size: 10px; line-height: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+
+  /* AI PANEL (right) */
+  .panel { grid-area: panel; background: #fff; border-left: 2px solid #7c3aed; overflow-y: auto;
+    box-shadow: -4px 0 12px rgba(0,0,0,.06); display: flex; flex-direction: column; }
+  .panel-header {
+    background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
+    padding: 12px 16px;
+    border-bottom: 1px solid #c4b5fd;
+  }
+  .panel-header .scope-pill {
+    display: inline-block;
+    background: #7c3aed; color: white;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 6px;
+  }
+  .panel-header .ai-title {
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 13px; color: #5b21b6;
+  }
+  .panel-header .ctx { font-size: 11px; color: #5a6573; margin-top: 4px; }
+  .panel-header .close {
+    float: right; cursor: pointer; color: #5b21b6; font-weight: 700; font-size: 14px;
+  }
+
+  .panel-body { padding: 12px 16px; flex-grow: 1; overflow-y: auto; background: #fafbfc; }
+
+  .ai-msg {
+    background: #fff; border: 1px solid #e0e0e0;
+    padding: 10px 12px; border-radius: 12px 12px 12px 2px;
+    margin-bottom: 12px; font-size: 12px; line-height: 1.5;
+  }
+  .ai-msg .msg-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: #5b21b6; font-weight: 700;
+    margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #e0e0e0;
+  }
+  .ai-msg strong { color: #5b21b6; }
+
+  .suggestion-card {
+    border: 1px solid #d0d7de; border-radius: 6px;
+    padding: 8px 10px; margin-bottom: 6px;
+    background: #fff; cursor: pointer;
+  }
+  .suggestion-card:hover { border-color: #7c3aed; background: #faf5ff; }
+  .suggestion-card.recommended { background: #f3e8ff; border-color: #7c3aed; }
+  .suggestion-card .sc-head {
+    display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px;
+  }
+  .suggestion-card .sc-name { font-weight: 700; font-size: 12px; color: #1f2328; }
+  .suggestion-card .sc-meta { font-size: 10px; color: #5a6573; }
+  .suggestion-card .sc-rationale {
+    font-size: 11px; color: #5a6573; line-height: 1.4;
+    margin: 4px 0;
+  }
+  .suggestion-card .sc-actions {
+    display: flex; gap: 4px; margin-top: 6px;
+  }
+  .suggestion-card .sc-btn {
+    background: #7c3aed; color: white; border: none;
+    padding: 3px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 600; cursor: pointer;
+  }
+  .suggestion-card .sc-btn.secondary {
+    background: white; color: #5b21b6;
+    border: 1px solid #c4b5fd;
+  }
+
+  .panel-footer { padding: 12px; border-top: 1px solid #e0e0e0; background: #fff; }
+  .panel-footer .input-row { display: flex; gap: 6px; align-items: center; }
+  .panel-footer input {
+    flex-grow: 1; padding: 8px 12px; border: 1px solid #d0d7de;
+    border-radius: 18px; font-size: 12px; outline: none;
+  }
+  .panel-footer input:focus { border-color: #7c3aed; }
+  .panel-footer .send-btn {
+    background: #7c3aed; color: white; border: none;
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: 14px;
+  }
+  .panel-footer .quick-asks { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .panel-footer .quick-ask {
+    background: #f5f5f5; border: 1px solid #e0e0e0;
+    padding: 3px 8px; border-radius: 10px;
+    font-size: 10px; color: #5a6573; cursor: pointer;
+  }
+  .panel-footer .quick-ask:hover { background: #faf5ff; border-color: #c4b5fd; color: #5b21b6; }
+</style>
+
+<h2>Contextual AI — semester-level and flow-level scope</h2>
+<p class="subtitle">Renamed "Ask Claude" → generic "Ask AI." Each sem-row gets a small ✦ icon (visible on hover, prominent when active). Click it to scope AI to that semester. Same pattern works at the flow level (button in the main header).</p>
+
+<!-- ========== SCENARIO: Luke clicks ✦ on Sem 2 — AI scoped to that semester ========== -->
+<div class="scenario-label">Luke's example: "In Sem 2, what Gen Eds can I take to fill these 2 spots?"<span class="desc">Click ✦ next to "Sem 2" → right panel opens scoped to Sem 2 with context-aware suggestions.</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <button class="ai-btn"><span class="icon">✦</span>Ask AI</button>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="side-section">
+        <div class="side-label">My degree flows <span style="text-transform:none;letter-spacing:0;color:#1976d2;cursor:pointer;font-size:10px;">+ Add</span></div>
+        <div class="flow-card active">
+          <div class="flow-name">Cyber Security Engr</div>
+          <div class="flow-meta">CYBE · 2025-26</div>
+          <div class="flow-progress">
+            <span>22%</span>
+            <div class="bar"><div class="fill" style="width:22%;"></div></div>
+            <span>28/125</span>
+          </div>
+          <span class="flow-status">Active · viewing</span>
+        </div>
+        <div class="flow-card active">
+          <div class="flow-name">Math Minor</div>
+          <div class="flow-meta">MATH · 2025-26</div>
+          <span class="flow-status">Active</span>
+        </div>
+        <div class="flow-card pending">
+          <div class="flow-name">Computer Engr</div>
+          <div class="flow-meta">CPRE · what-if</div>
+          <span class="flow-status">Pending</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="main-header">
+        <h1>Cyber Security Engineering — 2025-26</h1>
+        <button class="ai-flow-btn"><span>✦</span>Analyze flow</button>
+        <div class="meta">Active · grad: Spring 2030</div>
+      </div>
+
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits">15 cr</span><span class="ai-scope-btn" title="AI for Sem 1">✦</span></div>
+          <span class="tile completed math">Math 1650<small>A · 4cr</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R</small></span>
+          <span class="tile completed cpre">CprE 1850<small>3cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+
+        <!-- Sem 2 — currently scoped by AI -->
+        <div class="sem-row scoped">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits">19 cr</span><span class="ai-scope-btn" title="AI scoped here">✦</span></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened ai-suggested">Gen Ed<small>3cr · open</small></span>
+          <span class="tile inprogress gened ai-suggested">Gen Ed<small>3cr · open</small></span>
+        </div>
+
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits">14 cr</span><span class="ai-scope-btn" title="AI for Sem 3">✦</span></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 4<small>Spring 2027</small><span class="credits">16 cr</span><span class="ai-scope-btn" title="AI for Sem 4">✦</span></div>
+          <span class="tile planned cybe">Cyb E 2310<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2880<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2340<small>3cr</small></span>
+          <span class="tile planned engl">Engl 2500<small>3cr</small></span>
+          <span class="tile elective-empty">Math Elec<small>3-4cr</small></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI PANEL — scoped to Sem 2 -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="close">×</span>
+        <span class="scope-pill">Scoped: Sem 2 · Spring 2026</span>
+        <div class="ai-title">✦ AI · semester analysis</div>
+        <div class="ctx">Looking at this semester's open slots, planned courses, credit load, and your interests.</div>
+      </div>
+      <div class="panel-body">
+        <div class="ai-msg">
+          <div class="msg-header">✦ AI · 2 open Gen Ed slots in Sem 2</div>
+          Looking at your current Sem 2 plan — <strong>19 credits already</strong>, mostly Math+Phys+ComS heavy. For these 2 Gen Ed slots, I'd recommend lighter-load courses to keep the semester manageable. Here are 4 candidates ranked by fit:
+        </div>
+
+        <div class="suggestion-card recommended">
+          <div class="sc-head">
+            <div class="sc-name">PSYCH 2300 · Intro to Psychology</div>
+            <div class="sc-meta">3 cr · no prereqs · F/S/Su</div>
+          </div>
+          <div class="sc-rationale">
+            Most popular Gen Ed pick among CybE majors (89% of cohort took it). Cognitive bias coverage is genuinely useful for security work. Light reading load.
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn">Add to Sem 2 (slot 1)</button>
+            <button class="sc-btn secondary">Why?</button>
+          </div>
+        </div>
+
+        <div class="suggestion-card">
+          <div class="sc-head">
+            <div class="sc-name">SPAN 1010 · Spanish I</div>
+            <div class="sc-meta">5 cr · no prereqs · F/S/Su</div>
+          </div>
+          <div class="sc-rationale">
+            Counts as Gen Ed and satisfies International Perspectives. Heavier load (5 cr) — would push Sem 2 to 21cr. Worth it if you want to start a language sequence.
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn">Add to Sem 2</button>
+            <button class="sc-btn secondary">Show alternatives</button>
+          </div>
+        </div>
+
+        <div class="suggestion-card">
+          <div class="sc-head">
+            <div class="sc-name">PHIL 2300 · Moral Theory & Practice</div>
+            <div class="sc-meta">3 cr · no prereqs · F/S</div>
+          </div>
+          <div class="sc-rationale">
+            Pairs well with CYBE 2340 (Ethics in Security) coming in Sem 4 — gives you a philosophical grounding ahead of time. Discussion-heavy, no exams.
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn">Add to Sem 2 (slot 2)</button>
+            <button class="sc-btn secondary">Why?</button>
+          </div>
+        </div>
+
+        <div class="suggestion-card">
+          <div class="sc-head">
+            <div class="sc-name">HIST 2010 · Western Civ I</div>
+            <div class="sc-meta">3 cr · no prereqs · F/S</div>
+          </div>
+          <div class="sc-rationale">
+            Counts toward both Gen Ed and U.S. Cultures requirement (kills two birds). Mostly lecture; manageable workload.
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn">Add to Sem 2</button>
+            <button class="sc-btn secondary">Why?</button>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:8px;">
+          <button class="sc-btn secondary" style="background:white;color:#5b21b6;border:1px solid #c4b5fd;">Show 12 more</button>
+        </div>
+
+        <div class="ai-msg" style="margin-top:14px;background:#f0f9ff;border-color:#90caf9;">
+          <strong>Tip:</strong> If you accept PSYCH 2300 + PHIL 2300, your Sem 2 stays at 19cr (replacing the 2 Gen Ed placeholders). I can apply both with one click.
+          <div style="margin-top:6px;">
+            <button class="sc-btn">Apply both recommendations</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-footer">
+        <div class="input-row">
+          <input type="text" placeholder="Ask about Sem 2…" value="What Gen Eds fit here?" />
+          <button class="send-btn">→</button>
+        </div>
+        <div class="quick-asks">
+          <span class="quick-ask">Suggest a math elective</span>
+          <span class="quick-ask">Why is Sem 2 heavy?</span>
+          <span class="quick-ask">Compare Gen Ed options</span>
+          <span class="quick-ask">Easier semester layout?</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">React to:</h3>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="rename" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Generic "Ask AI" naming (no Claude branding)</h3>
+      <p>Topbar button reads "✦ Ask AI." Sidebar insights still have a discreet "✦ AI" pill. No vendor name surfaced to the user — under the hood we route to Anthropic, but the UI stays generic.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="sem-icon" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>✦ AI icon on each sem-row label</h3>
+      <p>Small purple-bordered ✦ button next to each semester's credits. Faded by default (40% opacity), full opacity on hover. Click → AI panel scopes to that semester. Active scope gets a purple background tint on the row + filled-in icon.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="flow-ai-btn" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>"✦ Analyze flow" button in the main header</h3>
+      <p>For flow-level questions ("How am I doing overall? Should I switch majors?"). Sits between the flow title and the meta info.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="scoped-pill" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Scope pill in panel header</h3>
+      <p>The AI panel header shows what the AI is scoped to: "Scoped: Sem 2 · Spring 2026." Clicking the × closes the panel, OR clicking another scope on the plan switches the pill.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="suggestion-card" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>Suggestion cards with rationale + action buttons</h3>
+      <p>Each AI suggestion is a clickable card showing: course code/name, credits + offering, plain-English rationale ("89% of cohort took it"), and action buttons ("Add to Sem 2 slot 1" / "Why?" / "Show alternatives"). One-click application of suggestions.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="batch-action" onclick="toggleSelect(this)">
+    <div class="letter">F</div>
+    <div class="content">
+      <h3>Batch "Apply both recommendations" tip at bottom</h3>
+      <p>When AI gives 2+ related suggestions that fit together, a footnote-tip card offers to apply them all in one click. Saves clicking each suggestion individually.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="visual-link" onclick="toggleSelect(this)">
+    <div class="letter">G</div>
+    <div class="content">
+      <h3>AI-suggested tiles get visual ring + ✦ badge</h3>
+      <p>The 2 Gen Ed slots in Sem 2 currently being analyzed have a purple ring + ✦ corner badge so you can see what the AI is referring to. Disappears when AI scope changes.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#666;">
+The slot-level picker (from interaction #1) can also have an "AI suggestions" section at the top — same suggestion-card format. Three entry points to the same AI engine, scoped progressively narrower: <strong>Flow</strong> ("Analyze flow") → <strong>Semester</strong> (✦ icon) → <strong>Slot</strong> (in the picker). The topbar "Ask AI" is the un-scoped general entry.
+</p>

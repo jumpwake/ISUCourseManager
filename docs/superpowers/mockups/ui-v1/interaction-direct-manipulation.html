@@ -1,0 +1,657 @@
+<style>
+  body, .frame { background: #f6f7f9; }
+  .scenario-label {
+    background: #1f3b5d; color: white; padding: 8px 16px;
+    font-size: 13px; font-weight: 700;
+    border-radius: 6px 6px 0 0; margin-top: 24px;
+  }
+  .scenario-label .step { background: #ffc555; color: #1f3b5d; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 8px; }
+  .scenario-label .desc { font-weight: 400; color: #cfd8dc; font-size: 12px; margin-left: 8px; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    grid-template-rows: 56px auto 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "banner panel"
+      "main panel";
+    height: 620px;
+    border: 1px solid #d0d7de;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    background: #fff;
+    font-size: 13px;
+    color: #1f2328;
+  }
+  .app.no-panel {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "banner"
+      "main";
+  }
+  .app.no-panel .panel { display: none; }
+  .app.no-banner {
+    grid-template-rows: 56px 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "main panel";
+  }
+  .app.no-banner .banner { display: none; }
+
+  .topbar { grid-area: topbar; background: #1f3b5d; color: #f0f4f8; display: flex; align-items: center; padding: 0 16px; gap: 16px; }
+  .topbar .brand { font-weight: 700; font-size: 14px; }
+  .topbar .brand .accent { color: #ffc555; }
+  .topbar .student { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cfd8dc; }
+  .topbar .student .avatar { width: 28px; height: 28px; border-radius: 50%; background: #ffc555; color: #1f3b5d; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+
+  /* Validation banner */
+  .banner {
+    grid-area: banner;
+    background: #ffebee;
+    border-bottom: 1px solid #ef9a9a;
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px;
+  }
+  .banner.clean {
+    background: #e8f5e9;
+    border-color: #66bb6a;
+    color: #1b5e20;
+  }
+  .banner .icon {
+    font-size: 18px;
+    background: #c62828; color: white;
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; flex-shrink: 0;
+  }
+  .banner.clean .icon { background: #2e7d32; }
+  .banner .msg { flex-grow: 1; color: #c62828; font-weight: 600; }
+  .banner.clean .msg { color: #1b5e20; }
+  .banner .actions { display: flex; gap: 6px; }
+  .banner .btn {
+    padding: 4px 10px; font-size: 11px; border-radius: 4px;
+    border: 1px solid #ef9a9a; background: #fff; cursor: pointer; color: #c62828;
+  }
+  .banner .btn.primary { background: #c62828; color: white; border-color: #c62828; }
+  .banner.clean .btn { border-color: #66bb6a; color: #1b5e20; }
+
+  .main { grid-area: main; overflow-y: auto; padding: 0; background: #fff; }
+  .main-header {
+    background: #fff; padding: 10px 16px; border-bottom: 1px solid #e0e0e0;
+    font-size: 13px; font-weight: 700;
+  }
+
+  /* Tiles */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 78px; min-height: 44px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; cursor: pointer; position: relative;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+
+  /* Validation flag — red badge on a tile that has a broken prereq/coreq */
+  .tile.invalid {
+    box-shadow: 0 0 0 2px #c62828;
+    border-color: #c62828;
+  }
+  .tile .flag {
+    position: absolute; top: -7px; right: -7px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #c62828; color: white;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,.2);
+  }
+
+  /* Empty/unfulfilled */
+  .tile.unfulfilled-degree {
+    background: repeating-linear-gradient(45deg, #fff5f5, #fff5f5 6px, #ffe5e5 6px, #ffe5e5 12px);
+    border-color: #ef9a9a; color: #c62828; border-style: dashed;
+  }
+
+  .tile.selected {
+    box-shadow: 0 0 0 3px #1976d2, 0 4px 12px rgba(25,118,210,.4);
+    transform: scale(1.04); z-index: 1;
+  }
+
+  /* Sem rows */
+  .sem-row {
+    padding: 8px 16px; border-bottom: 1px dashed #e0e0e0;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  }
+  .sem-label { width: 90px; font-size: 11px; color: #455a64; font-weight: 700; flex-shrink: 0; line-height: 1.3; }
+  .sem-label small { display: block; font-weight: 400; color: #999; }
+  .sem-label .credits {
+    display: block; margin-top: 2px;
+    font-size: 11px; font-weight: 700; color: #1565c0;
+  }
+  .sem-label .credits.over { color: #c62828; }       /* > 18 cr (over soft cap) */
+  .sem-label .credits.under { color: #ef6c00; }      /* < 12 cr (under soft min) */
+  .sem-label .credits.done  { color: #2e7d32; }      /* Sem already completed */
+  .sem-label .credits .ind { font-size: 9px; font-weight: 400; opacity: .7; }
+
+  /* RIGHT PANEL */
+  .panel { grid-area: panel; background: #fff; border-left: 2px solid #1976d2; overflow-y: auto; box-shadow: -4px 0 12px rgba(0,0,0,.06); display: flex; flex-direction: column; }
+  .panel-header { background: #e3f2fd; padding: 12px 16px; border-bottom: 1px solid #90caf9; }
+  .panel-header.invalid { background: #ffebee; border-color: #ef9a9a; }
+  .panel-header .breadcrumb { font-size: 11px; color: #1565c0; margin-bottom: 4px; }
+  .panel-header.invalid .breadcrumb { color: #c62828; }
+  .panel-header h2 { font-size: 14px; margin: 0; color: #0d47a1; }
+  .panel-header.invalid h2 { color: #b71c1c; }
+  .panel-header .ctx { font-size: 11px; color: #455a64; margin-top: 6px; }
+  .panel-header .meta-row { display: flex; gap: 8px; margin-top: 8px; font-size: 10px; flex-wrap: wrap; }
+  .panel-header .meta-pill { background: white; padding: 2px 8px; border-radius: 10px; border: 1px solid #b3e5fc; color: #455a64; }
+  .panel-header.invalid .meta-pill { border-color: #ffcdd2; }
+  .panel-header.invalid .meta-pill.problem { background: #c62828; color: white; border-color: #c62828; font-weight: 700; }
+
+  .panel-body { padding: 12px 16px; flex-grow: 1; overflow-y: auto; }
+  .panel-section { margin-bottom: 16px; }
+  .panel-section h3 { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: #5a6573; font-weight: 700; margin: 0 0 6px 0; }
+  .action-card { border: 1px solid #d0d7de; border-radius: 5px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; background: #fff; display: flex; align-items: center; gap: 10px; }
+  .action-card:hover { background: #f8f9fa; border-color: #1976d2; }
+  .action-card .icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; }
+  .action-card .ac-content { flex-grow: 1; }
+  .action-card .ac-name { font-weight: 700; font-size: 12px; }
+  .action-card .ac-meta { font-size: 10px; color: #5a6573; margin-top: 2px; }
+  .action-card.danger .ac-name { color: #c62828; }
+  .action-card.suggested { background: #e8f5e9; border-color: #66bb6a; }
+  .action-card.suggested .ac-name { color: #1b5e20; }
+
+  /* Inline destination picker (after "Move to future") */
+  .dest-picker {
+    background: #fafbfc; border: 1px dashed #b0bec5; border-radius: 5px;
+    padding: 8px; margin-bottom: 6px;
+  }
+  .dest-picker .dp-label { font-size: 10px; color: #5a6573; margin-bottom: 4px; }
+  .dest-picker .dp-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .dest-picker .dp-btn {
+    padding: 4px 10px; font-size: 11px; border: 1px solid #d0d7de;
+    border-radius: 4px; background: #fff; cursor: pointer; flex: 1; min-width: 80px;
+  }
+  .dest-picker .dp-btn.recommended { background: #c8e6c9; border-color: #66bb6a; font-weight: 700; }
+
+  .panel-footer { padding: 12px 16px; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; justify-content: flex-end; background: #fafbfc; }
+  .panel-footer .btn { padding: 6px 12px; font-size: 12px; border-radius: 4px; border: 1px solid #d0d7de; background: #fff; cursor: pointer; }
+  .panel-footer .btn.primary { background: #1976d2; color: white; border-color: #1565c0; }
+  .panel-footer .btn.ghost { border-color: transparent; color: #5a6573; }
+</style>
+
+<h2>Direct manipulation: immediate moves + live validation badges</h2>
+<p class="subtitle">Re-mocked per Luke's flow. Moves happen instantly with no preview gate. The system flags broken prereqs/coreqs as red badges on tiles, plus a banner at the top. User iterates by clicking flagged tiles and moving them until validation is clean.</p>
+
+<!-- ========== STATE 1: Math 1650 just moved to Sem 2 — CprE 1850 now flagged ========== -->
+<div class="scenario-label"><span class="step">1</span>After moving Math 1650 to Sem 2 — instant move, CprE 1850 flagged with broken coreq<span class="desc">(Notice: no confirmation modal, no cascade preview. The move just happened.)</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app no-panel">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+    <div class="banner">
+      <div class="icon">!</div>
+      <div class="msg">1 prereq issue — CprE 1850 (Sem 1) needs Math 1650 as a coreq, but Math 1650 is now in Sem 2</div>
+      <div class="actions">
+        <button class="btn">Show all</button>
+        <button class="btn primary">Get help</button>
+      </div>
+    </div>
+    <div class="main">
+      <div class="main-header">Cyber Security Engineering — 2025-26 (Active)</div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits under">8 cr</span></div>
+          <span class="tile unfulfilled-degree">⚠ Math 1650<small>moved to Sem 2</small></span>
+          <span class="tile completed cpre invalid">CprE 1850<small>3cr · ⚠ broken coreq</small><span class="flag">!</span></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits over">23 cr</span></div>
+          <span class="tile inprogress math">Math 1650<small>4cr · ⤴ moved here</small></span>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits">14 cr</span></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== STATE 2: Luke clicks the flagged CprE 1850 tile → action menu opens, suggested fix at top ========== -->
+<div class="scenario-label"><span class="step">2</span>Luke clicks the flagged CprE 1850 tile → action menu opens with a suggested fix at top<span class="desc">(Same action menu as before, but now it knows there's a validation issue and surfaces the fix.)</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+    <div class="banner">
+      <div class="icon">!</div>
+      <div class="msg">1 prereq issue — viewing CprE 1850</div>
+      <div class="actions"></div>
+    </div>
+    <div class="main">
+      <div class="main-header">Cyber Security Engineering — 2025-26 (Active)</div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits under">8 cr</span></div>
+          <span class="tile unfulfilled-degree">⚠ Math 1650<small>moved to Sem 2</small></span>
+          <span class="tile completed cpre invalid selected">CprE 1850<small>3cr · ⚠ broken coreq</small><span class="flag">!</span></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits over">20 cr</span></div>
+          <span class="tile inprogress math">Math 1650<small>4cr · ⤴</small></span>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header invalid">
+        <div class="breadcrumb">⚠ Validation issue · Sem 1 · Fall 2025</div>
+        <h2>CprE 1850 · CprE Prob Solv</h2>
+        <div class="ctx">Coreq <strong>Math 1650</strong> is in Sem 2, but this slot is in Sem 1.</div>
+        <div class="meta-row">
+          <span class="meta-pill">3 cr</span>
+          <span class="meta-pill problem">⚠ broken coreq</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="panel-section">
+          <h3>Suggested fix</h3>
+          <div class="action-card suggested">
+            <div class="icon">→</div>
+            <div class="ac-content">
+              <div class="ac-name">Move CprE 1850 to Sem 2 (with Math 1650)</div>
+              <div class="ac-meta">Restores the coreq pairing. Sem 2 grows to 23cr.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Reschedule (other options)</h3>
+          <div class="dest-picker">
+            <div class="dp-label">Move CprE 1850 to:</div>
+            <div class="dp-row">
+              <button class="dp-btn recommended">Sem 2 (Spring '26)</button>
+              <button class="dp-btn">Sem 3 (Fall '26)</button>
+              <button class="dp-btn">Sem 4 (Spring '27)</button>
+            </div>
+          </div>
+          <div class="action-card">
+            <div class="icon">←</div>
+            <div class="ac-content">
+              <div class="ac-name">Move Math 1650 back to Sem 1 instead</div>
+              <div class="ac-meta">Undo the original deferral; CprE 1850 stays put.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Other actions</h3>
+          <div class="action-card">
+            <div class="icon">⏵</div>
+            <div class="ac-content">
+              <div class="ac-name">Mark In Progress</div>
+              <div class="ac-meta">Currently enrolled this term</div>
+            </div>
+          </div>
+          <div class="action-card danger">
+            <div class="icon">⚠</div>
+            <div class="ac-content">
+              <div class="ac-name">Mark Failed / Cancelled</div>
+              <div class="ac-meta">Will trigger downstream re-validation</div>
+            </div>
+          </div>
+          <div class="action-card">
+            <div class="icon">⇄</div>
+            <div class="ac-content">
+              <div class="ac-name">Substitute another course</div>
+            </div>
+          </div>
+          <div class="action-card danger">
+            <div class="icon">×</div>
+            <div class="ac-content">
+              <div class="ac-name">Remove from plan</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-footer">
+        <button class="btn ghost">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== STATE 3: After moving CprE 1850 too — clean state ========== -->
+<div class="scenario-label"><span class="step">3</span>After moving CprE 1850 to Sem 2 — validation is now clean<span class="desc">(Banner turns green. Two empty slots in Sem 1 remain; user clicks them to fill — this is Interaction #1 from before.)</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app no-panel">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+    <div class="banner clean">
+      <div class="icon">✓</div>
+      <div class="msg">All prereqs validated. 2 empty slots in Sem 1 — click any to fill.</div>
+      <div class="actions">
+        <button class="btn">Dismiss</button>
+      </div>
+    </div>
+    <div class="main">
+      <div class="main-header">Cyber Security Engineering — 2025-26 (Active)</div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits under">8 cr</span></div>
+          <span class="tile unfulfilled-degree">⚠ Math 1650<small>click to fill</small></span>
+          <span class="tile unfulfilled-degree">⚠ CprE 1850<small>click to fill</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits over">22 cr</span></div>
+          <span class="tile inprogress math">Math 1650<small>4cr · ⤴</small></span>
+          <span class="tile inprogress cpre">CprE 1850<small>3cr · ⤴</small></span>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits">14 cr</span></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">React to the new model</h3>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="immediate-move" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Immediate move (no confirmation gate)</h3>
+      <p>When you drag or pick "Move to future," the move applies instantly — no preview modal, no "are you sure." Validation runs after; flags appear if anything broke. Light, responsive, easy to iterate.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="red-flag-badge" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Red flag badge on broken tiles</h3>
+      <p>Affected tiles get a red ring + small "!" badge in the corner. Hover/click reveals the specific issue.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="banner" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Top banner with issue summary</h3>
+      <p>Persistent banner above the plan view: red when issues exist, green when clean. Has Show-all and Get-help buttons. The "Get help" button is what opens the wizard (Mode B from the spec) for users who want batch assistance.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="suggested-fix" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Suggested-fix card at top of action menu when invalid</h3>
+      <p>When you click a flagged tile, the action menu opens with a green "Suggested fix" card at the very top — the most likely resolution one click away.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="dest-picker" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>Inline destination picker for "Move to future"</h3>
+      <p>Instead of opening another panel, "Move to future" expands inline with semester buttons. Recommended destination is highlighted green.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#666;">
+The wizard / cascade preview from the previous mockup isn't gone — it just lives behind the banner's "Get help" button for users who want batched, guided multi-step planning. Default flow stays simple.
+</p>
+
+<!-- ========== STATE 4: Heavy cascade — Luke moves CprE 1850 down too, but it's required by 12 downstream courses ========== -->
+<div class="scenario-label"><span class="step">4</span>Heavy cascade scenario — Luke moves CprE 1850 to a future semester, invalidating 12 downstream classes<span class="desc">(Manually fixing 12 by hand is exhausting. The banner offers "Auto-Fix all" as the dominant action.)</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app no-panel">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+    <!-- Beefier banner for high cascade count -->
+    <div class="banner" style="background:#ffe5e5;border-color:#ef5350;padding:12px 16px;">
+      <div class="icon" style="width:32px;height:32px;font-size:20px;">12</div>
+      <div class="msg" style="font-size:13px;">
+        <strong>Large cascade — 12 prereq issues across 5 semesters</strong><br>
+        <span style="font-weight:400;font-size:11px;">Moving CprE 1850 broke prereqs for everything that depends on it (Embedded Systems chain, Cyb E core, Senior Design, ...).</span>
+      </div>
+      <div class="actions" style="flex-direction:column;gap:4px;align-items:flex-end;">
+        <button class="btn primary" style="background:#2e7d32;border-color:#2e7d32;font-weight:700;padding:6px 14px;">⤓ Auto-Fix all</button>
+        <div style="display:flex;gap:4px;">
+          <button class="btn">Show all 12</button>
+          <button class="btn">Get help (wizard)</button>
+        </div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="main-header">Cyber Security Engineering — 2025-26 (Active)</div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits under">8 cr</span></div>
+          <span class="tile unfulfilled-degree">⚠ Math 1650<small>moved</small></span>
+          <span class="tile unfulfilled-degree">⚠ CprE 1850<small>moved</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits over">20 cr</span></div>
+          <span class="tile inprogress math">Math 1650<small>4</small></span>
+          <span class="tile inprogress cpre">CprE 1850<small>3 · ⤴</small></span>
+          <span class="tile inprogress math">Math 1660<small>4</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits">14 cr</span></div>
+          <span class="tile planned math">Math 2670<small>4</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3</small></span>
+          <span class="tile planned cpre invalid">CprE 2810<small>4</small><span class="flag">!</span></span>
+          <span class="tile planned coms">Com S 2280<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 4<small>Spring 2027</small><span class="credits">14 cr</span></div>
+          <span class="tile planned cybe invalid">Cyb E 2310<small>3</small><span class="flag">!</span></span>
+          <span class="tile planned cpre invalid">CprE 2880<small>4</small><span class="flag">!</span></span>
+          <span class="tile planned cybe">Cyb E 2340<small>3</small></span>
+          <span class="tile planned engl">Engl 2500<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 5<small>Fall 2027</small><span class="credits">16 cr</span></div>
+          <span class="tile planned cybe invalid">Cyb E 3310<small>3</small><span class="flag">!</span></span>
+          <span class="tile planned cpre invalid">CprE 3810<small>4</small><span class="flag">!</span></span>
+          <span class="tile planned coms invalid">Com S 3090<small>3</small><span class="flag">!</span></span>
+          <span class="tile planned cpre invalid">CprE 3100<small>3</small><span class="flag">!</span></span>
+          <span class="tile planned gened">Gen Ed<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 6<small>Spring 2028</small><span class="credits under">10 cr</span></div>
+          <span class="tile planned cpre invalid">CprE 3080<small>4</small><span class="flag">!</span></span>
+          <span class="tile planned coms invalid">Com S 3110<small>3</small><span class="flag">!</span></span>
+          <span class="tile planned engl">Engl 3140<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 7<small>Fall 2028</small><span class="credits under">3 cr</span></div>
+          <span class="tile planned cpre invalid">CprE 4910<small>3</small><span class="flag">!</span></span>
+          <span class="tile planned cpre invalid">CprE 4940<small>R</small><span class="flag">!</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== STATE 5: After clicking Auto-Fix ========== -->
+<div class="scenario-label"><span class="step">5</span>After clicking "Auto-Fix all" — engine pushed every broken course to its next valid term<span class="desc">(One click resolved all 12 issues. Some semesters re-balanced; graduation projection updated. User reviews and adjusts.)</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app no-panel">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+    <div class="banner clean">
+      <div class="icon">✓</div>
+      <div class="msg">
+        <strong>Auto-Fixed 12 courses across 5 semesters.</strong><br>
+        <span style="font-weight:400;font-size:11px;">All prereqs satisfied. Projected graduation pushed 1 semester (Spring 2030 → Fall 2030). 4 empty slots opened up — click to fill.</span>
+      </div>
+      <div class="actions" style="flex-direction:column;gap:4px;align-items:flex-end;">
+        <button class="btn primary" style="background:#2e7d32;border-color:#2e7d32;">Looks good</button>
+        <button class="btn">Undo Auto-Fix</button>
+      </div>
+    </div>
+    <div class="main">
+      <div class="main-header">Cyber Security Engineering — 2025-26 (Active) · grad: Fall 2030</div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits under">8 cr</span></div>
+          <span class="tile unfulfilled-degree">⚠ Math 1650<small>fill</small></span>
+          <span class="tile unfulfilled-degree">⚠ CprE 1850<small>fill</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits over">20 cr</span></div>
+          <span class="tile inprogress math">Math 1650<small>4 · ⤴</small></span>
+          <span class="tile inprogress cpre">CprE 1850<small>3 · ⤴</small></span>
+          <span class="tile inprogress math">Math 1660<small>4</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits under">10 cr</span></div>
+          <span class="tile planned math">Math 2670<small>4</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3</small></span>
+          <span class="tile planned coms">Com S 2280<small>3</small></span>
+          <span class="tile unfulfilled-degree">⚠ slot<small>fill</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 4<small>Spring 2027</small><span class="credits under">10 cr</span></div>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 2810<small>4 · ⤴ Auto-Fixed</small></span>
+          <span class="tile planned cybe">Cyb E 2340<small>3</small></span>
+          <span class="tile planned engl">Engl 2500<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 5<small>Fall 2027</small><span class="credits under">10 cr</span></div>
+          <span class="tile planned cybe" style="border-color:#2e7d32;background:#e8f5e9;">Cyb E 2310<small>3 · ⤴</small></span>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 2880<small>4 · ⤴</small></span>
+          <span class="tile planned gened">Gen Ed<small>3</small></span>
+          <span class="tile unfulfilled-degree">⚠ slot<small>fill</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 6<small>Spring 2028</small><span class="credits">14 cr</span></div>
+          <span class="tile planned cybe" style="border-color:#2e7d32;background:#e8f5e9;">Cyb E 3310<small>3 · ⤴</small></span>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 3810<small>4 · ⤴</small></span>
+          <span class="tile planned coms" style="border-color:#2e7d32;background:#e8f5e9;">Com S 3090<small>3 · ⤴</small></span>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 3100<small>3 · ⤴</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 7<small>Fall 2028</small><span class="credits under">10 cr</span></div>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 3080<small>4 · ⤴</small></span>
+          <span class="tile planned coms" style="border-color:#2e7d32;background:#e8f5e9;">Com S 3110<small>3 · ⤴</small></span>
+          <span class="tile planned engl">Engl 3140<small>3</small></span>
+          <span class="tile unfulfilled-degree">⚠ slot<small>fill</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 8<small>Spring 2029</small><span class="credits under">5 cr</span></div>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 4910<small>3 · ⤴</small></span>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 4940<small>R · ⤴</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 9<small>Fall 2029 · NEW</small><span class="credits under">2 cr</span></div>
+          <span class="tile planned cpre" style="border-color:#2e7d32;background:#e8f5e9;">CprE 4920<small>2 · ⤴</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">Cascade-size handling — react to:</h3>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="threshold-banner" onclick="toggleSelect(this)">
+    <div class="letter">F</div>
+    <div class="content">
+      <h3>Banner adapts to cascade size</h3>
+      <p>1-2 issues: thin banner with "Show all" + "Get help" (Mode B wizard). 3+ issues: tall banner with bold issue count, "Auto-Fix all" as dominant green action, plus the secondary buttons.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="Auto-Fix" onclick="toggleSelect(this)">
+    <div class="letter">G</div>
+    <div class="content">
+      <h3>Auto-Fix = one click runs the cascade engine</h3>
+      <p>Engine pushes every broken-prereq course to its next valid semester. May push graduation back. May leave new empty slots that need filling. Tiles that got moved by Auto-Fix get a green ring + "⤴ Auto-Fixed" annotation so you can see what changed.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="undo-autofix" onclick="toggleSelect(this)">
+    <div class="letter">H</div>
+    <div class="content">
+      <h3>Undo Auto-Fix is a one-click revert</h3>
+      <p>Right after Auto-Fix, the banner offers "Undo Auto-Fix" alongside "Looks good." A single Plan-snapshot-and-restore — only valid for the most recent Auto-Fix, not multi-level undo.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="grad-update" onclick="toggleSelect(this)">
+    <div class="letter">I</div>
+    <div class="content">
+      <h3>Graduation impact called out</h3>
+      <p>If Auto-Fix pushes a course past Sem 8, a new semester appears (Sem 9 in this example) and the header updates: "grad: Fall 2030" — with a callout in the banner explaining the shift.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#666;">
+This pattern reuses the cascade engine from the spec — what's new is the UI affordance. The engine runs on every move; the banner just changes shape based on issue count.
+</p>

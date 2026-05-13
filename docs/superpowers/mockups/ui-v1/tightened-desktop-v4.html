@@ -1,0 +1,647 @@
+<style>
+  body, .frame { background: #f6f7f9; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; }
+  .scenario-label {
+    background: #1f3b5d; color: white; padding: 8px 16px;
+    font-size: 13px; font-weight: 700;
+    border-radius: 6px 6px 0 0; margin-top: 24px;
+  }
+  .scenario-label .desc { font-weight: 400; color: #cfd8dc; font-size: 12px; margin-left: 8px; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr 380px;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas:
+      "topbar topbar topbar"
+      "sidebar main panel";
+    height: 700px;
+    border: 1px solid #d0d7de;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    background: #fff;
+    font-size: 13px;
+    color: #1f2328;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    grid-area: topbar; background: #1f3b5d; color: #f0f4f8;
+    display: flex; align-items: center; padding: 0 16px; gap: 16px;
+  }
+  .topbar .brand { font-weight: 700; font-size: 14px; }
+  .topbar .brand .accent { color: #ffc555; }
+
+  /* AI button — purple gradient pill (v3 style) */
+  .topbar .ai-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border: none;
+    padding: 6px 12px; border-radius: 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 8px rgba(124,58,237,.3);
+  }
+  .topbar .ai-btn:hover { transform: translateY(-1px); }
+  .topbar .ai-btn .icon { font-size: 13px; }
+
+  .topbar .student { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cfd8dc; }
+  .topbar .student .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ffc555; color: #1f3b5d; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    grid-area: sidebar; background: #fafbfc; border-right: 1px solid #e0e0e0;
+    padding: 12px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .side-section { font-size: 11px; }
+  .side-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+    color: #8895a4; font-weight: 700; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .flow-card {
+    border: 1px solid #d0d7de; border-radius: 6px;
+    padding: 8px 10px; margin-bottom: 6px;
+    cursor: pointer; background: #fff;
+  }
+  .flow-card.active { background: #e3f2fd; border-color: #1976d2; box-shadow: 0 0 0 2px rgba(25,118,210,.15); }
+  .flow-card.pending { background: #fff8e1; border-color: #ffb300; border-style: dashed; }
+  .flow-card .flow-name { font-weight: 700; font-size: 12px; color: #1f2328; }
+  .flow-card .flow-meta { font-size: 10px; color: #8895a4; margin-top: 2px; }
+  .flow-card .flow-progress {
+    margin-top: 4px; font-size: 10px; color: #5a6573;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .flow-card .flow-progress .bar { flex-grow: 1; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+  .flow-card .flow-progress .fill { height: 100%; background: #66bb6a; }
+  .flow-card .flow-status {
+    display: inline-block; padding: 1px 6px; border-radius: 8px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; margin-top: 4px;
+  }
+  .flow-card.active .flow-status { background: #1976d2; color: white; }
+  .flow-card.pending .flow-status { background: #ffb300; color: #5a4500; }
+
+  /* Test-another-flow card — same shape as flow cards, dashed empty state */
+  .flow-card.add-test {
+    border: 1px dashed #b0bec5; background: #fff;
+    text-align: center; padding: 12px 10px;
+    color: #5a6573;
+  }
+  .flow-card.add-test:hover {
+    border-color: #1f3b5d; background: #fafbfc;
+    color: #1f3b5d;
+  }
+  .flow-card.add-test .add-name {
+    font-weight: 600; font-size: 12px;
+  }
+  .flow-card.add-test .add-meta {
+    font-size: 10px; color: #8895a4; margin-top: 2px;
+  }
+  .flow-card.add-test .add-mark {
+    display: inline-block;
+    background: #1f3b5d; color: #ffc555;
+    width: 16px; height: 16px;
+    border-radius: 2px; font-weight: 800;
+    font-size: 9px; line-height: 16px;
+    margin-right: 4px; vertical-align: -2px;
+  }
+
+  /* Insights — clean re-style: white card, thin border, charcoal/gold accent */
+  .insights {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px; padding: 10px;
+  }
+  .insights-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+    font-weight: 700; color: #5a6573;
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .insights-header .ai-mark {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white;
+    font-size: 9px; font-weight: 800; letter-spacing: .3px;
+    padding: 1px 6px; border-radius: 8px;
+    text-transform: none;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .insights-header .ai-mark::before { content: "✦"; font-size: 10px; }
+  .insight {
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    font-size: 11px; line-height: 1.45; color: #1f2328;
+    border-left: 2px solid #c4b5fd;
+    background: #fafbfc;
+    border-radius: 0 3px 3px 0;
+    cursor: pointer;
+  }
+  .insight:hover {
+    border-left-color: #7c3aed;
+    background: #faf5ff;
+  }
+  .insight.priority {
+    border-left-color: #7c3aed;
+    background: #faf5ff;
+  }
+  .insight strong { color: #5b21b6; }
+  .insight .insight-action {
+    display: block; margin-top: 4px;
+    font-size: 10px; color: #5b21b6; font-weight: 600;
+  }
+  .insight:hover .insight-action { color: #4c1d95; }
+  .insights-more {
+    text-align: center; font-size: 10px; color: #5a6573;
+    padding: 6px 0 0; cursor: pointer;
+  }
+  .insights-more:hover { color: #1f3b5d; }
+
+  /* MAIN */
+  .main { grid-area: main; overflow-y: auto; padding: 0; background: #fff; }
+  .main-header {
+    background: #fff; padding: 10px 16px; border-bottom: 1px solid #e0e0e0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .main-header h1 { font-size: 14px; margin: 0; flex-grow: 1; }
+  .main-header .meta { font-size: 11px; color: #8895a4; }
+  .main-header .ai-flow-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border: none;
+    padding: 5px 12px; border-radius: 14px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    box-shadow: 0 2px 6px rgba(124,58,237,.25);
+  }
+  .main-header .ai-flow-btn:hover { transform: translateY(-1px); }
+  .main-header .ai-flow-btn .icon { font-size: 12px; }
+
+  /* Sem rows */
+  .sem-row {
+    padding: 8px 16px; border-bottom: 1px dashed #e0e0e0;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    position: relative;
+  }
+  .sem-row.scoped {
+    background: #faf5ff;
+    box-shadow: inset 3px 0 0 #7c3aed;
+  }
+  .sem-label {
+    width: 96px; font-size: 11px; color: #455a64; font-weight: 700;
+    flex-shrink: 0; line-height: 1.3; position: relative;
+  }
+  .sem-label small { display: block; font-weight: 400; color: #999; }
+  .sem-label .credits { display: block; margin-top: 2px; font-size: 11px; font-weight: 700; color: #1565c0; }
+
+  /* AI scope button — purple sparkle, visible on hover */
+  .ai-scope-btn {
+    position: absolute; top: 0; right: 0;
+    width: 20px; height: 18px;
+    background: #fff; color: #7c3aed;
+    border: 1px solid #c4b5fd;
+    border-radius: 10px;
+    font-size: 11px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .15s;
+  }
+  .sem-row:hover .ai-scope-btn { opacity: 1; }
+  .ai-scope-btn:hover { background: #faf5ff; }
+  .sem-row.scoped .ai-scope-btn {
+    opacity: 1;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border-color: #7c3aed;
+    box-shadow: 0 2px 6px rgba(124,58,237,.3);
+  }
+
+  /* Tiles */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 78px; min-height: 44px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; cursor: pointer; position: relative;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+
+  /* AI-tagged tile — small purple sparkle corner mark */
+  .tile.ai-context::after {
+    content: "✦"; position: absolute; top: -5px; right: -5px;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white;
+    font-size: 9px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    line-height: 16px; text-align: center;
+    box-shadow: 0 1px 3px rgba(124,58,237,.4);
+  }
+
+  /* AI PANEL — purple accent */
+  .panel {
+    grid-area: panel;
+    background: #fff;
+    border-left: 2px solid #7c3aed;
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .panel-header {
+    background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #c4b5fd;
+  }
+  .panel-header .title-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; color: #1f2328;
+  }
+  .panel-header .ai-mark {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white;
+    font-size: 10px; font-weight: 800; letter-spacing: .3px;
+    padding: 2px 7px; border-radius: 10px;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .panel-header .ai-mark::before { content: "✦"; font-size: 10px; }
+  .panel-header .scope {
+    margin-left: auto;
+    font-size: 10px; color: #5b21b6;
+    background: white;
+    border: 1px solid #c4b5fd;
+    padding: 2px 8px; border-radius: 10px;
+    font-weight: 600;
+  }
+  .panel-header .close {
+    color: #5a6573; cursor: pointer; font-size: 16px; font-weight: 400;
+    margin-left: 4px;
+  }
+  .panel-header .panel-meta {
+    font-size: 11px; color: #5a6573; margin-top: 6px; line-height: 1.4;
+  }
+  .panel-header .close { color: #5b21b6; }
+
+  .panel-body {
+    padding: 12px 16px; flex-grow: 1; overflow-y: auto;
+    background: #fff;
+  }
+
+  /* AI message — flat, no bubble */
+  .ai-msg {
+    padding: 10px 0;
+    font-size: 12px; line-height: 1.55; color: #1f2328;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 12px;
+  }
+  .ai-msg strong { color: #5b21b6; font-weight: 700; }
+  .ai-msg .lead { font-size: 11px; color: #5a6573; margin-bottom: 6px; }
+
+  /* Suggestion cards — clean, no purple, single charcoal accent on left */
+  .suggestion {
+    border: 1px solid #e0e0e0; border-left: 3px solid transparent;
+    border-radius: 4px; padding: 10px 12px;
+    margin-bottom: 8px; background: #fff;
+    cursor: pointer; transition: all .12s;
+  }
+  .suggestion:hover {
+    border-left-color: #7c3aed;
+    background: #faf5ff;
+  }
+  .suggestion.recommended {
+    border-left-color: #7c3aed;
+    background: #faf5ff;
+  }
+  .suggestion .sg-head {
+    display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;
+  }
+  .suggestion .sg-name { font-weight: 700; font-size: 12.5px; color: #1f2328; }
+  .suggestion .sg-meta { font-size: 10px; color: #8895a4; margin-left: auto; }
+  .suggestion .sg-rationale {
+    font-size: 11px; color: #455a64; line-height: 1.45;
+    margin: 4px 0 8px;
+  }
+  .suggestion .sg-actions {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .suggestion .sg-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border: none;
+    padding: 4px 12px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    letter-spacing: 0.1px;
+  }
+  .suggestion .sg-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(124,58,237,.3); }
+  .suggestion .sg-btn.ghost {
+    background: transparent; color: #5b21b6;
+    padding: 4px 8px; box-shadow: none;
+  }
+  .suggestion .sg-btn.ghost:hover { background: #faf5ff; transform: none; }
+  .suggestion.recommended .sg-name::before {
+    content: "✦ "; color: #7c3aed; font-size: 11px; font-weight: 800;
+  }
+
+  /* Tip card — subtle purple accent */
+  .tip {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #faf5ff; border: 1px solid #c4b5fd;
+    border-radius: 6px;
+    font-size: 11px; line-height: 1.5; color: #455a64;
+  }
+  .tip strong { color: #5b21b6; }
+  .tip-action {
+    display: inline-block; margin-top: 6px;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white;
+    padding: 4px 12px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+
+  .show-more {
+    text-align: center; margin-top: 4px;
+    font-size: 11px; color: #5a6573; cursor: pointer; padding: 4px;
+  }
+  .show-more:hover { color: #1f3b5d; }
+
+  /* Footer — minimal input */
+  .panel-footer {
+    padding: 10px 12px; border-top: 1px solid #e0e0e0; background: #fff;
+  }
+  .panel-footer .input-row {
+    display: flex; gap: 6px; align-items: center;
+    border: 1px solid #d0d7de; border-radius: 4px;
+    padding: 4px 6px 4px 10px; background: #fff;
+  }
+  .panel-footer .input-row:focus-within { border-color: #7c3aed; }
+  .panel-footer input {
+    flex-grow: 1; padding: 4px 0; border: none;
+    font-size: 12px; outline: none; background: transparent;
+  }
+  .panel-footer .send-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border: none;
+    padding: 4px 10px; border-radius: 10px;
+    cursor: pointer; font-size: 11px; font-weight: 600;
+  }
+  .panel-footer .quick-asks {
+    margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .panel-footer .quick-ask {
+    background: #fff; border: 1px solid #e0e0e0;
+    padding: 3px 8px; border-radius: 3px;
+    font-size: 10px; color: #5a6573; cursor: pointer;
+  }
+  .panel-footer .quick-ask:hover { background: #faf5ff; border-color: #c4b5fd; color: #5b21b6; }
+
+  /* Sub-comparison block at bottom */
+  .compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px;
+  }
+  .compare > div {
+    border: 1px solid #d0d7de; border-radius: 6px; padding: 12px; background: white;
+  }
+  .compare h4 { margin: 0 0 8px 0; font-size: 13px; color: #1f3b5d; }
+  .compare ul { margin: 0; padding-left: 18px; font-size: 11.5px; color: #455a64; line-height: 1.55; }
+</style>
+
+<h2>AI styling — pass 2 (cleaner, charcoal + gold accent)</h2>
+<p class="subtitle">Killed the purple gradients and chat-app aesthetic. AI now uses a single restrained accent (charcoal #1f3b5d + brand gold #ffc555) that's "of the same family" as the rest of the UI. Less ornament, more typography-driven.</p>
+
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <button class="ai-btn"><span class="icon">✦</span>Ask AI</button>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="side-section">
+        <div class="side-label">My degree flows</div>
+        <div class="flow-card active">
+          <div class="flow-name">Cyber Security Engr</div>
+          <div class="flow-meta">CYBE · 2025-26</div>
+          <div class="flow-progress">
+            <span>22%</span>
+            <div class="bar"><div class="fill" style="width:22%;"></div></div>
+            <span>28/125</span>
+          </div>
+          <span class="flow-status">Active · viewing</span>
+        </div>
+        <div class="flow-card active">
+          <div class="flow-name">Math Minor</div>
+          <div class="flow-meta">MATH · 4/12</div>
+          <span class="flow-status">Active</span>
+        </div>
+        <div class="flow-card pending">
+          <div class="flow-name">Computer Engr</div>
+          <div class="flow-meta">CPRE · what-if</div>
+          <span class="flow-status">Pending</span>
+        </div>
+        <div class="flow-card add-test">
+          <div class="add-name">+ Test another flow</div>
+          <div class="add-meta">Add a Pending flow to overlay against your courses</div>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="side-label">Insights <span class="ai-mark">AI</span></div>
+        <div class="insights">
+          <div class="insight priority">
+            You're <strong>2 classes away</strong> from also satisfying CprE. Worth a closer look.
+            <span class="insight-action">→ Compare flows</span>
+          </div>
+          <div class="insight">
+            Your <strong>Sem 2 is 19 cr</strong> — heavier than Sem 1 (15 cr). Consider deferring one course.
+            <span class="insight-action">→ Suggest which one</span>
+          </div>
+          <div class="insight">
+            <strong>CprE 4360</strong> (Digital Forensics) is popular among CybE majors and would fit your CybE Elective slot in Sem 6.
+            <span class="insight-action">→ Add to Sem 6</span>
+          </div>
+          <div class="insights-more">More insights →</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="main-header">
+        <h1>Cyber Security Engineering — 2025-26</h1>
+        <button class="ai-flow-btn"><span class="icon">✦</span>Analyze flow</button>
+        <div class="meta">grad: Spring 2030</div>
+      </div>
+
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits">15 cr</span><span class="ai-scope-btn">✦</span></div>
+          <span class="tile completed math">Math 1650<small>A · 4cr</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R</small></span>
+          <span class="tile completed cpre">CprE 1850<small>3cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+
+        <div class="sem-row scoped">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits">19 cr</span><span class="ai-scope-btn">✦</span></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened ai-context">Gen Ed<small>3cr · open</small></span>
+          <span class="tile inprogress gened ai-context">Gen Ed<small>3cr · open</small></span>
+        </div>
+
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits">14 cr</span><span class="ai-scope-btn">✦</span></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 4<small>Spring 2027</small><span class="credits">16 cr</span><span class="ai-scope-btn">✦</span></div>
+          <span class="tile planned cybe">Cyb E 2310<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2880<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2340<small>3cr</small></span>
+          <span class="tile planned engl">Engl 2500<small>3cr</small></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI PANEL — clean restraint -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="title-row">
+          <span class="ai-mark">AI</span>
+          <span>Semester analysis</span>
+          <span class="scope">Sem 2 · Spring 2026</span>
+          <span class="close">×</span>
+        </div>
+        <div class="panel-meta">2 open Gen Ed slots · 19 credits planned · 4 candidate courses ranked by fit</div>
+      </div>
+
+      <div class="panel-body">
+        <div class="ai-msg">
+          <div class="lead">Reading your plan</div>
+          Sem 2 is already <strong>19 credits</strong> with Math&nbsp;1660, Phys&nbsp;2310, and Com&nbsp;S&nbsp;2270 — math and STEM heavy. For the two Gen Ed slots, lighter-load courses keep the semester manageable.
+        </div>
+
+        <div class="suggestion recommended">
+          <div class="sg-head">
+            <div class="sg-name">PSYCH 2300 · Intro to Psychology</div>
+            <div class="sg-meta">3 cr · F/S/Su · no prereq</div>
+          </div>
+          <div class="sg-rationale">
+            Most-picked Gen Ed among CybE majors (89% of cohort). Cognitive-bias coverage is genuinely useful for security work. Light reading load.
+          </div>
+          <div class="sg-actions">
+            <button class="sg-btn">Add to slot 1</button>
+            <button class="sg-btn ghost">Why?</button>
+          </div>
+        </div>
+
+        <div class="suggestion">
+          <div class="sg-head">
+            <div class="sg-name">SPAN 1010 · Spanish I</div>
+            <div class="sg-meta">5 cr · F/S/Su · no prereq</div>
+          </div>
+          <div class="sg-rationale">
+            Counts as Gen Ed and satisfies International Perspectives. Heavier load (5 cr) — would push Sem 2 to 21cr.
+          </div>
+          <div class="sg-actions">
+            <button class="sg-btn">Add</button>
+            <button class="sg-btn ghost">Alternatives</button>
+          </div>
+        </div>
+
+        <div class="suggestion">
+          <div class="sg-head">
+            <div class="sg-name">PHIL 2300 · Moral Theory & Practice</div>
+            <div class="sg-meta">3 cr · F/S · no prereq</div>
+          </div>
+          <div class="sg-rationale">
+            Pairs well with CYBE 2340 (Ethics in Security) coming Sem 4 — gives you philosophical grounding ahead of time. Discussion-heavy, no exams.
+          </div>
+          <div class="sg-actions">
+            <button class="sg-btn">Add to slot 2</button>
+            <button class="sg-btn ghost">Why?</button>
+          </div>
+        </div>
+
+        <div class="suggestion">
+          <div class="sg-head">
+            <div class="sg-name">HIST 2010 · Western Civ I</div>
+            <div class="sg-meta">3 cr · F/S · no prereq</div>
+          </div>
+          <div class="sg-rationale">
+            Counts toward both Gen Ed and U.S. Cultures. Lecture-based; manageable workload.
+          </div>
+          <div class="sg-actions">
+            <button class="sg-btn">Add</button>
+            <button class="sg-btn ghost">Why?</button>
+          </div>
+        </div>
+
+        <div class="show-more">Show 12 more →</div>
+
+        <div class="tip">
+          <strong>Recommended pair:</strong> PSYCH 2300 + PHIL 2300 keeps Sem 2 at 19cr (no overload) and pairs your two Gen Eds with adjacent CYBE/security topics.
+          <br>
+          <span class="tip-action">Apply both</span>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <div class="input-row">
+          <input type="text" placeholder="Ask about Sem 2…" />
+          <button class="send-btn">Ask</button>
+        </div>
+        <div class="quick-asks">
+          <span class="quick-ask">Suggest a math elective</span>
+          <span class="quick-ask">Why is Sem 2 heavy?</span>
+          <span class="quick-ask">Compare options</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="compare">
+  <div>
+    <h4>What changed from v3 → v4</h4>
+    <ul>
+      <li>Killed purple-to-blue gradients everywhere</li>
+      <li>Single accent color: charcoal <code>#1f3b5d</code> + brand gold <code>#ffc555</code> (matches existing topbar)</li>
+      <li>"AI" replaces ✦ as the visual mark — small uppercase tag in a charcoal/gold pill</li>
+      <li>No chat bubbles — flat typographic conversation</li>
+      <li>Suggestion cards use a 3px left-border accent (gold for recommended, charcoal on hover) instead of full-color background</li>
+      <li>Right panel border is thin grey, not 2px purple</li>
+      <li>AI-tagged tiles get a tiny "AI" corner badge — no big colored ring competing with red/blue/yellow semantic colors</li>
+      <li>Action buttons are flat charcoal, not gradient pills</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Stuff to push back on</h4>
+    <ul>
+      <li>"AI" tag too plain? Could use a more distinctive mark (sparkle, asterisk, etc.)</li>
+      <li>Charcoal/gold accent feels "newspaper editorial" — could try a different accent (teal? indigo with restraint?)</li>
+      <li>Could drop the scope pill from header and just rely on the "Sem 2 · Spring 2026" subtitle</li>
+      <li>Panel could be even more minimal — maybe drop the panel-meta line</li>
+      <li>Quick-ask chips look generic — could be removed for cleanliness, or restyled</li>
+    </ul>
+  </div>
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#666;">
+Refresh the browser. If this lands, we lock the AI styling and move on. If it still feels off, tell me what direction (e.g., "more like Linear" / "warmer" / "different accent color") and I'll iterate.
+</p>

@@ -1,0 +1,354 @@
+<style>
+  /* Tile palette modeled loosely on the printed CybE chart */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 6px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 76px; min-height: 44px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; vertical-align: top;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+
+  /* Status colors for completed/in-progress/planned/failed */
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; box-shadow: 0 0 0 2px rgba(255,179,0,.25); }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.failed      { background: #ffebee; border-color: #ef5350; color: #b71c1c; }
+
+  /* Status corner badge */
+  .tile .grade { position: absolute; }
+  .tile-wrap { position: relative; display: inline-block; }
+  .badge {
+    position: absolute; top: -6px; right: -6px;
+    background: #2e7d32; color: white;
+    font-size: 9px; font-weight: 700;
+    border-radius: 9px; padding: 1px 5px;
+    line-height: 1.4;
+    z-index: 2;
+  }
+  .badge.warn { background: #d4a72c; }
+  .badge.fail { background: #c62828; }
+  .badge.info { background: #455a64; }
+
+  /* Department tints (light wash) */
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+  .tile.elective-empty {
+    background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f0f0f0 6px, #f0f0f0 12px);
+    border-color: #cfd8dc; color: #607d8b;
+  }
+  .tile.completed.math    { background-image: linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)); }
+
+  /* Layout A — Rows = Semesters */
+  .row-layout .sem-row {
+    padding: 8px 12px; border-bottom: 1px dashed #e0e0e0;
+    white-space: nowrap; display: flex; align-items: center; gap: 4px;
+  }
+  .row-layout .sem-label {
+    width: 80px; font-size: 11px; color: #666; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .row-layout .sem-label small { display: block; font-weight: 400; color: #999; }
+  .row-layout .sem-credits {
+    margin-left: auto; padding-left: 8px;
+    font-size: 10px; color: #888; white-space: nowrap;
+  }
+
+  /* Layout B — Columns = Semesters */
+  .col-layout { display: flex; gap: 6px; padding: 8px; overflow-x: auto; }
+  .col-layout .sem-col {
+    flex-shrink: 0; width: 150px;
+    background: #fafbfc; border: 1px solid #e0e0e0; border-radius: 6px;
+    padding: 8px;
+  }
+  .col-layout .col-head {
+    font-size: 11px; font-weight: 700; color: #444;
+    text-align: center; padding-bottom: 6px; margin-bottom: 6px;
+    border-bottom: 1px solid #ddd;
+  }
+  .col-layout .col-head small { display: block; font-weight: 400; color: #999; }
+  .col-layout .tile { display: flex; width: 100%; box-sizing: border-box; margin: 4px 0; }
+
+  /* Layout C — Hybrid (rows + curved prereq overlays) */
+  .grid-layout .sem-row {
+    padding: 6px 12px; display: flex; align-items: center; gap: 4px;
+    border-bottom: 1px dashed #e8e8e8;
+  }
+  .grid-layout .sem-label {
+    width: 80px; font-size: 11px; color: #666; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .grid-layout .arrow-up {
+    position: absolute; left: 50%; top: -8px;
+    transform: translateX(-50%);
+    color: #2196f3; font-size: 10px;
+  }
+
+  .header {
+    background: #fff; padding: 12px 16px; border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 8px;
+  }
+  .header h1 { font-size: 14px; margin: 0; color: #1f2328; }
+  .header .meta { font-size: 11px; color: #666; margin-top: 4px; }
+
+  .legend {
+    background: #fffbe6; border: 1px solid #f5e7a3; border-left: 4px solid #d4a72c;
+    padding: 8px 12px; margin: 8px 0 16px; font-size: 11px; border-radius: 4px;
+  }
+  .legend strong { display: block; margin-bottom: 4px; }
+  .legend-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; margin: 2px 4px 2px 0; border: 1px solid;
+    background: #fff;
+  }
+  .legend-pill.completed { background: #e8f5e9; border-color: #66bb6a; }
+  .legend-pill.inprogress { background: #fff8e1; border-color: #ffb300; }
+  .legend-pill.planned { background: #fff; border-color: #b0bec5; }
+  .legend-pill.failed { background: #ffebee; border-color: #ef5350; color: #b71c1c; }
+
+  .layout-title {
+    font-weight: 700; font-size: 13px; color: #1f2328;
+    margin: 0 0 6px; padding: 4px 0;
+  }
+  .layout-desc {
+    font-size: 12px; color: #555; margin: 0 0 10px;
+  }
+
+  .cards { display: block !important; }
+  .card { width: 100% !important; max-width: none !important; margin-bottom: 24px; }
+  .card-image { padding: 0 !important; }
+</style>
+
+<h2>Plan / overlay view — pick a layout shape</h2>
+<p class="subtitle">Same data in each. Realistic scenario: Kevin's son completed Sem 1 with most courses, Math 1650 deferred to Sem 2 (so CprE 1850 cascaded too), currently in-progress in Sem 2, planned for future semesters.</p>
+
+<div class="legend">
+  <strong>Status legend:</strong>
+  <span class="legend-pill completed">Completed (with grade)</span>
+  <span class="legend-pill inprogress">In-progress this term</span>
+  <span class="legend-pill planned">Planned (future)</span>
+  <span class="legend-pill failed">Failed</span>
+  <br>
+  <strong style="margin-top:6px;">Tile color = department (Math/CprE/CybE/ComS/GenEd/Engl). Stripes = empty Elective slot.</strong>
+</div>
+
+<div class="cards">
+
+  <!-- ============ Layout A — Rows = Semesters ============ -->
+  <div class="card" data-choice="rows" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#fff;">
+      <div class="header">
+        <h1>Cyber Security Engineering — 2025-26 (Active)</h1>
+        <div class="meta">Student: Kevin's son · 28 / 125 credits earned · projected graduation: Spring 2030</div>
+      </div>
+      <div class="row-layout">
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small></div>
+          <span class="tile completed math">Math 1650<small>A · 4cr</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile completed gened">Gen Ed<small>3cr · "PSYCH"</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+          <div class="sem-credits">15cr ✓</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1850<small>3cr · ⤴ moved</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr · "Span 1010"</small></span>
+          <div class="sem-credits">19cr · in progress</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+          <div class="sem-credits">14cr · planned</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 4<small>Spring 2027</small></div>
+          <span class="tile elective-empty">Math Elec<small>3-4cr · pick one</small></span>
+          <span class="tile planned cybe">Cyb E 2310<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2880<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2340<small>3cr</small></span>
+          <span class="tile planned engl">Engl 2500<small>3cr</small></span>
+          <div class="sem-credits">16cr · planned</div>
+        </div>
+        <div style="padding:8px 12px;font-size:11px;color:#999;font-style:italic;">… (Sems 5-8 below) …</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A &nbsp;Rows = Semesters</h3>
+      <p>Matches the printed flowchart's orientation. Read top-to-bottom in chronological order. Each row is a semester strip with its label + AcademicTerm + credit total. Familiar at a glance to anyone who's seen the chart.</p>
+    </div>
+  </div>
+
+  <!-- ============ Layout B — Columns = Semesters ============ -->
+  <div class="card" data-choice="cols" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#fff;">
+      <div class="header">
+        <h1>Cyber Security Engineering — 2025-26 (Active)</h1>
+        <div class="meta">Student: Kevin's son · 28 / 125 credits earned · projected graduation: Spring 2030</div>
+      </div>
+      <div class="col-layout">
+        <div class="sem-col">
+          <div class="col-head">Sem 1<small>Fall 2025 · 15cr ✓</small></div>
+          <span class="tile completed math">Math 1650 · A · 4</span>
+          <span class="tile completed cpre">Engr 1010 · R</span>
+          <span class="tile completed gened">Gen Ed · 3</span>
+          <span class="tile completed cpre">Chem 1670 · B+ · 4</span>
+          <span class="tile completed cpre">Lib 1600 · S · 1</span>
+          <span class="tile completed engl">Engl 1500 · A- · 3</span>
+        </div>
+        <div class="sem-col">
+          <div class="col-head">Sem 2<small>Spring 2026 · 19cr ⏵</small></div>
+          <span class="tile inprogress math">Math 1660 · 4</span>
+          <span class="tile inprogress cpre">CprE 1850 ⤴ · 3</span>
+          <span class="tile inprogress math">Phys 2310 · 5</span>
+          <span class="tile inprogress coms">Com S 2270 · 4</span>
+          <span class="tile inprogress cpre">CprE 1660 · R</span>
+          <span class="tile inprogress gened">Gen Ed · 3</span>
+        </div>
+        <div class="sem-col">
+          <div class="col-head">Sem 3<small>Fall 2026 · 14cr</small></div>
+          <span class="tile planned math">Math 2670 · 4</span>
+          <span class="tile planned cybe">Cyb E 2300 · 3</span>
+          <span class="tile planned cpre">CprE 2810 · 4</span>
+          <span class="tile planned coms">Com S 2280 · 3</span>
+        </div>
+        <div class="sem-col">
+          <div class="col-head">Sem 4<small>Spring 2027 · 16cr</small></div>
+          <span class="tile elective-empty">Math Elec · 3-4</span>
+          <span class="tile planned cybe">Cyb E 2310 · 3</span>
+          <span class="tile planned cpre">CprE 2880 · 4</span>
+          <span class="tile planned cybe">Cyb E 2340 · 3</span>
+          <span class="tile planned engl">Engl 2500 · 3</span>
+        </div>
+        <div class="sem-col">
+          <div class="col-head">Sem 5<small>Fall 2027 · 16cr</small></div>
+          <span class="tile elective-empty">Gen Ed · 3</span>
+          <span class="tile planned cybe">Cyb E 3310 · 3</span>
+          <span class="tile planned cpre">CprE 3810 · 4</span>
+          <span class="tile planned coms">Com S 3090 · 3</span>
+          <span class="tile planned cpre">CprE 3100 · 3</span>
+        </div>
+        <div style="flex-shrink:0;align-self:center;color:#999;font-size:11px;font-style:italic;padding:0 8px;">…&nbsp;6-8</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B &nbsp;Columns = Semesters</h3>
+      <p>Kanban-style. Each semester is a vertical to-do list with a header showing AcademicTerm and credit total. Reads left-to-right. Great for drag-and-drop between semesters and for surfacing per-semester credit weight at a glance.</p>
+    </div>
+  </div>
+
+  <!-- ============ Layout C — Compact dashboard ============ -->
+  <div class="card" data-choice="dashboard" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#fff;">
+      <div class="header">
+        <h1>Cyber Security Engineering — 2025-26 (Active)</h1>
+        <div class="meta">Student: Kevin's son · 28 / 125 credits earned · projected graduation: Spring 2030</div>
+      </div>
+      <!-- Stats strip -->
+      <div style="display:flex;gap:12px;padding:10px 16px;background:#f8f9fa;border-bottom:1px solid #e0e0e0;font-size:11px;">
+        <div><strong style="font-size:18px;color:#2e7d32;">22%</strong><br>complete</div>
+        <div><strong style="font-size:18px;color:#1565c0;">5</strong><br>completed</div>
+        <div><strong style="font-size:18px;color:#ef6c00;">6</strong><br>in progress</div>
+        <div><strong style="font-size:18px;color:#455a64;">22</strong><br>planned</div>
+        <div><strong style="font-size:18px;color:#d4a72c;">2</strong><br>warnings</div>
+        <div style="margin-left:auto;text-align:right;color:#666;">
+          <div>Active: <strong>CybE 2025-26</strong></div>
+          <div style="font-size:10px;">Pending: 1 (CprE 2025-26 — what-if)</div>
+        </div>
+      </div>
+      <!-- Compact 8-row grid -->
+      <div class="grid-layout">
+        <div class="sem-row">
+          <div class="sem-label">1<small>F25</small></div>
+          <span class="tile completed math" style="min-width:62px;min-height:36px;font-size:10px;">M 1650<small>A·4</small></span>
+          <span class="tile completed cpre" style="min-width:62px;min-height:36px;font-size:10px;">Engr 1010<small>R</small></span>
+          <span class="tile completed gened" style="min-width:62px;min-height:36px;font-size:10px;">GenEd<small>3</small></span>
+          <span class="tile completed cpre" style="min-width:62px;min-height:36px;font-size:10px;">Chem<small>B+·4</small></span>
+          <span class="tile completed cpre" style="min-width:62px;min-height:36px;font-size:10px;">Lib<small>S·1</small></span>
+          <span class="tile completed engl" style="min-width:62px;min-height:36px;font-size:10px;">Engl<small>A-·3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">2<small>S26</small></div>
+          <span class="tile inprogress math" style="min-width:62px;min-height:36px;font-size:10px;">M 1660<small>4</small></span>
+          <span class="tile inprogress cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 1850<small>⤴·3</small></span>
+          <span class="tile inprogress math" style="min-width:62px;min-height:36px;font-size:10px;">Phys<small>5</small></span>
+          <span class="tile inprogress coms" style="min-width:62px;min-height:36px;font-size:10px;">CS 2270<small>4</small></span>
+          <span class="tile inprogress cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 1660<small>R</small></span>
+          <span class="tile inprogress gened" style="min-width:62px;min-height:36px;font-size:10px;">GenEd<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">3<small>F26</small></div>
+          <span class="tile planned math" style="min-width:62px;min-height:36px;font-size:10px;">M 2670<small>4</small></span>
+          <span class="tile planned cybe" style="min-width:62px;min-height:36px;font-size:10px;">CybE 2300<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 2810<small>4</small></span>
+          <span class="tile planned coms" style="min-width:62px;min-height:36px;font-size:10px;">CS 2280<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">4<small>S27</small></div>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">M Elec<small>3-4</small></span>
+          <span class="tile planned cybe" style="min-width:62px;min-height:36px;font-size:10px;">CybE 2310<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 2880<small>4</small></span>
+          <span class="tile planned cybe" style="min-width:62px;min-height:36px;font-size:10px;">CybE 2340<small>3</small></span>
+          <span class="tile planned engl" style="min-width:62px;min-height:36px;font-size:10px;">Engl 2500<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">5<small>F27</small></div>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">GenEd<small>3</small></span>
+          <span class="tile planned cybe" style="min-width:62px;min-height:36px;font-size:10px;">CybE 3310<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 3810<small>4</small></span>
+          <span class="tile planned coms" style="min-width:62px;min-height:36px;font-size:10px;">CS 3090<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 3100<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">6<small>S28</small></div>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">GenEd<small>3</small></span>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">CybE Elec<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 3080<small>4</small></span>
+          <span class="tile planned coms" style="min-width:62px;min-height:36px;font-size:10px;">CS 3110<small>3</small></span>
+          <span class="tile planned engl" style="min-width:62px;min-height:36px;font-size:10px;">Engl 3140<small>3</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">7<small>F28</small></div>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">GenEd<small>3</small></span>
+          <span class="tile planned" style="min-width:62px;min-height:36px;font-size:10px;">Stat 3030<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 4910<small>3</small></span>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">CybE Elec<small>3</small></span>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">CybE Elec<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 4940<small>R</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">8<small>S29</small></div>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">GenEd<small>3</small></span>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">Tech Elec<small>3</small></span>
+          <span class="tile planned cpre" style="min-width:62px;min-height:36px;font-size:10px;">CprE 4920<small>2</small></span>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">Tech Elec<small>3</small></span>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">CybE Elec<small>3</small></span>
+          <span class="tile elective-empty" style="min-width:62px;min-height:36px;font-size:10px;">CprE Elec<small>3</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C &nbsp;Compact dashboard (all 8 semesters visible at once)</h3>
+      <p>Stats strip at the top (completion %, status counts, multi-flow indicator), then the entire 8-semester chart on one screen with denser tiles. Closest to the printed CybE flowchart's information density. Best for a "big picture" view; loses some breathing room.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:24px; font-size:12px; color:#666;">
+  Tip: click a card to select. Or push back with new ideas — these are starting points, not final.
+</div>

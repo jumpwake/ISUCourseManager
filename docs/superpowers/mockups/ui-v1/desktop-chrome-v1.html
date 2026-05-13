@@ -1,0 +1,351 @@
+<style>
+  body, .frame { background: #f6f7f9; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "sidebar main";
+    height: 720px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    font-size: 13px;
+    color: #1f2328;
+  }
+
+  /* === TOPBAR === */
+  .topbar {
+    grid-area: topbar;
+    background: #1f3b5d;
+    color: #f0f4f8;
+    display: flex; align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+  }
+  .topbar .brand { font-weight: 700; font-size: 14px; letter-spacing: .3px; }
+  .topbar .brand .accent { color: #ffc555; }
+  .topbar .student {
+    margin-left: auto; display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #cfd8dc;
+  }
+  .topbar .student .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ffc555; color: #1f3b5d; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+
+  /* === SIDEBAR === */
+  .sidebar {
+    grid-area: sidebar;
+    background: #fafbfc;
+    border-right: 1px solid #e0e0e0;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 14px;
+    overflow-y: auto;
+  }
+  .side-section { font-size: 11px; }
+  .side-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+    color: #8895a4; font-weight: 700; margin-bottom: 6px;
+  }
+
+  /* Flow switcher */
+  .flow-card {
+    border: 1px solid #d0d7de; border-radius: 6px;
+    padding: 8px 10px; margin-bottom: 6px;
+    cursor: pointer; background: #fff;
+  }
+  .flow-card.active {
+    background: #e3f2fd; border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25,118,210,.15);
+  }
+  .flow-card.pending { background: #fff8e1; border-color: #ffb300; border-style: dashed; }
+  .flow-card .flow-name { font-weight: 700; font-size: 12px; }
+  .flow-card .flow-meta { font-size: 10px; color: #8895a4; margin-top: 2px; }
+  .flow-card .flow-status {
+    display: inline-block; padding: 1px 6px; border-radius: 8px;
+    font-size: 9px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .flow-card.active .flow-status { background: #1976d2; color: white; }
+  .flow-card.pending .flow-status { background: #ffb300; color: #5a4500; }
+
+  /* Stats panel */
+  .stats {
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 6px;
+    padding: 10px;
+  }
+  .stats .progress-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 11px; margin-bottom: 4px;
+  }
+  .stats .progress-bar {
+    height: 6px; background: #e0e0e0; border-radius: 3px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .stats .progress-fill {
+    background: linear-gradient(90deg, #66bb6a, #43a047);
+    height: 100%; border-radius: 3px;
+    width: 22%;
+  }
+  .stats .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px; font-size: 10px; color: #5a6573;
+  }
+  .stats .stat-grid strong {
+    display: block; font-size: 14px; color: #1f2328;
+    font-weight: 700;
+  }
+  .stats .stat-grid .completed { color: #2e7d32; }
+  .stats .stat-grid .inprogress { color: #ef6c00; }
+  .stats .stat-grid .planned { color: #455a64; }
+  .stats .stat-grid .warnings { color: #d4a72c; }
+
+  /* Validation issues panel */
+  .issues {
+    background: #fff8e1; border: 1px solid #f5e7a3; border-left: 3px solid #d4a72c;
+    border-radius: 6px; padding: 8px 10px;
+    font-size: 11px;
+  }
+  .issues .issue { margin: 4px 0; line-height: 1.4; }
+  .issues .issue:before { content: "⚠ "; color: #d4a72c; }
+
+  /* === MAIN === */
+  .main {
+    grid-area: main;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .main-header {
+    background: #fff; padding: 12px 16px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .main-header h1 { font-size: 14px; margin: 0; flex-grow: 1; }
+  .main-header .meta { font-size: 11px; color: #8895a4; }
+  .main-header .actions {
+    display: flex; gap: 6px;
+  }
+  .main-header .btn {
+    padding: 4px 10px; border: 1px solid #d0d7de;
+    border-radius: 4px; font-size: 11px; background: #fff;
+    cursor: pointer;
+  }
+  .main-header .btn.primary { background: #1976d2; color: white; border-color: #1565c0; }
+
+  /* Course tiles */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 76px; min-height: 42px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; vertical-align: top; cursor: pointer;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; box-shadow: 0 0 0 2px rgba(255,179,0,.25); }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.failed      { background: #ffebee; border-color: #ef5350; color: #b71c1c; }
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+  .tile.elective-empty {
+    background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f0f0f0 6px, #f0f0f0 12px);
+    border-color: #cfd8dc; color: #607d8b; border-style: dashed;
+  }
+  .tile.completed.math    { background-image: linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)); }
+
+  /* Sem rows */
+  .sem-row {
+    padding: 8px 16px; border-bottom: 1px dashed #e0e0e0;
+    white-space: nowrap; display: flex; align-items: center; gap: 4px;
+  }
+  .sem-row:hover { background: #fafbfc; }
+  .sem-label {
+    width: 90px; font-size: 11px; color: #455a64; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sem-label small { display: block; font-weight: 400; color: #999; }
+  .sem-credits {
+    margin-left: auto; padding-left: 8px;
+    font-size: 10px; color: #888; white-space: nowrap;
+  }
+  .sem-credits .check { color: #2e7d32; font-weight: 700; }
+  .sem-credits .progress { color: #ef6c00; font-weight: 700; }
+</style>
+
+<h2>Desktop layout — what chrome stays for v1?</h2>
+<p class="subtitle">A more complete mockup of layout A with surrounding panels. Tell me what to keep, what to defer.</p>
+
+<div class="frame" style="padding: 12px; background:#eceff1;">
+  <div class="app">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student">
+        <span>Hi, Luke</span>
+        <div class="avatar">LB</div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="side-section">
+        <div class="side-label">My degree flows</div>
+        <div class="flow-card active">
+          <div class="flow-name">Cyber Security Engr</div>
+          <div class="flow-meta">Catalog 2025-26 · 125 cr</div>
+          <span class="flow-status">Active</span>
+        </div>
+        <div class="flow-card pending">
+          <div class="flow-name">Computer Engineering</div>
+          <div class="flow-meta">Catalog 2025-26 · what-if</div>
+          <span class="flow-status">Pending</span>
+        </div>
+        <div style="font-size:11px;color:#8895a4;text-align:center;margin-top:4px;cursor:pointer;">+ Explore another flow</div>
+      </div>
+
+      <div class="side-section">
+        <div class="side-label">Progress</div>
+        <div class="stats">
+          <div class="progress-row">
+            <span><strong>28</strong> / 125 credits</span>
+            <span style="color:#2e7d32;font-weight:700;">22%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="stat-grid">
+            <div class="completed"><strong>5</strong>completed</div>
+            <div class="inprogress"><strong>6</strong>in progress</div>
+            <div class="planned"><strong>22</strong>planned</div>
+            <div class="warnings"><strong>2</strong>warnings</div>
+          </div>
+          <div style="margin-top:8px;font-size:10px;color:#5a6573;border-top:1px solid #eee;padding-top:6px;">
+            Projected graduation:<br><strong style="color:#1f2328;">Spring 2030</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="side-label">Issues to address</div>
+        <div class="issues">
+          <div class="issue">CprE 1850 cascaded with Math 1650 (info)</div>
+          <div class="issue">Sem 2 will be 19 credits (heavy load)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="main-header">
+        <h1>Cyber Security Engineering — 2025-26</h1>
+        <div class="meta">Active flow · 28 / 125 cr · grad Spring 2030</div>
+        <div class="actions">
+          <button class="btn">Print</button>
+          <button class="btn">Export</button>
+          <button class="btn primary">Edit</button>
+        </div>
+      </div>
+
+      <div class="row-layout">
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small></div>
+          <span class="tile completed math">Math 1650<small>A · 4cr</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile completed gened">Gen Ed<small>3cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+          <div class="sem-credits"><span class="check">15cr ✓</span></div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1850<small>3cr · ⤴ moved</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+          <div class="sem-credits"><span class="progress">19cr ⏵</span></div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+          <div class="sem-credits">14cr</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 4<small>Spring 2027</small></div>
+          <span class="tile elective-empty">Math Elec<small>3-4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2310<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2880<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2340<small>3cr</small></span>
+          <span class="tile planned engl">Engl 2500<small>3cr</small></span>
+          <div class="sem-credits">16cr</div>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 5<small>Fall 2027</small></div>
+          <span class="tile elective-empty">Gen Ed<small>3cr</small></span>
+          <span class="tile planned cybe">Cyb E 3310<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 3810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 3090<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 3100<small>3cr</small></span>
+          <div class="sem-credits">16cr</div>
+        </div>
+        <div style="padding:12px 16px;font-size:11px;color:#999;font-style:italic;text-align:center;">… (Sems 6-8 below — scroll) …</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">What's in this mockup (5 areas — call out what stays for v1)</h3>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="topbar" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Top bar — brand + student</h3>
+      <p>Dark header with app name and student name/avatar on the right. Minimal but signals "this is your account."</p>
+    </div>
+  </div>
+  <div class="option" data-choice="flowswitcher" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Flow switcher (sidebar) — Active + Pending cards</h3>
+      <p>Vertical list of all the student's StudentDegreeFlows. Click to switch which one is rendered in the main area. Active flows have solid borders; Pending (what-if) have dashed borders. Includes "+ Explore another flow" link.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="stats" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Progress stats panel (sidebar)</h3>
+      <p>Credit progress bar (28 / 125), counts by status (5 completed / 6 in progress / 22 planned / 2 warnings), projected graduation term.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="issues" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Issues panel (sidebar) — validation findings</h3>
+      <p>List of current ValidationIssues for the active flow. Cascaded moves, semester overloads, broken pairings. Each clickable to jump to the relevant tile.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="actions" onclick="toggleSelect(this)">
+    <div class="letter">5</div>
+    <div class="content">
+      <h3>Action buttons (main header)</h3>
+      <p>Print / Export / Edit buttons in the top-right of the main area. v1 might be read-only (no Edit) or include the Edit affordance even if it's stubbed.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#666;">Tip: select multiple. Anything not selected gets deferred to v2 (or considered for cut entirely).</p>

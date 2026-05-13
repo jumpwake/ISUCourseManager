@@ -1,0 +1,464 @@
+<style>
+  body, .frame { background: #f6f7f9; }
+
+  .scenario-label {
+    background: #1f3b5d; color: white;
+    padding: 8px 16px; font-size: 13px; font-weight: 700;
+    border-radius: 6px 6px 0 0;
+    margin-top: 24px;
+  }
+  .scenario-label .step { background: #ffc555; color: #1f3b5d; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 8px; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "main panel";
+    height: 600px;
+    border: 1px solid #d0d7de;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    background: #fff;
+    font-size: 13px;
+    color: #1f2328;
+  }
+
+  .topbar {
+    grid-area: topbar; background: #1f3b5d; color: #f0f4f8;
+    display: flex; align-items: center; padding: 0 16px; gap: 16px;
+  }
+  .topbar .brand { font-weight: 700; font-size: 14px; }
+  .topbar .brand .accent { color: #ffc555; }
+  .topbar .student { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cfd8dc; }
+  .topbar .student .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ffc555; color: #1f3b5d; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+
+  .main { grid-area: main; overflow-y: auto; padding: 0; background: #fff; }
+  .main-header {
+    background: #fff; padding: 10px 16px; border-bottom: 1px solid #e0e0e0;
+    font-size: 13px; font-weight: 700;
+  }
+
+  /* Tiles */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 78px; min-height: 44px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; cursor: pointer;
+    transition: all .15s;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+
+  .tile.unfulfilled-degree {
+    background: repeating-linear-gradient(45deg, #fff5f5, #fff5f5 6px, #ffe5e5 6px, #ffe5e5 12px);
+    border-color: #ef9a9a; color: #c62828; border-style: dashed;
+  }
+  .tile.selected {
+    box-shadow: 0 0 0 3px #1976d2, 0 4px 12px rgba(25,118,210,.4);
+    transform: scale(1.04);
+  }
+  .tile.dragging {
+    opacity: 0.4; cursor: grabbing;
+    box-shadow: none;
+    transform: rotate(-2deg);
+  }
+  .tile.cascade-affected {
+    box-shadow: 0 0 0 2px #d4a72c;
+    background: #fff8e1; border-color: #ffb300;
+  }
+
+  /* Drag-floating ghost tile */
+  .drag-ghost {
+    position: absolute; pointer-events: none;
+    background: #fff8e1; border: 2px solid #ffb300;
+    border-radius: 5px; padding: 6px 10px;
+    font-size: 11px; font-weight: 700;
+    box-shadow: 0 8px 20px rgba(0,0,0,.3);
+    transform: rotate(2deg);
+    z-index: 10;
+  }
+  .drag-ghost small { display: block; font-weight: 400; opacity: 0.7; font-size: 10px; }
+
+  /* Drop zone highlights */
+  .sem-row.drop-valid {
+    background: #e8f5e9;
+    box-shadow: inset 0 0 0 2px #66bb6a;
+  }
+  .sem-row.drop-target {
+    background: #c8e6c9;
+    box-shadow: inset 0 0 0 3px #2e7d32;
+  }
+  .sem-row.drop-invalid {
+    background: #ffebee;
+    box-shadow: inset 0 0 0 2px #ef5350;
+    opacity: 0.6;
+  }
+  .drop-hint {
+    margin-left: auto; padding-left: 8px;
+    font-size: 10px; font-weight: 700;
+    white-space: nowrap;
+  }
+  .drop-hint.valid { color: #2e7d32; }
+  .drop-hint.target { color: #1b5e20; }
+  .drop-hint.invalid { color: #c62828; }
+
+  /* Sem rows */
+  .sem-row {
+    padding: 8px 16px; border-bottom: 1px dashed #e0e0e0;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    position: relative;
+  }
+  .sem-label {
+    width: 90px; font-size: 11px; color: #455a64; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sem-label small { display: block; font-weight: 400; color: #999; }
+
+  /* RIGHT PANEL */
+  .panel {
+    grid-area: panel;
+    background: #fff;
+    border-left: 2px solid #1976d2;
+    overflow-y: auto;
+    box-shadow: -4px 0 12px rgba(0,0,0,.06);
+    display: flex; flex-direction: column;
+  }
+  .panel-header {
+    background: #e3f2fd; padding: 12px 16px;
+    border-bottom: 1px solid #90caf9;
+  }
+  .panel-header .breadcrumb {
+    font-size: 11px; color: #1565c0; margin-bottom: 4px;
+  }
+  .panel-header h2 {
+    font-size: 14px; margin: 0; color: #0d47a1;
+  }
+  .panel-header .ctx { font-size: 11px; color: #455a64; margin-top: 6px; }
+  .panel-header .meta-row {
+    display: flex; gap: 12px; margin-top: 8px; font-size: 10px;
+  }
+  .panel-header .meta-row .meta-pill {
+    background: white; padding: 2px 8px; border-radius: 10px;
+    border: 1px solid #b3e5fc; color: #455a64;
+  }
+
+  .panel-body { padding: 12px 16px; flex-grow: 1; overflow-y: auto; }
+  .panel-section { margin-bottom: 16px; }
+  .panel-section h3 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+    color: #5a6573; font-weight: 700; margin: 0 0 6px 0;
+  }
+  .action-card {
+    border: 1px solid #d0d7de; border-radius: 5px;
+    padding: 8px 10px; margin-bottom: 6px;
+    cursor: pointer; background: #fff;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .action-card:hover { background: #f8f9fa; border-color: #1976d2; }
+  .action-card .icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; }
+  .action-card .ac-content { flex-grow: 1; }
+  .action-card .ac-name { font-weight: 700; font-size: 12px; }
+  .action-card .ac-meta { font-size: 10px; color: #5a6573; margin-top: 2px; }
+  .action-card.danger:hover { background: #ffebee; border-color: #ef5350; }
+  .action-card.danger .ac-name { color: #c62828; }
+
+  .panel-footer {
+    padding: 12px 16px; border-top: 1px solid #e0e0e0;
+    display: flex; gap: 8px; justify-content: flex-end;
+    background: #fafbfc;
+  }
+  .panel-footer .btn {
+    padding: 6px 12px; font-size: 12px; border-radius: 4px;
+    border: 1px solid #d0d7de; background: #fff; cursor: pointer;
+  }
+  .panel-footer .btn.primary { background: #1976d2; color: white; border-color: #1565c0; }
+  .panel-footer .btn.ghost { border-color: transparent; color: #5a6573; }
+
+  /* Cascade preview (used in scenario 2) */
+  .cascade-preview {
+    background: #fff8e1; border: 1px solid #ffd54f;
+    border-left: 4px solid #ffb300;
+    padding: 10px 12px; border-radius: 5px;
+    margin-bottom: 12px; font-size: 11px;
+  }
+  .cascade-preview h4 {
+    margin: 0 0 6px 0; font-size: 12px; color: #f57f17;
+  }
+  .cascade-preview ul { margin: 4px 0 0 18px; padding: 0; }
+  .cascade-preview li { margin: 3px 0; line-height: 1.4; }
+  .cascade-preview li strong { color: #1f2328; }
+  .cascade-preview .arrow { color: #f57f17; font-weight: 700; }
+</style>
+
+<h2>Interaction #2: Click a course tile (or drag it) → action menu / cascade preview</h2>
+<p class="subtitle">Two scenarios shown end-to-end: first the click action menu, then what happens after picking "Move to future" — same cascade preview a drag would trigger.</p>
+
+<!-- ========== SCENARIO 1: CLICK to open action menu ========== -->
+<div class="scenario-label"><span class="step">1</span>User clicks Math 1650 in Sem 1 → right panel opens with action options</div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+
+    <div class="main">
+      <div class="main-header">Cyber Security Engineering — 2025-26 (Active)</div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small></div>
+          <span class="tile completed math selected">Math 1650<small>completed · A · 4cr</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile completed cpre">CprE 1850<small>3cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="breadcrumb">Sem 1 · Fall 2025</div>
+        <h2>Math 1650 · Calc I</h2>
+        <div class="ctx">Department: Math · 4 credits · prereq: placement</div>
+        <div class="meta-row">
+          <span class="meta-pill">Status: Completed</span>
+          <span class="meta-pill">Grade: A</span>
+          <span class="meta-pill">Min req: C-</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="panel-section">
+          <h3>Update status</h3>
+          <div class="action-card">
+            <div class="icon">✓</div>
+            <div class="ac-content">
+              <div class="ac-name">Mark Completed</div>
+              <div class="ac-meta">Set grade (currently A)</div>
+            </div>
+          </div>
+          <div class="action-card">
+            <div class="icon">⏵</div>
+            <div class="ac-content">
+              <div class="ac-name">Mark In Progress</div>
+              <div class="ac-meta">Currently enrolled this term</div>
+            </div>
+          </div>
+          <div class="action-card danger">
+            <div class="icon">⚠</div>
+            <div class="ac-content">
+              <div class="ac-name">Mark Failed / Cancelled</div>
+              <div class="ac-meta">Will trigger cascade for downstream prereqs</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Reschedule</h3>
+          <div class="action-card" style="background:#e3f2fd;border-color:#1976d2;">
+            <div class="icon">→</div>
+            <div class="ac-content">
+              <div class="ac-name">Move to future term</div>
+              <div class="ac-meta">Pre-req not met / scheduling conflict</div>
+            </div>
+          </div>
+          <div class="action-card">
+            <div class="icon">←</div>
+            <div class="ac-content">
+              <div class="ac-name">Move to earlier term</div>
+              <div class="ac-meta">Take ahead of recommended schedule</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Replace</h3>
+          <div class="action-card">
+            <div class="icon">⇄</div>
+            <div class="ac-content">
+              <div class="ac-name">Substitute another course</div>
+              <div class="ac-meta">Pick a course that satisfies this slot</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Remove</h3>
+          <div class="action-card danger">
+            <div class="icon">×</div>
+            <div class="ac-content">
+              <div class="ac-name">Remove from plan</div>
+              <div class="ac-meta">Take the slot back to "unfulfilled"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-footer">
+        <button class="btn ghost">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCENARIO 2: After picking "Move to future" OR drag-and-drop → cascade preview ========== -->
+<div class="scenario-label"><span class="step">2</span>User picks "Move to future" (or drags Math 1650 onto Sem 2) → cascade preview appears</div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+
+    <div class="main">
+      <div class="main-header">Cyber Security Engineering — 2025-26 (Active)</div>
+      <div style="position:relative;">
+        <div class="sem-row drop-invalid">
+          <div class="sem-label">Sem 1<small>Fall 2025 · was the source</small></div>
+          <span class="tile dragging math">Math 1650<small>4cr</small></span>
+          <span class="tile completed cpre cascade-affected">CprE 1850<small>3cr · ⚠ coreq</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+          <div class="drop-hint invalid">cannot drop on origin</div>
+        </div>
+        <div class="sem-row drop-target">
+          <div class="sem-label">Sem 2<small>Spring 2026</small></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+          <div class="drop-hint target">⬇ drop here · 4cr added</div>
+          <!-- Drag ghost positioned over Sem 2 -->
+          <div class="drag-ghost" style="left:240px; top:18px;">Math 1650<small>4cr · being moved</small></div>
+        </div>
+        <div class="sem-row drop-valid">
+          <div class="sem-label">Sem 3<small>Fall 2026</small></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+          <div class="drop-hint valid">also valid</div>
+        </div>
+        <div class="sem-row drop-valid">
+          <div class="sem-label">Sem 4<small>Spring 2027</small></div>
+          <span class="tile planned cybe">Cyb E 2310<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2880<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2340<small>3cr</small></span>
+          <span class="tile planned engl">Engl 2500<small>3cr</small></span>
+          <div class="drop-hint valid">also valid</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="breadcrumb">Cascade preview · move Math 1650</div>
+        <h2>Moving from Sem 1 → Sem 2</h2>
+        <div class="ctx">Reason: pre-req not met / scheduling</div>
+      </div>
+      <div class="panel-body">
+        <div class="cascade-preview">
+          <h4>⚠ This move will also affect:</h4>
+          <ul>
+            <li><strong>CprE 1850</strong> (Sem 1) <span class="arrow">→</span> moves to Sem 2 (coreq w/ Math 1650 broken)</li>
+            <li>Sem 2 grows to <strong>23 cr</strong> (over 18cr soft cap)</li>
+            <li>Sem 1 drops to <strong>9 cr</strong> (below 12cr soft minimum)</li>
+          </ul>
+        </div>
+
+        <div class="panel-section">
+          <h3>What happens next</h3>
+          <div class="action-card" style="background:#e8f5e9;border-color:#66bb6a;">
+            <div class="icon">✓</div>
+            <div class="ac-content">
+              <div class="ac-name">Apply move + cascade</div>
+              <div class="ac-meta">Both Math 1650 and CprE 1850 move to Sem 2. You'll then be prompted to fill the empty Sem 1 slots.</div>
+            </div>
+          </div>
+          <div class="action-card">
+            <div class="icon">⚙</div>
+            <div class="ac-content">
+              <div class="ac-name">Apply move only (leave CprE 1850)</div>
+              <div class="ac-meta">CprE 1850 stays in Sem 1 with a broken-coreq warning. Possible if you'll handle it manually.</div>
+            </div>
+          </div>
+          <div class="action-card">
+            <div class="icon">↩</div>
+            <div class="ac-content">
+              <div class="ac-name">Cancel the move</div>
+              <div class="ac-meta">Math 1650 stays in Sem 1.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-footer">
+        <button class="btn ghost">Cancel</button>
+        <button class="btn primary">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">React to:</h3>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="action-menu" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Action menu structure (Scenario 1)</h3>
+      <p>Four sections: Update status / Reschedule / Replace / Remove. Status header at top shows current state. Most likely action ("Move to future") visually emphasized in blue. Pick if this organization works.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="drag-affordance" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Drag-and-drop visual affordance (Scenario 2)</h3>
+      <p>Source semester gets red "cannot drop on origin" border; target semester gets green border + drop hint; other valid semesters get lighter green; ghost tile follows cursor with rotation. The course's coreq-affected partner (CprE 1850) gets a yellow ring before drop completes.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="cascade-preview" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Cascade preview content (Scenario 2)</h3>
+      <p>Yellow callout listing all affected items: cascaded courses, semester credit changes (over/under thresholds). Three actions: Apply with cascade / Apply alone (with warning) / Cancel.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#666;">
+The drag-and-drop affordance and the cascade preview are decoupled — you'd see the same cascade preview whether you (a) clicked → "Move to future" → picked Sem 2, or (b) dragged the tile and dropped on Sem 2. One implementation, two entry points.
+</p>
