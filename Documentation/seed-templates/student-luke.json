@@ -15,8 +15,37 @@
   ],
 
   "courses": [
+      {
+      "courseId": "CPRE-2810",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
     {
-      "_term": "Spring 2026",
+      "courseId": "PHYS-2310",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "MATH-1660",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "COMS-2270",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "PHYS-2310L",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
       "courseId": "CPRE-1850",
       "academicTerm": 202604,
       "status": "Complete",
@@ -32,7 +61,7 @@
       "courseId": "MATH-1650",
       "academicTerm": 202604,
       "status": "Complete",
-      "grade": "C-"
+      "grade": ""
     },
     {
       "courseId": "CPRE-1660",
@@ -46,9 +75,7 @@
       "status": "Complete",
       "grade": "A"
     },
-
     {
-      "_term": "Fall 2025",
       "courseId": "MATH-1430",
       "academicTerm": 202602,
       "status": "Complete",
