@@ -66,12 +66,12 @@ ISUCourseManager.sln
 ├── src/
 │   ├── ISUCourseManager.Api/          ASP.NET Core entry, controllers, DI,
 │   │                                  JWT-stub middleware, swagger, DTOs
-│   ├── ISUCourseManager.Services/     business logic — PlanService,
+│   ├── ISUCourseManager.Services/     business logic — EnrollmentService,
 │   │                                  CascadeEngine, PrereqEvaluator,
 │   │                                  CatalogService, IPlanRepository, ...
 │   └── ISUCourseManager.Data/
 │       ├── Entity/                    POCO entities (Course, DegreeFlow,
-│       │                              FlowchartSlot, Plan, StudentCourse, Student)
+│       │                              FlowchartSlot, StudentCourse, StudentDegreeFlow, Student)
 │       ├── Configurations/            EF Fluent API configs
 │       ├── Repositories/              EF implementations of I*Repository
 │       ├── Migrations/
@@ -94,7 +94,7 @@ ISUCourseManager.sln
 │   (browser SPA)         │ ◄─────► │  Controllers (thin)                  │
 │   - Plan view           │  REST   │       │                              │
 │   - Wizard modals       │  JSON   │       ▼                              │
-│   - Catalog browser     │         │  Services (PlanService, CascadeEngine,│
+│   - Catalog browser     │         │  Services (EnrollmentService, CascadeEngine,│
 │   - Major switcher      │         │            PrereqEvaluator, ...)     │
 └─────────────────────────┘         │       │                              │
                                     │       ▼                              │
@@ -151,7 +151,7 @@ abstract class PrereqExpression { }
 class PrereqAnd            : PrereqExpression { List<PrereqExpression> Children; }
 class PrereqOr             : PrereqExpression { List<PrereqExpression> Children; }
 class PrereqCourse         : PrereqExpression {
-  Guid CourseId;
+  string ClassId;               // → Course.ClassId (e.g., "MATH-1650"); string semantic FK
   string? MinGrade;             // "C-" or null
   bool AcceptConcurrent;        // for "Cr or enrollment in X"
 }
@@ -414,12 +414,12 @@ enum StudentDegreeFlowStatus {
 ```csharp
 enum Season { Summer = 1, Fall = 2, Winter = 3, Spring = 4 }
 
-// Helper — lives in Services/AcademicTerm.cs
+// Helper — lives in Data/Entity/AcademicTerm.cs (pure logic, no EF deps)
 static class AcademicTerm
 {
     public static (int Year, Season Season) Decode(int term);     // 202602 → (2026, Fall)
     public static int Encode(int year, Season season);             // (2026, Fall) → 202602
-    public static AcademicTerm Next(AcademicTerm current);         // sequence walk
+    public static int Next(int term);                              // 202602 → 202603 (Winter); rolls year
 }
 ```
 
@@ -535,7 +535,7 @@ erDiagram
 
 ## 5. Cascade Engine
 
-Pure C# in `Services/`. No DB, no I/O, no clocks. Given `(Plan, DegreeFlow, Catalog, Trigger) → CascadeProposal`. Never persists; the controller calls the engine, then `PlanService.Apply()` does the writes.
+Pure C# in `Services/`. No DB, no I/O, no clocks. Given `(Student, ActiveAssociation, Flow, Courses, Catalog, Trigger, Options) → CascadeProposal`. Never persists; the controller calls the engine, then `EnrollmentService.Apply()` does the writes inside a DB transaction.
 
 ### Inputs
 
@@ -653,7 +653,7 @@ class MovableItem {             // a StudentCourse the user could defer to allev
 
 **Multi-major / overlay (forward-looking, tested now to keep the model honest):**
 - **AC-16** `WhatIfMajorSwitched` to a different `DegreeFlow` → produces an overlay proposal: which `StudentCourse`s map to which slots in the new flow, what's missing, what's surplus. No mutation of stored plan.
-- **AC-17** Same `Plan` overlaid against two different `DegreeFlow`s → overlays computed independently, no shared state leakage.
+- **AC-17** *Superseded by AC-28 + AC-30 once the Plan entity was removed; retained for traceability of the original overlay-isolation requirement.*
 
 **Cross-listing equivalence:**
 - **AC-19** Student took `EE 4910` (a cross-listing of `CPRE 4910`) → engine treats CPRE 4910 slot as filled by EE 4910 StudentCourse; downstream prereqs referencing CPRE 4910 are satisfied.
@@ -672,7 +672,7 @@ class MovableItem {             // a StudentCourse the user could defer to allev
 - **AC-24** Cumulative credits computed from completed StudentCourses + planned earlier-semester StudentCourses → consistent with how `earliestValidSemester` walks forward.
 
 **Core-credit gates:**
-- **AC-25** `PrereqCoreCredits(29)` on CprE 4910 → engine sums credits from StudentCourses whose Course's category is part of the program's core (per `MajorPath.CoreCategories`); blocks placement until threshold is met.
+- **AC-25** `PrereqCoreCredits(29)` on CprE 4910 → engine sums credits from StudentCourses whose Course is referenced by a `DegreeFlow.CoreCategories` slot (the flow declares which `SlotType` values count as "core" — typically `DegreeClass` slots in the program's required core curriculum); blocks placement until threshold is met.
 
 **Validation entry point (used by every read):**
 - **AC-18** `Engine.Validate(courses, flow)` returns the same set of issues that would be detected if every StudentCourse were re-checked individually — exhaustive and consistent with cascade behavior. Includes cross-listing, term-offering, and classification-gate checks.
@@ -720,7 +720,8 @@ The wizard is client-orchestrated. The client carries the trigger and accumulati
 ```jsonc
 // POST /api/v1/cascade/preview
 {
-  "trigger": { "type": "CourseSkipped", "planItemId": "...", "rescheduledTo": null },
+  "associationId": "the StudentDegreeFlow id whose Active flow this cascade targets",
+  "trigger": { "type": "CourseSkipped", "studentCourseId": "...", "rescheduledToTerm": null },
   "decisionAnswers": [
     { "decisionId": "fillgap-sem1", "answer": { "kind": "UseSuggestedSlots" } }
   ]
@@ -732,15 +733,16 @@ The wizard is client-orchestrated. The client carries the trigger and accumulati
 {
   "proposedCourses": [ /* hypothetical post-cascade StudentCourse[] */ ],
   "moves": [
-    { "planItemId": "...", "courseCode": "CprE 1850", "from": 1, "to": 2,
-      "reason": "Coreq Math 1650 moved to Sem 2" }
+    { "studentCourseId": "...", "courseCode": "CprE 1850",
+      "fromAcademicTerm": 202602, "toAcademicTerm": 202604,
+      "reason": "Coreq Math 1650 moved to Spring 2026" }
   ],
   "decisions": [],          // empty when ready to apply
   "warnings": [
     { "kind": "SemesterOverload", "message": "Sem 2 = 22 cr (cap 18)",
       "relatedStudentCourseIds": [...] }
   ],
-  "projectedGraduationSemester": 9
+  "projectedGraduationTerm": 202904
 }
 ```
 
@@ -798,7 +800,7 @@ Undo is **deferred**. The previous spec proposed a `Plan.PreviousSnapshotJson` s
 
 ## 8. Validation (server-computed)
 
-`Engine.Validate(plan, flow)` returns the active issues as `ValidationIssueDto[]`:
+`Engine.Validate(courses, flow)` returns the active issues as `ValidationIssueDto[]`:
 
 ```csharp
 class ValidationIssueDto {
@@ -853,7 +855,7 @@ tests/
 │   │   ├── CascadeEngineTests.Validate.cs
 │   │   └── Fixtures/
 │   │       └── CybEFixture.cs        builds a small in-memory CybE flow + catalog
-│   ├── PlanServiceTests.cs           SqliteInMemoryRepositoryFactory
+│   ├── EnrollmentServiceTests.cs     SqliteInMemoryRepositoryFactory
 │   └── CatalogServiceTests.cs
 └── ISUCourseManager.Api.Tests/
     ├── PlansControllerTests.cs       WebApplicationFactory + in-memory SQLite
@@ -905,6 +907,7 @@ Recording the journey for context in future sessions:
 | 28 | `StudentCourse.Semester` (was 1..N sequence) removed; `AcademicTerm` (YYYYSS encoding: 202602 = Fall 2026) is the chronological identifier | True chronology beats sequence. Year is the *ending* year of the academic cycle (25-26 → 2026); season values: Summer=1, Fall=2, Winter=3, Spring=4. Winter retained for future / winter-session use |
 | 29 | Overlay (`StudentCourse[]` + `DegreeFlow` → fit) elevated to a first-class core capability, not a one-off "what-if" | Same function powers active-flow rendering, what-if exploration, and (future) closest-matching-degree suggestions and minor evaluation. Pure / deterministic by design |
 | 30 | Single-level undo (`Plan.PreviousSnapshotJson`) dropped; rely on wizard preview-then-apply for back-out | Removing `Plan` left undo without a home; the wizard's preview already lets the user cancel before any commit, which covers the common case. Multi-level action log deferred |
+| 31 | `Term` (Fall/Spring/Summer) and `Season` (Summer/Fall/Winter/Spring) are *separate* enums, not unified | `Term` describes catalog availability (`Course.TypicallyOffered`) — ISU never offers a course "Winter only," so Winter doesn't appear here. `Season` describes `AcademicTerm` chronology and includes Winter for winter-session enrollments. The cascade engine maps a candidate `Season` to the corresponding `Term` for offering checks; Winter maps to *no offering expected* until a `Course.TypicallyOffered` ever lists it. A small `SeasonToTerm()` helper in `Data/Entity/AcademicTerm.cs` handles the mapping |
 
 ## 11. Open items for the implementation plan
 

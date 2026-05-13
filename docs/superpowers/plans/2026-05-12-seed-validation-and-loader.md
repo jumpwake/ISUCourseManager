@@ -38,6 +38,7 @@ src/
     │   ├── FlowchartSlot.cs
     │   ├── StudentCourse.cs                  (replaces PlanItem; no PlanId)
     │   ├── StudentDegreeFlow.cs              (junction with Status — replaces Plan.SelectedDegreeFlowId)
+    │   ├── AcademicTerm.cs                   (encode/decode helper for YYYYSS term ints)
     │   ├── Student.cs
     │   ├── PrereqExpression.cs                    abstract base
     │   ├── PrereqAnd.cs
@@ -1841,7 +1842,8 @@ Append to `SeedValidatorTests`:
 ```csharp
 private static FlowchartSlot MakeSlot(int sem, int order, string? classId = null,
                                       SlotType slotType = SlotType.DegreeClass,
-                                      decimal? credits = null, params string[] pairing) => new()
+                                      decimal? credits = null,
+                                      string[]? pairing = null) => new()
 {
     Semester = sem,
     DisplayOrder = order,
@@ -1849,8 +1851,10 @@ private static FlowchartSlot MakeSlot(int sem, int order, string? classId = null
     ClassId = classId,
     // For DegreeClass slots, credits are null (read from Course.Credits); for Elective* slots, credits is set.
     RequiredCredits = slotType == SlotType.DegreeClass ? null : (credits ?? 3m),
-    RecommendedPairing = pairing.ToList(),
+    RecommendedPairing = pairing?.ToList() ?? new(),
 };
+// Note: `pairing` is `string[]?` (not `params`) so callers can use named-arg syntax:
+//   MakeSlot(1, 1, classId: "CPRE-1850", pairing: new[] { "MATH-1650" })
 
 [Fact]
 public void Flow_with_classId_not_in_catalog_emits_error()
@@ -1892,7 +1896,7 @@ public void Flow_recommendedPairing_referencing_unknown_classId_emits_error()
     var flow = new DegreeFlow
     {
         MajorCode = "X", MajorName = "X", CatalogYear = "Y", TotalCreditsRequired = 3,
-        Slots = { MakeSlot(1, 1, classId: "CPRE-1850", credits: 3, pairing: "PHANTOM-1234") },
+        Slots = { MakeSlot(1, 1, classId: "CPRE-1850", credits: 3, pairing: new[] { "PHANTOM-1234" }) },
     };
 
     var report = SeedValidator.ValidateFlow(flow, catalog);
@@ -1908,7 +1912,7 @@ public void Flow_recommendedPairing_referencing_classId_not_in_same_flow_emits_w
     var flow = new DegreeFlow
     {
         MajorCode = "X", MajorName = "X", CatalogYear = "Y", TotalCreditsRequired = 3,
-        Slots = { MakeSlot(1, 1, classId: "CPRE-1850", credits: 3, pairing: "MATH-1650") },
+        Slots = { MakeSlot(1, 1, classId: "CPRE-1850", credits: 3, pairing: new[] { "MATH-1650" }) },
         // MATH-1650 is in the catalog but NOT in this flow
     };
 
