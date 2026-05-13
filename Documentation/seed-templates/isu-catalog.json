@@ -1,29 +1,36 @@
 {
-  "_comment": "Draft generated from 2025-2026_Catalog_Final.pdf. Prereqs are stored as raw catalog strings; needs human review to convert to PrereqExpression trees. Credits and short names taken from cybe_flowchart.json where available.",
+  "_comment": "Catalog scraped from catalog.iastate.edu/azcourses/. Prereqs auto-converted to PrereqExpression trees where possible; complex strings remain as {\"_unparsed\": \"...\"} for human review.",
   "courses": [
     {
-      "classId": "MATH-1650",
-      "code": "Math 1650",
-      "name": "Calc I",
-      "officialName": "Calculus I",
+      "classId": "CHEM-1670",
+      "code": "Chem 1670",
+      "name": "Engr Chem",
+      "officialName": "General Chemistry for Engineering Students",
       "credits": 4.0,
       "creditNote": null,
-      "department": "Math",
-      "prereqs": null,
+      "department": "Chem",
+      "prereqs": {
+        "_unparsed": "College of Engineering Students or Open Option Undergraduate Undeclared Students"
+      },
       "coreqs": null,
       "crossListedAs": [],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
       "isActive": true
     },
     {
-      "classId": "MATH-1660",
-      "code": "Math 1660",
-      "name": "Calc II",
-      "officialName": "Calculus II",
+      "classId": "COMS-2270",
+      "code": "Com S 2270",
+      "name": "Intro Program",
+      "officialName": "Object-oriented Programming",
       "credits": 4.0,
       "creditNote": null,
-      "department": "Math",
-      "prereqs": "Satisfactory performance on placement assessment or MATH 1400",
+      "department": "ComS",
+      "prereqs": {
+        "_unparsed": "Credit or concurrent enrollment in MATH 1430 or higher; (COMS 1270 or CPRE 1850 or SE 1850 or COMS 2070 or MIS 2070 or EE 2850 or MTEOR 2270 or ME 1600)"
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
@@ -34,35 +41,74 @@
       "isActive": true
     },
     {
-      "classId": "MATH-2670",
-      "code": "Math 2670",
-      "name": "Diff Eq/Lap",
-      "officialName": "Elementary Differential Equations and Laplace Transforms",
-      "credits": 4.0,
-      "creditNote": null,
-      "department": "Math",
-      "prereqs": "Minimum C- in MATH 1430 or satisfactory score on placement exam",
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [
-        "Fall",
-        "Spring",
-        "Summer"
-      ],
-      "isActive": true
-    },
-    {
-      "classId": "CPRE-1850",
-      "code": "CprE 1850",
-      "name": "CprE Prob Solv",
-      "officialName": "Introduction to Computer Engineering and Problem Solving I",
+      "classId": "COMS-2280",
+      "code": "Com S 2280",
+      "name": "Data Structures",
+      "officialName": "Introduction to Data Structures",
       "credits": 3.0,
       "creditNote": null,
-      "department": "CprE",
-      "prereqs": null,
+      "department": "ComS",
+      "prereqs": {
+        "type": "And",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1650"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "COMS-3090",
+      "code": "Com S 3090",
+      "name": "Software Dev",
+      "officialName": "Software Development Practices",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "ComS",
+      "prereqs": {
+        "_unparsed": "Minimum of C- in (COMS 2280; MATH 1650)"
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "SE-3090"
+      ],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "COMS-3110",
+      "code": "Com S 3110",
+      "name": "Algor Analys",
+      "officialName": "Introduction to the Design and Analysis of Algorithms",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "ComS",
+      "prereqs": {
+        "_unparsed": "(COMS 2300 or CPRE 3100) and (Minimum of C- in COMS 2280, ENGL 1500, and MATH 1660)"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
       "isActive": true
     },
     {
@@ -76,8 +122,27 @@
       "prereqs": null,
       "coreqs": null,
       "crossListedAs": [
-        "EE 1660"
+        "EE-1660"
       ],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-1850",
+      "code": "CprE 1850",
+      "name": "CprE Prob Solv",
+      "officialName": "Introduction to Computer Engineering and Problem Solving I",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "_unparsed": "(MATH 1430 or satisfactory scores on mathematics placement examinations) or (MATH 1650 or satisfactory scores on mathematics placement examinations)"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
       "typicallyOffered": [],
       "isActive": true
     },
@@ -89,21 +154,47 @@
       "credits": 4.0,
       "creditNote": null,
       "department": "CprE",
-      "prereqs": "Sophomore classi\ufb01cation",
+      "prereqs": {
+        "type": "Classification",
+        "min": "Sophomore"
+      },
       "coreqs": null,
       "crossListedAs": [],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
       "isActive": true
     },
     {
       "classId": "CPRE-2880",
       "code": "CprE 2880",
       "name": "Embedded Systems",
-      "officialName": "Embedded Systems I: Introduction",
+      "officialName": "Embedded Systems I:  Introduction",
       "credits": 4.0,
       "creditNote": null,
       "department": "CprE",
-      "prereqs": "CPRE 2810, COMS 2070 or COMS 2270 or EE 2850",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2810"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2070"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2850"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
@@ -120,7 +211,19 @@
       "credits": 4.0,
       "creditNote": null,
       "department": "CprE",
-      "prereqs": "COMS 3210 or CPRE 3810",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-3810"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-3210"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
@@ -137,7 +240,10 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "CprE",
-      "prereqs": "COMS 2280",
+      "prereqs": {
+        "type": "Course",
+        "classId": "COMS-2280"
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
@@ -154,13 +260,69 @@
       "credits": 4.0,
       "creditNote": null,
       "department": "CprE",
-      "prereqs": "CPRE 2880",
+      "prereqs": {
+        "type": "Course",
+        "classId": "CPRE-2880"
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
         "Fall",
         "Spring"
       ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4300",
+      "code": "CprE 4300",
+      "name": "Network Protocols and Security",
+      "officialName": "Network Protocols and Security",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "_unparsed": "(CPRE 3080, COMS 2520, or COMS 3520) or CPRE 2880"
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CYBSC-4300"
+      ],
+      "typicallyOffered": [],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4360",
+      "code": "CprE 4360",
+      "name": "Digital Forensics",
+      "officialName": "Digital Forensics",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Course",
+        "classId": "CYBE-3310"
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CYBE-4360"
+      ],
+      "typicallyOffered": [],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4370",
+      "code": "CprE 4370",
+      "name": "Introduction to Wireless Secur",
+      "officialName": "Introduction to Wireless Security",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": null,
+      "coreqs": null,
+      "crossListedAs": [
+        "CYBE-4370"
+      ],
+      "typicallyOffered": [],
       "isActive": true
     },
     {
@@ -171,11 +333,14 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "CprE",
-      "prereqs": "COMS 3210 or CPRE 3810",
+      "prereqs": {
+        "_unparsed": "(ENGL 3090 OR ENGL 3140 OR ENGL 3140H) and [[(EE MAJOR) and (EE 3940 or EE 2320) and (Credit or enrollment in EE 3220 or EE 3022) and (Credit or enrollment in EE 3250)] or [(CPRE MAJOR) and (CPRE 3940 or CPRE 2320) and (Credit or enrollment in CPRE 3080) and (Credit or enrollment in CPRE 3250] or [(CYBE MAJOR) and (CPRE 3940 or CYBE 2340) and (Credit or enrollment in CYBE 3250) and CYBE 3310] or [(SE MAJOR) and (SE 3390 and SE 3170) and (Credit or enrollment in COMS 3520 or CPRE 3080)]]"
+      },
       "coreqs": null,
       "crossListedAs": [
-        "EE 4910",
-        "SE 4910"
+        "EE-4910",
+        "SE-4910",
+        "CYBE-4910"
       ],
       "typicallyOffered": [
         "Fall",
@@ -191,13 +356,29 @@
       "credits": 2.0,
       "creditNote": null,
       "department": "CprE",
-      "prereqs": "COMS 3210 or CPRE 3810",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-4910"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-4910"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [
-        "EE 4920",
-        "SE 4920"
+        "EE-4920",
+        "SE-4920",
+        "CYBE-4920"
       ],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
       "isActive": true
     },
     {
@@ -208,15 +389,36 @@
       "credits": 0.0,
       "creditNote": "R cr",
       "department": "CprE",
-      "prereqs": "CPRE 2880 or COMS 3270",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2320"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2320"
+          },
+          {
+            "type": "Course",
+            "classId": "CYBE-2340"
+          },
+          {
+            "type": "Course",
+            "classId": "CPRE-4910"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-4910"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [
-        "EE 4940"
+        "EE-4940"
       ],
-      "typicallyOffered": [
-        "Fall",
-        "Spring"
-      ],
+      "typicallyOffered": [],
       "isActive": true
     },
     {
@@ -227,12 +429,30 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "CybE",
-      "prereqs": "COMS 2270 or EE 2850 or MIS 2070",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2850"
+          },
+          {
+            "type": "Course",
+            "classId": "MIS-2070"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [
-        "CPRE 6310"
+        "CPRE-2300"
       ],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall"
+      ],
       "isActive": true
     },
     {
@@ -243,12 +463,26 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "CybE",
-      "prereqs": "CPRE 2300 or CYBE 2300",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2300"
+          },
+          {
+            "type": "Course",
+            "classId": "CYBE-2300"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [
-        "CPRE 2310"
+        "CPRE-2310"
       ],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Spring"
+      ],
       "isActive": true
     },
     {
@@ -259,13 +493,28 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "CybE",
-      "prereqs": "COMS 2270 or EE 2850 or MIS 2070",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2850"
+          },
+          {
+            "type": "Course",
+            "classId": "MIS-2070"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [
-        "CPRE 2340"
+        "CPRE-2340"
       ],
       "typicallyOffered": [
-        "Fall",
         "Spring"
       ],
       "isActive": true
@@ -278,23 +527,23 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "CybE",
-      "prereqs": null,
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2310"
+          },
+          {
+            "type": "Course",
+            "classId": "CYBE-2310"
+          }
+        ]
+      },
       "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [],
-      "isActive": true
-    },
-    {
-      "classId": "COMS-2270",
-      "code": "Com S 2270",
-      "name": "Intro Program",
-      "officialName": "Object-oriented Programming",
-      "credits": 4.0,
-      "creditNote": null,
-      "department": "ComS",
-      "prereqs": "Credit or concurrent enrollment in MATH 1430 or higher; (COMS 1270",
-      "coreqs": null,
-      "crossListedAs": [],
+      "crossListedAs": [
+        "CPRE-3310"
+      ],
       "typicallyOffered": [
         "Fall",
         "Spring"
@@ -302,52 +551,22 @@
       "isActive": true
     },
     {
-      "classId": "COMS-2280",
-      "code": "Com S 2280",
-      "name": "Data Structures",
-      "officialName": "Introduction to Data Structures",
+      "classId": "CYBE-4400",
+      "code": "Cyb E 4400",
+      "name": "Operating System Security",
+      "officialName": "Operating System Security",
       "credits": 3.0,
       "creditNote": null,
-      "department": "ComS",
-      "prereqs": "Minimum of C- in COMS 2270; credit or concurrent enrollment in MATH 1650",
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [],
-      "isActive": true
-    },
-    {
-      "classId": "COMS-3090",
-      "code": "Com S 3090",
-      "name": "Software Dev",
-      "officialName": "Software Development Practices",
-      "credits": 3.0,
-      "creditNote": null,
-      "department": "ComS",
-      "prereqs": "Minimum of C- in COMS 2270 and MATH 1650; ENGL 1500",
+      "department": "CybE",
+      "prereqs": {
+        "_unparsed": "Graduate Classification or (COMS 3520 or CPRE 3080)"
+      },
       "coreqs": null,
       "crossListedAs": [
-        "MATH 2300"
+        "CPRE-4400"
       ],
       "typicallyOffered": [
-        "Fall",
-        "Spring",
-        "Summer"
-      ],
-      "isActive": true
-    },
-    {
-      "classId": "COMS-3110",
-      "code": "Com S 3110",
-      "name": "Algor Analys",
-      "officialName": "Introduction to the Design and Analysis of Algorithms",
-      "credits": 3.0,
-      "creditNote": null,
-      "department": "ComS",
-      "prereqs": "Minimum of C- in (COMS 2280; MATH 1660, ENGL 1500); (COMS 2300",
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [
-        "Fall"
+        "Spring"
       ],
       "isActive": true
     },
@@ -359,10 +578,17 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "Engl",
-      "prereqs": null,
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-1500"
+      },
       "coreqs": null,
       "crossListedAs": [],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
       "isActive": true
     },
     {
@@ -373,25 +599,16 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "Engl",
-      "prereqs": "[(Overall EPT Score 2+ OR Passing ESL Course Grade) AND",
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [],
-      "isActive": true
-    },
-    {
-      "classId": "ENGL-3140",
-      "code": "Engl 3140",
-      "name": "Technical Com",
-      "officialName": "Technical Communication",
-      "credits": 3.0,
-      "creditNote": null,
-      "department": "Engl",
-      "prereqs": null,
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-2500"
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
-        "Fall"
+        "Fall",
+        "Spring",
+        "Summer"
       ],
       "isActive": true
     },
@@ -403,78 +620,36 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "Engl",
-      "prereqs": "ENGL 2500 and Junior classi\ufb01cation",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-2500"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "ENGL-3140",
+      "code": "Engl 3140",
+      "name": "Technical Com",
+      "officialName": "Technical Communication",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Engl",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-2500"
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
         "Fall",
         "Spring",
         "Summer"
-      ],
-      "isActive": true
-    },
-    {
-      "classId": "CHEM-1670",
-      "code": "Chem 1670",
-      "name": "Engr Chem",
-      "officialName": "General Chemistry for Engineering Students",
-      "credits": 4.0,
-      "creditNote": null,
-      "department": "Chem",
-      "prereqs": "(MATH 1430 or satisfactory scores on mathematics placement",
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [
-        "Fall",
-        "Spring"
-      ],
-      "isActive": true
-    },
-    {
-      "classId": "PHYS-2310",
-      "code": "Phys 2310",
-      "name": "Classical Phys I (lecture)",
-      "officialName": "Introduction to Classical Physics I",
-      "credits": 4.0,
-      "creditNote": null,
-      "department": "Phys",
-      "prereqs": "[MATH 1650 OR (MATH 1630X AND 1640X)] AND Credit or concurrent",
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [],
-      "isActive": true
-    },
-    {
-      "classId": "PHYS-2310L",
-      "code": "Phys 2310L",
-      "name": "Classical Phys I (lab)",
-      "officialName": "Introduction to Classical Physics I Laboratory",
-      "credits": 1.0,
-      "creditNote": null,
-      "department": "Phys",
-      "prereqs": "MATH 1650 AND (credit or enrollment in MATH 1660) AND (credit or",
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [
-        "Fall",
-        "Spring"
-      ],
-      "isActive": true
-    },
-    {
-      "classId": "LIB-1600",
-      "code": "Lib 1600",
-      "name": "Lib Instruction",
-      "officialName": "Introduction to College Level Research",
-      "credits": 1.0,
-      "creditNote": null,
-      "department": "Lib",
-      "prereqs": null,
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [
-        "Fall",
-        "Spring"
       ],
       "isActive": true
     },
@@ -496,14 +671,17 @@
       "isActive": true
     },
     {
-      "classId": "STAT-3300",
-      "code": "Stat 3300",
-      "name": "Probability and Statistics for",
-      "officialName": "Probability and Statistics for Computer Science",
-      "credits": 4.0,
+      "classId": "LIB-1600",
+      "code": "Lib 1600",
+      "name": "Lib Instruction",
+      "officialName": "Introduction to College Level Research",
+      "credits": 1.0,
       "creditNote": null,
-      "department": "Stat",
-      "prereqs": "One of STAT 1010, 1040, 1050, 2010, 2260, 2310, 3050, 3220, 3300",
+      "department": "Lib",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-1010C"
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
@@ -514,67 +692,47 @@
       "isActive": true
     },
     {
-      "classId": "CPRE-4300",
-      "code": "CprE 4300",
-      "name": "Network Protocols and Security",
-      "officialName": "Network Protocols and Security",
-      "credits": null,
-      "creditNote": null,
-      "department": "CprE",
-      "prereqs": null,
-      "coreqs": null,
-      "crossListedAs": [],
-      "typicallyOffered": [],
-      "isActive": true
-    },
-    {
-      "classId": "CPRE-4360",
-      "code": "CprE 4360",
-      "name": "Digital Forensics",
-      "officialName": "Digital Forensics",
+      "classId": "MATH-1650",
+      "code": "Math 1650",
+      "name": "Calc I",
+      "officialName": "Calculus I",
       "credits": 4.0,
       "creditNote": null,
-      "department": "CprE",
-      "prereqs": "CPRE 3080 or COMS 3210 and CPRE 3150 or COMS 3110",
+      "department": "Math",
+      "prereqs": {
+        "type": "Course",
+        "classId": "MATH-1430",
+        "minGrade": "C-"
+      },
       "coreqs": null,
-      "crossListedAs": [
-        "CYBE 4360"
-      ],
+      "crossListedAs": [],
       "typicallyOffered": [
-        "Fall"
+        "Fall",
+        "Spring",
+        "Summer"
       ],
       "isActive": true
     },
     {
-      "classId": "CPRE-4370",
-      "code": "CprE 4370",
-      "name": "Introduction to Wireless Secur",
-      "officialName": "Introduction to Wireless Security",
-      "credits": 3.0,
+      "classId": "MATH-1660",
+      "code": "Math 1660",
+      "name": "Calc II",
+      "officialName": "Calculus II",
+      "credits": 4.0,
       "creditNote": null,
-      "department": "CprE",
-      "prereqs": "(CPRE 3080 or COMS 2520 or COMS 3520) OR CPRE 2880",
+      "department": "Math",
+      "prereqs": {
+        "type": "Course",
+        "classId": "MATH-1650",
+        "minGrade": "C-"
+      },
       "coreqs": null,
-      "crossListedAs": [
-        "CYBE 4370"
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
       ],
-      "typicallyOffered": [],
-      "isActive": true
-    },
-    {
-      "classId": "CYBE-4400",
-      "code": "Cyb E 4400",
-      "name": "Operating System Security",
-      "officialName": "Operating System Security",
-      "credits": 3.0,
-      "creditNote": null,
-      "department": "CybE",
-      "prereqs": "CPRE 2310 or CYBE 2310",
-      "coreqs": null,
-      "crossListedAs": [
-        "CPRE 3310"
-      ],
-      "typicallyOffered": [],
       "isActive": true
     },
     {
@@ -585,7 +743,19 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "Math",
-      "prereqs": "Satisfactory performance on placement assessment; Early or",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1660"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660H"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
@@ -603,12 +773,55 @@
       "credits": 4.0,
       "creditNote": null,
       "department": "Math",
-      "prereqs": "Minimum of C- in MATH 1660 or MATH 1660H",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1660"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660H"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
         "Fall",
-        "Spring"
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-2670",
+      "code": "Math 2670",
+      "name": "Diff Eq/Lap",
+      "officialName": "Elementary Differential Equations and Laplace Transforms",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1660"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660H"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
       ],
       "isActive": true
     },
@@ -620,10 +833,14 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "Math",
-      "prereqs": "(MATH 1660 or MATH 1660H); (MATH 2010 or COMS 2300 or CPRE 3100)",
+      "prereqs": {
+        "_unparsed": "(MATH 1660 or MATH 1660H); (MATH 2010 or COMS 2300 or CPRE 3100)"
+      },
       "coreqs": null,
       "crossListedAs": [],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall"
+      ],
       "isActive": true
     },
     {
@@ -634,7 +851,9 @@
       "credits": 3.0,
       "creditNote": null,
       "department": "Math",
-      "prereqs": "(MATH 1660 or MATH 1660H); (MATH 2010 or COMS 2300 or CPRE 3100)",
+      "prereqs": {
+        "_unparsed": "(MATH 1660 or MATH 1660H); (MATH 2010 or COMS 2300 or CPRE 3100)"
+      },
       "coreqs": null,
       "crossListedAs": [],
       "typicallyOffered": [
@@ -647,13 +866,93 @@
       "code": "Math 3170",
       "name": "Theory of Linear Algebra",
       "officialName": "Theory of Linear Algebra",
-      "credits": null,
+      "credits": 4.0,
       "creditNote": null,
       "department": "Math",
-      "prereqs": null,
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-2010"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2300"
+          },
+          {
+            "type": "Course",
+            "classId": "CPRE-3100"
+          }
+        ]
+      },
       "coreqs": null,
       "crossListedAs": [],
-      "typicallyOffered": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "PHYS-2310",
+      "code": "Phys 2310",
+      "name": "Classical Phys I (lecture)",
+      "officialName": "Introduction to Classical Physics I",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Phys",
+      "prereqs": {
+        "_unparsed": "[MATH 1650 or (MATH 1630X and 1640X)] and credit or enrollment in MATH 1660"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "PHYS-2310L",
+      "code": "Phys 2310L",
+      "name": "Classical Phys I (lab)",
+      "officialName": "Introduction to Classical Physics I Laboratory",
+      "credits": 1.0,
+      "creditNote": null,
+      "department": "Phys",
+      "prereqs": {
+        "_unparsed": "MATH 1650 and (credit or concurrent enrollment in MATH 1660) and (credit or concurrent enrollment in PHYS 2310 or PHYS 2410)"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "STAT-3030",
+      "code": "Stat 3030",
+      "name": "Stat for ComS",
+      "officialName": "Probability and Statistics for Computer Science",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Stat",
+      "prereqs": {
+        "type": "Course",
+        "classId": "MATH-1660"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
       "isActive": true
     }
   ]

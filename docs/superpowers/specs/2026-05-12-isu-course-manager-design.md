@@ -594,6 +594,6 @@ These are knowingly deferred to the writing-plans phase rather than left ambiguo
 
 - **UI plan-view layout** — three mockups exist (`.superpowers/brainstorm/.../plan-layout-v2.html`); decision to be made during frontend work.
 - **CybE 2025-26 catalog seed contents** — partially complete. `Data/cybe_flowchart.json` is committed (45 slots across 8 semesters). `isu-catalog.json` is being generated from `Data/2025-2026_Catalog_Final.pdf` — see `Documentation/seed-templates/`.
-- **Flow file fixes from catalog analysis**: STAT-3030 → STAT-3300 (renumbered course); add missing prereqs to CYBE-2300, CYBE-2310, CYBE-2340, CPRE-3100; add MATH-1660 coreq to PHYS-2310 and PHYS-2310L.
+- **Flow file fixes from catalog analysis**: add missing prereqs to CYBE-2300, CYBE-2310, CYBE-2340, CPRE-3100; add MATH-1660 coreq to PHYS-2310 and PHYS-2310L. (Note: an earlier draft of this spec claimed STAT-3030 should be renumbered to STAT-3300; that was wrong — STAT 3030 is the current course code per the live catalog at https://catalog.iastate.edu/azcourses/stat/.)
 - **Soft/hard credit caps per semester** — defaults to be picked (e.g., target 15, soft cap 18, hard cap 20 — confirm with the user during planning).
 - **Test-data fixture builder** — design of `CybEFixture.cs` to give every cascade test a realistic baseline.
