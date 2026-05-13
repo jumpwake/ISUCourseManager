@@ -52,8 +52,7 @@
       "courseId": "MATH-1430",
       "academicTerm": 202702,
       "status": "Planned",
-      "grade": null,
-      "_validationNote": "MATH-1430 (Pre-Calc) is referenced in some catalog prereqs but does not have its own entry in isu-catalog.json yet — needs adding."
+      "grade": null
     },
     {
       "courseId": "ENGR-1010",
@@ -74,18 +73,18 @@
       "grade": null
     },
     {
-      "courseId": "CONS-ISSUES",
+      "courseId": "HDFS-2390",
       "academicTerm": 202702,
       "status": "Planned",
       "grade": null,
-      "_validationNote": "Source row read 'Cons Issues' / sectionId 'CONS ISSUES' — not a real ISU course code. Probably a Gen-Ed placeholder; needs the actual classId before it can validate against the catalog."
+      "_sourceNote": "Source row read 'Cons Issues' — actual ISU code is HDFS 2390 (Human Development & Family Studies — Consumer Issues). Not yet in isu-catalog.json."
     },
     {
-      "courseId": "PHIL-1010",
+      "courseId": "PHIL-2010",
       "academicTerm": 202702,
       "status": "Planned",
       "grade": null,
-      "_validationNote": "PHIL-1010 not yet in isu-catalog.json — needs adding (would be a GenEd-eligible course)."
+      "_sourceNote": "Source row read 'Phil 1010' — actual ISU code is PHIL 2010 (Introduction to Philosophy; PHIL 1010 does not exist). Not yet in isu-catalog.json."
     }
   ]
 }
