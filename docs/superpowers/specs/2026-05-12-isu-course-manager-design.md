@@ -257,6 +257,90 @@ enum PlanItemStatus { Planned, InProgress, Completed, Failed, Withdrawn }
 
 The `PlanItem` table holds the student's full academic record: prior semesters (`Status = Completed/Failed`), current semester (`Status = InProgress`), and future plans (`Status = Planned`).
 
+### Visual ER diagram
+
+```mermaid
+erDiagram
+    Course {
+        Guid Id PK "DB surrogate"
+        string ClassId UK "MATH-1650 (semantic key)"
+        string Code "Math 1650 (display)"
+        string Name "Calc I (chart abbrev)"
+        string OfficialName "Calculus I (catalog name)"
+        decimal Credits
+        string CreditNote "R cr / 3-4cr"
+        string Department
+        json Prereqs "PrereqExpression tree"
+        json Coreqs "PrereqExpression tree"
+        json CrossListedAs "List of ClassIds"
+        json TypicallyOffered "List of Term enum"
+        bool IsActive
+    }
+
+    DegreeFlow {
+        Guid Id PK
+        string MajorCode "CYBE"
+        string MajorName "Cyber Security Engineering"
+        string CatalogYear "2025-26"
+        int TotalCreditsRequired
+        json Notes "List of caveat strings"
+    }
+
+    FlowchartSlot {
+        Guid Id PK
+        Guid DegreeFlowId FK
+        int Semester "1..8 recommended"
+        SlotKind Kind "FixedClass or CategoryChoice"
+        string ClassId FK "to Course.ClassId, null for CategoryChoice"
+        string Category "GenEdElective etc, null for FixedClass"
+        decimal RequiredCredits
+        string CreditNote
+        string MinGrade
+        string ClassNote "Soph Class etc"
+        int DisplayOrder
+        string DisplayName
+        json RecommendedPairing "List of ClassIds (soft pairings)"
+    }
+
+    Student {
+        Guid Id PK
+        string DisplayName
+    }
+
+    Plan {
+        Guid Id PK
+        Guid StudentId FK
+        Guid SelectedDegreeFlowId FK
+        json PreviousSnapshotJson "single-level undo"
+    }
+
+    PlanItem {
+        Guid Id PK
+        Guid PlanId FK
+        string CourseId FK "to Course.ClassId (string semantic FK)"
+        int Semester
+        PlanItemStatus Status "Planned/InProgress/Completed/Failed/Withdrawn"
+        string Grade
+    }
+
+    DegreeFlow ||--o{ FlowchartSlot : "has slots"
+    FlowchartSlot }o--o| Course : "references when FixedClass"
+    Student ||--|| Plan : "owns one"
+    Plan }o--|| DegreeFlow : "follows"
+    Plan ||--o{ PlanItem : "contains"
+    PlanItem }o--|| Course : "is an enrollment in"
+```
+
+**Notes on the diagram:**
+
+- **Three tiers, color-coded by purpose** (not visible in pure ER but follows the entity grouping):
+  - Tier 1 (read-mostly catalog): `Course`
+  - Tier 2 (per-flow recommendation): `DegreeFlow`, `FlowchartSlot`
+  - Tier 3 (per-student state): `Student`, `Plan`, `PlanItem`
+- **`json` columns are EF Core JSON columns**, not separate tables. `CrossListedAs`, `RecommendedPairing`, `Prereqs`, `Coreqs`, `Notes`, `TypicallyOffered` are all stored as JSON. They could be normalized into join tables in a future plan if query patterns demand it (e.g., "find every course that lists X as a prereq"), but for the POC the JSON shape is simpler and matches the seed-file format.
+- **`FlowchartSlot.ClassId` and `PlanItem.CourseId` are string semantic FKs** referencing `Course.ClassId`, not surrogate-key joins on `Course.Id`. This makes plans and slots survive `Course` row re-seeds (the ClassId stays stable; the surrogate Guid does not).
+- **Cross-listings are not enforced by the DB.** The validator and the cascade engine consult the `Course.CrossListedAs` JSON list at runtime; equivalence is computed in-memory.
+
 ### Why this tiering matters
 
 - **Switching majors is just a different lens.** No data moves; only the rendered overlay changes.
