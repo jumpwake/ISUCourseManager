@@ -1,0 +1,480 @@
+{
+  "code": "CYBE",
+  "name": "Cyber Security Engineering",
+  "catalogYear": "2025-26",
+  "totalCreditsRequired": 125,
+  "notes": [
+    "This flowchart is only a guide. For more detailed information including prerequisites and co-requisites, see the ISU Catalog.",
+    "Check with Student Services for information on electives.",
+    "Course term offerings subject to change.",
+    "Lab and lecture must be passed in the same semester to receive credit for CprE/CybE/EE courses."
+  ],
+  "slots": [
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "MATH-1650",
+      "name": "Calc I",
+      "requiredCredits": 4,
+      "minGrade": "C-",
+      "displayOrder": 1,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "ENGR-1010",
+      "name": "Orientation",
+      "requiredCredits": 1,
+      "minGrade": null,
+      "displayOrder": 2,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "CPRE-1850",
+      "name": "CprE Prob Solv",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 3,
+      "prereqs": [],
+      "coreqs": ["MATH-1650"]
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "CHEM-1670",
+      "name": "Engr Chem",
+      "requiredCredits": 4,
+      "minGrade": null,
+      "displayOrder": 4,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "LIB-1600",
+      "name": "Lib Instruction",
+      "requiredCredits": 1,
+      "minGrade": null,
+      "displayOrder": 5,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "ENGL-1500",
+      "name": "Crit Think & Com",
+      "requiredCredits": 3,
+      "minGrade": "C-",
+      "displayOrder": 6,
+      "prereqs": [],
+      "coreqs": []
+    },
+
+    {
+      "semester": 2,
+      "kind": "FixedClass",
+      "classId": "MATH-1660",
+      "name": "Calc II",
+      "requiredCredits": 4,
+      "minGrade": "C-",
+      "displayOrder": 1,
+      "prereqs": [{ "classId": "MATH-1650", "minGrade": "C-" }],
+      "coreqs": []
+    },
+    {
+      "semester": 2,
+      "kind": "FixedClass",
+      "classId": "PHYS-2310",
+      "name": "Classical Phys I (lecture)",
+      "requiredCredits": 4,
+      "minGrade": null,
+      "displayOrder": 2,
+      "prereqs": [{ "classId": "MATH-1650", "minGrade": "C-" }],
+      "coreqs": ["PHYS-2310L"]
+    },
+    {
+      "semester": 2,
+      "kind": "FixedClass",
+      "classId": "PHYS-2310L",
+      "name": "Classical Phys I (lab)",
+      "requiredCredits": 1,
+      "minGrade": null,
+      "displayOrder": 3,
+      "prereqs": [],
+      "coreqs": ["PHYS-2310"]
+    },
+    {
+      "semester": 2,
+      "kind": "FixedClass",
+      "classId": "CPRE-1660",
+      "name": "Professional Prog",
+      "requiredCredits": 0,
+      "creditNote": "R cr",
+      "minGrade": null,
+      "displayOrder": 4,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 2,
+      "kind": "FixedClass",
+      "classId": "COMS-2270",
+      "name": "Intro Program",
+      "requiredCredits": 4,
+      "minGrade": "C-",
+      "displayOrder": 5,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 2,
+      "kind": "CategoryChoice",
+      "category": "GenEdElective",
+      "requiredCredits": 3,
+      "displayOrder": 6,
+      "prereqs": [],
+      "coreqs": []
+    },
+
+    {
+      "semester": 3,
+      "kind": "FixedClass",
+      "classId": "MATH-2670",
+      "name": "Diff Eq/Lap",
+      "requiredCredits": 4,
+      "minGrade": null,
+      "displayOrder": 1,
+      "prereqs": [{ "classId": "MATH-1660", "minGrade": "C-" }],
+      "coreqs": []
+    },
+    {
+      "semester": 3,
+      "kind": "FixedClass",
+      "classId": "CYBE-2300",
+      "name": "Cyber Secr. Infra",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 2,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 3,
+      "kind": "FixedClass",
+      "classId": "CPRE-2810",
+      "name": "Digital Logic",
+      "requiredCredits": 4,
+      "minGrade": null,
+      "classNote": "Soph Class",
+      "displayOrder": 3,
+      "prereqs": [{ "classId": "CPRE-1850", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 3,
+      "kind": "FixedClass",
+      "classId": "COMS-2280",
+      "name": "Data Structures",
+      "requiredCredits": 3,
+      "minGrade": "C-",
+      "displayOrder": 4,
+      "prereqs": [{ "classId": "COMS-2270", "minGrade": "C-" }],
+      "coreqs": []
+    },
+
+    {
+      "semester": 4,
+      "kind": "CategoryChoice",
+      "category": "MathElective",
+      "requiredCredits": 3,
+      "creditNote": "3/4cr",
+      "displayOrder": 1,
+      "prereqs": [{ "classId": "MATH-1660", "minGrade": "C-" }],
+      "coreqs": []
+    },
+    {
+      "semester": 4,
+      "kind": "FixedClass",
+      "classId": "CYBE-2310",
+      "name": "Cyber Sec. Concept/Tool",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 2,
+      "prereqs": [{ "classId": "CYBE-2300", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 4,
+      "kind": "FixedClass",
+      "classId": "CPRE-2880",
+      "name": "Embedded Systems",
+      "requiredCredits": 4,
+      "minGrade": null,
+      "displayOrder": 3,
+      "prereqs": [{ "classId": "CPRE-2810", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 4,
+      "kind": "FixedClass",
+      "classId": "CYBE-2340",
+      "name": "Ethics in Sec",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 4,
+      "prereqs": [{ "classId": "COMS-2280", "minGrade": "C-" }],
+      "coreqs": []
+    },
+    {
+      "semester": 4,
+      "kind": "FixedClass",
+      "classId": "ENGL-2500",
+      "name": "WOVE Comp",
+      "requiredCredits": 3,
+      "minGrade": "C-",
+      "displayOrder": 5,
+      "prereqs": [{ "classId": "ENGL-1500", "minGrade": "C-" }],
+      "coreqs": []
+    },
+
+    {
+      "semester": 5,
+      "kind": "CategoryChoice",
+      "category": "GenEdElective",
+      "requiredCredits": 3,
+      "displayOrder": 1,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 5,
+      "kind": "FixedClass",
+      "classId": "CYBE-3310",
+      "name": "Appl of Crypt",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 2,
+      "prereqs": [{ "classId": "CYBE-2310", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 5,
+      "kind": "FixedClass",
+      "classId": "CPRE-3810",
+      "name": "Cpr Org & Design",
+      "requiredCredits": 4,
+      "minGrade": null,
+      "displayOrder": 3,
+      "prereqs": [{ "classId": "CPRE-2880", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 5,
+      "kind": "FixedClass",
+      "classId": "COMS-3090",
+      "name": "Software Dev",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 4,
+      "prereqs": [
+        { "classId": "COMS-2280", "minGrade": "C-" }
+      ],
+      "coreqs": []
+    },
+    {
+      "semester": 5,
+      "kind": "FixedClass",
+      "classId": "CPRE-3100",
+      "name": "Foundtn CprE",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 5,
+      "prereqs": [],
+      "coreqs": []
+    },
+
+    {
+      "semester": 6,
+      "kind": "CategoryChoice",
+      "category": "GenEdElective",
+      "requiredCredits": 3,
+      "displayOrder": 1,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 6,
+      "kind": "CategoryChoice",
+      "category": "CybEElective",
+      "requiredCredits": 3,
+      "displayOrder": 2,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 6,
+      "kind": "FixedClass",
+      "classId": "CPRE-3080",
+      "name": "Operating Sys",
+      "requiredCredits": 4,
+      "minGrade": null,
+      "displayOrder": 3,
+      "prereqs": [{ "classId": "CPRE-3810", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 6,
+      "kind": "FixedClass",
+      "classId": "COMS-3110",
+      "name": "Algor Analys",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 4,
+      "prereqs": [{ "classId": "COMS-3090", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 6,
+      "kind": "FixedClass",
+      "classId": "ENGL-3140",
+      "name": "Technical Com",
+      "requiredCredits": 3,
+      "minGrade": "C-",
+      "classNote": "Junior Class",
+      "displayOrder": 5,
+      "prereqs": [{ "classId": "ENGL-2500", "minGrade": "C-" }],
+      "coreqs": []
+    },
+
+    {
+      "semester": 7,
+      "kind": "CategoryChoice",
+      "category": "GenEdElective",
+      "requiredCredits": 3,
+      "displayOrder": 1,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 7,
+      "kind": "FixedClass",
+      "classId": "STAT-3030",
+      "name": "Stat for ComS",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 2,
+      "prereqs": [{ "classId": "MATH-1660", "minGrade": "C-" }],
+      "coreqs": []
+    },
+    {
+      "semester": 7,
+      "kind": "FixedClass",
+      "classId": "CPRE-4910",
+      "name": "Senior Design I",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "classNote": "Requires 29 Core Credits",
+      "displayOrder": 3,
+      "prereqs": [
+        { "classId": "CPRE-3080", "minGrade": null },
+        { "classId": "COMS-3110", "minGrade": null },
+        { "classId": "ENGL-3140", "minGrade": null }
+      ],
+      "coreqs": []
+    },
+    {
+      "semester": 7,
+      "kind": "CategoryChoice",
+      "category": "CybEElective",
+      "requiredCredits": 3,
+      "displayOrder": 4,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 7,
+      "kind": "CategoryChoice",
+      "category": "CybEElective",
+      "requiredCredits": 3,
+      "displayOrder": 5,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 7,
+      "kind": "FixedClass",
+      "classId": "CPRE-4940",
+      "name": "Portfolio",
+      "requiredCredits": 0,
+      "creditNote": "R cr",
+      "minGrade": null,
+      "displayOrder": 6,
+      "prereqs": [{ "classId": "CYBE-2340", "minGrade": null }],
+      "coreqs": ["CPRE-4910"]
+    },
+
+    {
+      "semester": 8,
+      "kind": "CategoryChoice",
+      "category": "GenEdElective",
+      "requiredCredits": 3,
+      "displayOrder": 1,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 8,
+      "kind": "CategoryChoice",
+      "category": "TechElective",
+      "requiredCredits": 3,
+      "displayOrder": 2,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 8,
+      "kind": "FixedClass",
+      "classId": "CPRE-4920",
+      "name": "Senior Design II",
+      "requiredCredits": 2,
+      "minGrade": null,
+      "displayOrder": 3,
+      "prereqs": [{ "classId": "CPRE-4910", "minGrade": null }],
+      "coreqs": []
+    },
+    {
+      "semester": 8,
+      "kind": "CategoryChoice",
+      "category": "TechElective",
+      "requiredCredits": 3,
+      "displayOrder": 4,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 8,
+      "kind": "CategoryChoice",
+      "category": "CybEElective",
+      "requiredCredits": 3,
+      "displayOrder": 5,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 8,
+      "kind": "CategoryChoice",
+      "category": "CprEElective",
+      "requiredCredits": 3,
+      "displayOrder": 6,
+      "prereqs": [],
+      "coreqs": []
+    }
+  ]
+}
