@@ -68,7 +68,8 @@ ISUCourseManager.sln
 │   │                                  JWT-stub middleware, swagger, DTOs
 │   ├── ISUCourseManager.Services/     business logic — EnrollmentService,
 │   │                                  CascadeEngine, PrereqEvaluator,
-│   │                                  CatalogService, IPlanRepository, ...
+│   │                                  CatalogService, AiService, InsightService,
+│   │                                  IPlanRepository, ...
 │   └── ISUCourseManager.Data/
 │       ├── Entity/                    POCO entities (Course, DegreeFlow,
 │       │                              FlowchartSlot, StudentCourse, StudentDegreeFlow, Student)
@@ -95,6 +96,7 @@ ISUCourseManager.sln
 │   - Plan view           │  REST   │       │                              │
 │   - Wizard modals       │  JSON   │       ▼                              │
 │   - Catalog browser     │         │  Services (EnrollmentService, CascadeEngine,│
+│   - AI panel / insights │         │            AiService, InsightService,        │
 │   - Major switcher      │         │            PrereqEvaluator, ...)     │
 └─────────────────────────┘         │       │                              │
                                     │       ▼                              │
@@ -110,6 +112,18 @@ ISUCourseManager.sln
                                   │  flow-cybe-2025-26.json    │
                                   └────────────────────────────┘
 ```
+
+### AiService — server-mediated AI integration
+
+The `AiService` (in `Services/`) is the single backend integration point with Anthropic's API. The browser **never** calls Anthropic directly — every AI request hits our backend, which:
+
+1. Loads the relevant context based on the request scope (Student, StudentCourses, active StudentDegreeFlows, scope-relevant slice of the Catalog).
+2. Constructs a prompt combining domain-system instructions (cacheable) with per-request specifics (uncacheable).
+3. Calls Anthropic's Messages API with **prompt caching** enabled. The system instructions and catalog context cache; only the specific question + student data vary per request.
+4. If Claude returns tool-use suggestions ("propose moving X to Sem N"), the service translates them into action-button payloads referencing existing endpoints (e.g., `POST /me/courses` with the suggested body).
+5. Returns the AI message + structured action buttons + suggestion cards to the frontend.
+
+This server-mediation gives us: auth control (no API key in browser), audit logging, prompt-cache hit rates, rate limiting, cost containment, and the ability to swap models/providers without touching the client. The companion `InsightService` runs precanned analyses on a schedule (or on-demand per `/me/insights` requests) for the proactive sidebar observations.
 
 ## 4. Domain Model
 
@@ -547,7 +561,19 @@ class CascadeRequest {
   IReadOnlyList<StudentCourse> Courses; // the student's full academic record (all flows)
   IReadOnlyList<Course> Catalog;        // every course referenced
   CascadeTrigger Trigger;
-  CascadeOptions Options;               // target/cap credits per semester, projection rules
+  CascadeOptions Options;               // see CascadeOptions below
+}
+
+class CascadeOptions {
+  decimal TargetCreditsPerSemester = 15m;   // ideal credit load
+  decimal SoftMinCreditsPerSemester = 12m;  // below this → InsufficientCredits warning + UI orange
+  decimal SoftCapCreditsPerSemester = 18m;  // above this → SemesterOverload warning + UI red
+  decimal HardCapCreditsPerSemester = 20m;  // ConfirmOverloadDecision required to exceed
+  int MaxSemester = 8;                       // GraduationPushed warning beyond this
+  // Classification credit thresholds (for PrereqClassification gates)
+  decimal SophomoreMinCredits = 30m;
+  decimal JuniorMinCredits = 60m;
+  decimal SeniorMinCredits = 90m;
 }
 
 abstract class CascadeTrigger { }
@@ -557,7 +583,12 @@ class CourseAddedToTerm    : CascadeTrigger { string CourseId; int AcademicTerm;
 class CourseRemovedFromTerm: CascadeTrigger { Guid StudentCourseId; }
 class CourseSubstituted    : CascadeTrigger { Guid StudentCourseId; string NewCourseId; }
 class WhatIfMajorSwitched  : CascadeTrigger { Guid NewDegreeFlowId; }
+class FixCurrentState      : CascadeTrigger { }   // re-derive valid placements for every
+                                                  //   currently-broken StudentCourse — backs
+                                                  //   the UI's Auto-Fix-without-recent-trigger path
 ```
+
+**`FixCurrentState`** is special — it has no payload. The engine treats it as "pretend every currently-broken StudentCourse was just placed there as a trigger and re-derive valid placements via the standard algorithm steps 2-7." Used by the UI when the student clicks Auto-Fix on ambient warnings (not tied to one recent move).
 
 **Why a multi-flow-aware request:** A student with multiple `Active` flows (double major) might trigger a cascade that affects more than one degree path. The engine operates on `ActiveAssociation` (one focal flow) per call. The controller dispatches a separate cascade run per Active flow when a triggered change has cross-flow impact, then surfaces both proposals to the wizard.
 
@@ -701,17 +732,64 @@ GET    /api/v1/me/courses?term=&status=             → StudentCourseDto[]
 POST   /api/v1/me/courses                           → StudentCourseDto
 PUT    /api/v1/me/courses/{id}                      → StudentCourseDto
 DELETE /api/v1/me/courses/{id}                      → 204
+POST   /api/v1/me/courses/restore                   → StudentCourseDto[]      (bulk replace)
+GET    /api/v1/me/courses/pull-forward-candidates?slotId=
+                                                    → StudentCourseDto[]      (later-sem matches for an empty slot)
 
 GET    /api/v1/me/flows?status=                     → StudentDegreeFlowDto[]
 POST   /api/v1/me/flows                             → StudentDegreeFlowDto
 PUT    /api/v1/me/flows/{id}/status                 → StudentDegreeFlowDto
 DELETE /api/v1/me/flows/{id}                        → 204
 
-GET    /api/v1/me/flows/{id}/overlay                → OverlayDto
+GET    /api/v1/me/flows/{id}/overlay                → OverlayDto              (includes CascadeOptions + ValidationIssues)
 
 POST   /api/v1/cascade/preview                      → CascadeProposalDto
 POST   /api/v1/cascade/apply                        → StudentCourseDto[] + StudentDegreeFlowDto[] (changed)
+
+GET    /api/v1/me/insights?flowId=                  → AiInsightDto[]          (proactive sidebar insights)
+POST   /api/v1/ai/ask                               → AiResponseDto           (scoped AI requests)
 ```
+
+### Bulk restore — `POST /api/v1/me/courses/restore`
+
+Backs the UI's client-side Undo Auto-Fix (UI spec §12). Takes a snapshot of `StudentCourseDto[]` and replaces the student's current courses in a single transaction:
+
+```jsonc
+// Request
+{ "courses": [ { "id": "...", "courseId": "MATH-1650", "academicTerm": 202602, "status": "Completed", "grade": "A" }, … ] }
+
+// Response: 200 with the restored StudentCourseDto[]
+```
+
+Implementation: open a DB transaction, delete every existing `StudentCourse` for the active student, insert the snapshot rows verbatim (preserving Ids so foreign references survive), commit. Returns the restored list. If any course in the snapshot references a `CourseId` no longer in the catalog, returns 400 with the offending entries — caller is responsible for resolving.
+
+### Pull-forward candidates — `GET /api/v1/me/courses/pull-forward-candidates?slotId={...}`
+
+Backs the UI's slot picker "Pull from a later semester" section. Given a `FlowchartSlot.Id` for an empty slot in semester N:
+
+1. Determine the slot's required category (from `slot.SlotType` and `slot.ClassId`).
+2. Find every `StudentCourse` in the active flow's overlay where:
+   - `AcademicTerm` corresponds to a semester > N
+   - The course satisfies the slot's category (matches `ClassId` for `DegreeClass` slots; matches the SlotType's eligible-course list for `Elective*` slots)
+   - `Status` is `Planned` (Completed/InProgress can't be pulled forward)
+3. Return ordered by current semester (closest first).
+
+### AI endpoints — `POST /api/v1/ai/ask` and `GET /api/v1/me/insights`
+
+The AI service mediates all calls to Anthropic. Frontend never calls Anthropic directly. See UI spec §11 for the architectural rationale and `AiResponseDto` shape.
+
+```jsonc
+// POST /api/v1/ai/ask
+{
+  "scope": { "type": "Semester", "academicTerm": 202604 },   // or "Flow"/"Slot"/"Global" with appropriate fields
+  "prompt": "What Gen Eds fit these 2 open slots?",
+  "decisionAnswers": []                                       // for multi-turn refinement
+}
+```
+
+Response (`AiResponseDto`) contains: AI text messages, suggestion cards (each with rationale + executable action button payloads that reference existing endpoints like `/me/courses`), an optional batch tip, the resolved scope, and token/latency telemetry.
+
+`GET /me/insights` returns a precanned analysis run server-side (no user prompt) — the proactive observations that populate the UI's sidebar Insights box. Implementation can cache by `(studentId, flowId, lastMutationTime)`.
 
 ### Cascade preview/apply: stateless iteration
 
@@ -778,10 +856,19 @@ The wizard fires only when the user takes an action that intentionally changes t
 | Action | Trigger sent |
 |---|---|
 | Mark a course **Failed** | `CourseFailed` |
-| Mark a course **Withdrawn** mid-semester | `CourseRemovedFromSem` |
+| Mark a course **Withdrawn** mid-semester | `CourseRemovedFromTerm` |
 | Click **"Replan from this point"** | `CourseSkipped` |
 | Click **"Switch major"** in the major picker | `WhatIfMajorSwitched` |
-| Click **"Fix prereq issues"** banner | engine inspects current state |
+| Click **"Fix prereq issues"** / **"Auto-Fix all"** banner | `FixCurrentState` (re-derive all currently-broken placements) |
+
+**Auto-Fix and Mark-Failed both use the auto-answer protocol.** Same wire pattern as the wizard, but the client provides the `DecisionPoint` defaults rather than prompting the user:
+
+1. `POST /cascade/preview { trigger, decisionAnswers: [] }`
+2. For each `decisions[]` entry, build an auto-answer using the engine's recommended default (each `DecisionPoint` subclass defines a `RecommendedDefault`).
+3. `POST /cascade/preview` again with accumulated `decisionAnswers`. Loop until `decisions` is empty.
+4. `POST /cascade/apply` to commit.
+
+The UI renders the full Mode B side-by-side preview only when the user picks "Get help (wizard)" from the banner. Direct Mark-Failed / Auto-Fix flows skip that and apply with engine defaults; the user can still Undo (single-level snapshot via `/me/courses/restore` per UI spec §12).
 
 ### Walkthrough — Math 1650 case
 
@@ -807,7 +894,8 @@ class ValidationIssueDto {
   ValidationIssueKind Kind;     // BrokenPrereq | BrokenCoreq | GradeRequirementUnmet
                                 // | SemesterOverload | InsufficientCredits
                                 // | TermNotOffered | ClassificationGateUnmet | CoreCreditsGateUnmet
-  Guid? StudentCourseId;
+                                // | RecommendedPairingBroken
+  Guid? StudentCourseId;        // affected enrollment, when applicable
   int Semester;
   string Message;               // "Math 1660 needs Math 1650 with C- (currently in Sem 4)"
 }
@@ -908,6 +996,13 @@ Recording the journey for context in future sessions:
 | 29 | Overlay (`StudentCourse[]` + `DegreeFlow` → fit) elevated to a first-class core capability, not a one-off "what-if" | Same function powers active-flow rendering, what-if exploration, and (future) closest-matching-degree suggestions and minor evaluation. Pure / deterministic by design |
 | 30 | Single-level undo (`Plan.PreviousSnapshotJson`) dropped; rely on wizard preview-then-apply for back-out | Removing `Plan` left undo without a home; the wizard's preview already lets the user cancel before any commit, which covers the common case. Multi-level action log deferred |
 | 31 | `Term` (Fall/Spring/Summer) and `Season` (Summer/Fall/Winter/Spring) are *separate* enums, not unified | `Term` describes catalog availability (`Course.TypicallyOffered`) — ISU never offers a course "Winter only," so Winter doesn't appear here. `Season` describes `AcademicTerm` chronology and includes Winter for winter-session enrollments. The cascade engine maps a candidate `Season` to the corresponding `Term` for offering checks; Winter maps to *no offering expected* until a `Course.TypicallyOffered` ever lists it. A small `SeasonToTerm()` helper in `Data/Entity/AcademicTerm.cs` handles the mapping |
+| 32 | New `AiService` + `InsightService` in Services project; never call Anthropic from the browser | Auth, audit, prompt-cache hit rates, rate limiting, cost containment, and provider portability all stay server-side. UI passes scope; service constructs context-rich prompts and translates Claude tool-use into action-button payloads referencing existing endpoints |
+| 33 | `CascadeOptions` has pinned defaults: `softMin=12, softCap=18, hardCap=20, target=15, maxSemester=8` (plus classification credit thresholds) | Previously deferred ("to be picked"); UI's per-row credit color thresholds force the issue. `OverlayDto` exposes these so the client doesn't hardcode |
+| 34 | New `CascadeTrigger.FixCurrentState` (no payload) | Backs the UI's Auto-Fix-without-recent-trigger path. Engine treats it as "re-derive valid placements for every currently-broken StudentCourse" via the standard algorithm. Used when the user clicks Auto-Fix on ambient warnings rather than immediately after a move |
+| 35 | New `POST /me/courses/restore` bulk replace endpoint | Backs the UI's client-side Undo Auto-Fix without requiring server-side undo storage (preserves the spec's "no undo" stance from decision 30). Snapshot lives in browser sessionStorage; Undo POSTs the snapshot to restore in a single transaction |
+| 36 | New `GET /me/courses/pull-forward-candidates` endpoint | Backs the slot picker's "Pull from a later semester" section. Server filters and ranks Planned StudentCourses from later semesters that match the empty slot's category — keeps the picker fast without client-side filtering of the full course list |
+| 37 | `RecommendedPairingBroken` added to `ValidationIssueDto.Kind` | Lets the slot picker and action menu's suggested-fix card surface AC-26 broken-pairing warnings consistently with prereq/coreq/overload issues |
+| 38 | Auto-Fix and Mark-Failed both use the wizard's preview/apply protocol with auto-answered DecisionPoints | Reuses the cascade engine's existing Mode B contract; client provides defaults instead of prompting the user. Each `DecisionPoint` subclass defines a `RecommendedDefault` for this purpose |
 
 ## 11. Open items for the implementation plan
 
@@ -916,5 +1011,5 @@ These are knowingly deferred to the writing-plans phase rather than left ambiguo
 - **UI plan-view layout** — three mockups exist (`.superpowers/brainstorm/.../plan-layout-v2.html`); decision to be made during frontend work.
 - **CybE 2025-26 catalog seed contents** — partially complete. `Data/cybe_flowchart.json` is committed (45 slots across 8 semesters). `isu-catalog.json` is being generated from `Data/2025-2026_Catalog_Final.pdf` — see `Documentation/seed-templates/`.
 - **Flow file fixes from catalog analysis**: add missing prereqs to CYBE-2300, CYBE-2310, CYBE-2340, CPRE-3100; add MATH-1660 coreq to PHYS-2310 and PHYS-2310L. (Note: an earlier draft of this spec claimed STAT-3030 should be renumbered to STAT-3300; that was wrong — STAT 3030 is the current course code per the live catalog at https://catalog.iastate.edu/azcourses/stat/.)
-- **Soft/hard credit caps per semester** — defaults to be picked (e.g., target 15, soft cap 18, hard cap 20 — confirm with the user during planning).
+- ~~**Soft/hard credit caps per semester** — defaults to be picked~~ ✅ Pinned per decision 33: target 15, soft min 12, soft cap 18, hard cap 20.
 - **Test-data fixture builder** — design of `CybEFixture.cs` to give every cascade test a realistic baseline.
