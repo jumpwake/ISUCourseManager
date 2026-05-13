@@ -161,6 +161,115 @@ enum Classification { Freshman, Sophomore, Junior, Senior }
 
 Stored as a JSON column on `Course`.
 
+### Worked example: a real Course populated end-to-end
+
+To make the abstract schema concrete, here's how `CPRE 4940 (Portfolio Assessment)` looks fully populated. The ISU catalog text reads:
+
+> **CPRE 4940: Portfolio Assessment** (Cross-listed with EE 4940). Credits: Required. Contact Hours: Lecture 1.
+> **Prereq:** CPRE 2320 or EE 2320 or CYBE 2340; credit or concurrent enrollment in CPRE 4910 or EE 4910
+
+That single catalog "Prereq:" line decomposes naturally into two of our schema fields — the **completed-course requirement** goes in `Prereqs`, and the **must-take-this-term** part goes in `Coreqs`.
+
+#### As a C# object literal
+
+```csharp
+var cpre4940 = new Course
+{
+    Id = Guid.Parse("..."),                 // assigned by EF
+    ClassId = "CPRE-4940",
+    Code = "CprE 4940",
+    Name = "Portfolio",                     // chart abbreviation
+    OfficialName = "Portfolio Assessment",
+    Credits = 0m,
+    CreditNote = "R cr",                    // "Required" credit
+    Department = "CprE",
+
+    // "CPRE 2320 or EE 2320 or CYBE 2340" — must have completed one of these
+    Prereqs = new PrereqOr
+    {
+        Children =
+        {
+            new PrereqCourse { ClassId = "CPRE-2320" },
+            new PrereqCourse { ClassId = "EE-2320" },
+            new PrereqCourse { ClassId = "CYBE-2340" },
+        },
+    },
+
+    // "credit or concurrent enrollment in CPRE 4910 or EE 4910" — must take same/earlier term
+    Coreqs = new PrereqOr
+    {
+        Children =
+        {
+            new PrereqCourse { ClassId = "CPRE-4910", AcceptConcurrent = true },
+            new PrereqCourse { ClassId = "EE-4910",   AcceptConcurrent = true },
+        },
+    },
+
+    CrossListedAs = new() { "EE-4940" },
+    TypicallyOffered = new() { Term.Fall, Term.Spring },
+    IsActive = true,
+};
+```
+
+#### As JSON (the seed-file representation)
+
+```jsonc
+{
+  "classId": "CPRE-4940",
+  "code": "CprE 4940",
+  "name": "Portfolio",
+  "officialName": "Portfolio Assessment",
+  "credits": 0,
+  "creditNote": "R cr",
+  "department": "CprE",
+
+  "prereqs": {
+    "type": "Or",
+    "children": [
+      { "type": "Course", "classId": "CPRE-2320" },
+      { "type": "Course", "classId": "EE-2320" },
+      { "type": "Course", "classId": "CYBE-2340" }
+    ]
+  },
+
+  "coreqs": {
+    "type": "Or",
+    "children": [
+      { "type": "Course", "classId": "CPRE-4910", "acceptConcurrent": true },
+      { "type": "Course", "classId": "EE-4910",   "acceptConcurrent": true }
+    ]
+  },
+
+  "crossListedAs": ["EE-4940"],
+  "typicallyOffered": ["Fall", "Spring"],
+  "isActive": true
+}
+```
+
+#### How the cascade engine reads this
+
+When the engine evaluates whether `CPRE-4940` can be placed in semester N for a given student:
+
+1. **Prereqs check (Or):** at least one of `CPRE-2320`, `EE-2320`, or `CYBE-2340` must be `Completed` in a `PlanItem` with semester < N. Cross-listing equivalence applies — a student who took `CYBE-2340` satisfies any reference to `CPRE-2340` (and vice versa).
+2. **Coreqs check (Or with `acceptConcurrent`):** at least one of `CPRE-4910` or `EE-4910` must be in a `PlanItem` with semester ≤ N (because `acceptConcurrent: true` means "or enrolled in this term").
+3. If both pass, the placement is valid. If either fails, the engine returns `NoValidSemester` for the candidate, advances to N+1, and retries.
+
+#### Other realistic shapes you'll see in the catalog
+
+| Catalog text | Tree shape |
+|---|---|
+| (no prereq) | `Prereqs = null` |
+| "MATH 1650" | `PrereqCourse { ClassId = "MATH-1650" }` |
+| "Minimum C- in MATH 1650" | `PrereqCourse { ClassId = "MATH-1650", MinGrade = "C-" }` |
+| "credit or enrollment in MATH 1660" | `PrereqCourse { ClassId = "MATH-1660", AcceptConcurrent = true }` |
+| "CPRE 308 or COMS 252 or COMS 352" | `PrereqOr { Children = [Course CPRE-3080, Course COMS-2520, Course COMS-3520] }` |
+| "MATH 1650 AND credit or concurrent in MATH 1660" | `PrereqAnd { Children = [Course MATH-1650, Course(MATH-1660, AcceptConcurrent=true)] }` |
+| "Sophomore classification" | `PrereqClassification { Min = Sophomore }` |
+| "29 Core Cr" (CprE 4910 chart annotation) | `PrereqCoreCredits { MinCoreCredits = 29 }` |
+| "(MATH 1660 or 1660H); (MATH 2010 or COMS 2300)" | `PrereqAnd { Children = [Or(MATH-1660, MATH-1660H), Or(MATH-2010, COMS-2300)] }` |
+
+The expression tree composes arbitrarily deep: an `And` can contain `Or`s containing `Course`s with `MinGrade` and `AcceptConcurrent` flags. The catalog seed file's 12 `_unparsed` entries are the strings the auto-extractor couldn't decompose; they round-trip via the `PrereqUnparsed` escape-hatch node and surface as warnings during validation.
+
 ### Tier 2: DegreeFlow (per-flow recommended ordering)
 
 A specific major+catalog year. Multiple `DegreeFlow`s can coexist; the same `Course` rows are referenced by all of them. Switching majors = rendering the same plan against a different `DegreeFlow`.
