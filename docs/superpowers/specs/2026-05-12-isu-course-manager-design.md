@@ -119,22 +119,26 @@ The full ISU catalog of courses. Read-mostly. Same data regardless of major.
 
 ```csharp
 class Course {                    // table: courses
-  Guid Id;
-  string Code;            // "Math 1650"
-  string Name;            // "Calc I" (chart abbreviation, used in UI tiles)
-  string? OfficialName;   // "Calculus I" (catalog name, used in detail views)
+  Guid Id;                // surrogate primary key (DB)
+  string ClassId;         // "MATH-1650" — stable semantic key, referenced from
+                          //   slots, prereq trees, cross-listings, and PlanItem
+  string Code;            // "Math 1650" — display string (chart format)
+  string Name;            // "Calc I" — chart abbreviation, used in UI tiles
+  string? OfficialName;   // "Calculus I" — catalog name, used in detail views
   decimal Credits;
   string? CreditNote;     // "R cr", "3/4cr"
   string Department;      // "Math", "CprE", ...
   PrereqExpression? Prereqs;     // tree, JSON column
   PrereqExpression? Coreqs;      // tree, JSON column
-  List<string> CrossListedAs;    // ["CPRE 2300"] for CYBE 2300 — same physical course
+  List<string> CrossListedAs;    // ["CPRE-2300"] for CYBE-2300 — same physical course
   List<Term> TypicallyOffered;   // [Fall, Spring] — empty list = unknown / assume all
   bool IsActive;
 }
 
 enum Term { Fall, Spring, Summer }
 ```
+
+**Identifier model:** `ClassId` (e.g., `MATH-1650`) is the stable semantic key — it appears in seed JSON files, in cross-references between courses, and in slot references. `Id` is the DB surrogate. `Code` (e.g., `Math 1650`) is the human-readable display string. The seed loader treats `ClassId` as the canonical reference; EF Core uses `Id` for joins.
 
 **Cross-listing semantics:** if `CourseA.CrossListedAs` contains `CourseB.Code`, then completing either course satisfies any prereq, coreq, or `FlowchartSlot` reference to either. The cascade engine and `PrereqEvaluator` consult an equivalence-class map built from the `CrossListedAs` graph at startup. UI shows the "primary" code (the one in the slot) but lets users mark completion under any equivalent code.
 
@@ -240,7 +244,9 @@ class Plan {                      // table: plans
 class PlanItem {                  // table: plan_items — the xref
   Guid Id;
   Guid PlanId;
-  Guid CourseId;                  // always a real course from the registrar
+  string CourseId;                // matches Course.ClassId (e.g., "MATH-1650")
+                                  //   — string semantic FK, not Guid surrogate FK,
+                                  //   so PlanItems are stable across catalog re-seeds
   int Semester;                   // past, present, or future
   PlanItemStatus Status;          // Planned | InProgress | Completed | Failed | Withdrawn
   string? Grade;                  // populated for Completed/Failed
@@ -605,6 +611,7 @@ Recording the journey for context in future sessions:
 | 19 | Schema extensions adopted from user's flow file: `Notes`, `CreditNote`, `ClassNote`, slot-level `DisplayName` | Preserves chart's display nuance (R cr, 3/4cr, "Soph Class") and supports concise UI tiles vs. full official names |
 | 20 | `Prereqs` and `Coreqs` removed from `FlowchartSlot` — catalog (`Course.Prereqs`) is the single source of truth | Once we had the actual catalog, duplicating prereqs in the flow created drift risk with no real benefit; catalog encodes hard coreqs via `acceptConcurrent` flags |
 | 21 | Flow keeps soft `RecommendedPairing` (renamed from coreqs) for the chart's red-solid lines | Captures curriculum-recommended pairings (e.g., CprE 1850 + Math 1650) that aren't catalog-enforced; engine emits a `RecommendedPairingBroken` warning + offers a `ReunitePairing` decision |
+| 22 | `Course.ClassId` (string, e.g. `"MATH-1650"`) is the stable semantic key, separate from the surrogate `Guid Id` and the human-readable `Code` (`"Math 1650"`) | Seed JSON uses `classId` as the canonical foreign-key form; mixing it with `Code` (display string with spaces) caused brittleness; surrogate `Id` is for EF joins, `ClassId` is for cross-references. PlanItem.CourseId is `string` referencing `ClassId` so plans survive catalog re-seeds |
 
 ## 11. Open items for the implementation plan
 

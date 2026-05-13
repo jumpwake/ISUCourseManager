@@ -84,6 +84,32 @@ The actual seed files stay where they are now (`Data/cybe_flowchart.json` and `D
 Run: `dotnet --version`
 Expected: any 8.x.x output (e.g., `8.0.404`). If lower, install .NET 8 SDK from https://dotnet.microsoft.com/download.
 
+- [ ] **Step 1b: Extend `.gitignore` for .NET build artifacts**
+
+The repo's existing `.gitignore` covers `node_modules/`, `dist/`, etc., but not the `bin/`, `obj/`, IDE files that .NET builds produce. Without this, the first `dotnet build` plus the first `git add src/` will sweep megabytes of artifacts into the commit.
+
+Append to `.gitignore`:
+```
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.dll
+*.pdb
+artifacts/
+```
+
+Then verify the existing `.gitignore` content is preserved by running:
+```
+cat .gitignore
+```
+Expected: shows the original entries (`.superpowers/`, `node_modules/`, etc.) plus the new .NET block.
+
 - [ ] **Step 2: Create the solution file**
 
 From the repository root:
@@ -770,15 +796,17 @@ internal static class RepoPaths
 
 - [ ] **Step 2: Add a smoke test that the paths resolve**
 
-Append to `tests/ISUCourseManager.Services.Tests/SeedLoaderTests.cs` (create file if missing):
+Create `tests/ISUCourseManager.Services.Tests/SeedLoaderTests.cs`. **Declare the class as `partial`** — later tasks (8, 9) will append more `[Fact]` methods to the same class via additional partial-class files, so we set up the partial-class pattern from the start:
 
 ```csharp
 using FluentAssertions;
+using ISUCourseManager.Data.Entity;
+using ISUCourseManager.Data.Seed;
 using ISUCourseManager.Services.Tests.Helpers;
 
 namespace ISUCourseManager.Services.Tests;
 
-public class SeedLoaderTests
+public partial class SeedLoaderTests
 {
     [Fact]
     public void Repo_paths_resolve_to_existing_files()
@@ -788,6 +816,8 @@ public class SeedLoaderTests
     }
 }
 ```
+
+(The `using ISUCourseManager.Data.Entity` and `using ISUCourseManager.Data.Seed` lines are unused right now but will be needed by tasks 8 and 9. Including them up front avoids a multi-file edit later. The `TreatWarningsAsErrors` flag is OFF for the test project per Task 1 Step 8, so unused-using warnings won't fail the build.)
 
 - [ ] **Step 3: Run the test to verify it passes**
 
@@ -817,13 +847,16 @@ We use internal DTOs that mirror the JSON shape, then map to domain entities. Th
 
 - [ ] **Step 1: Write failing test for loading the actual catalog file**
 
-Append to `tests/ISUCourseManager.Services.Tests/SeedLoaderTests.cs`:
+Create a new file `tests/ISUCourseManager.Services.Tests/SeedLoaderTests.LoadCatalog.cs` (separate partial-class file — keeps growth manageable):
 
 ```csharp
+using FluentAssertions;
 using ISUCourseManager.Data.Entity;
 using ISUCourseManager.Data.Seed;
+using ISUCourseManager.Services.Tests.Helpers;
 
-// existing class continues:
+namespace ISUCourseManager.Services.Tests;
+
 public partial class SeedLoaderTests
 {
     [Fact]
@@ -869,7 +902,7 @@ public partial class SeedLoaderTests
 }
 ```
 
-(The `partial class` keyword lets you add more `[Fact]` methods to the same class. If your class wasn't declared `partial` in Task 7, change its declaration there to `public partial class SeedLoaderTests` and remove the duplicate declaration here, leaving just the new tests inside the existing class.)
+This is a separate `.cs` file that combines with `SeedLoaderTests.cs` (declared `partial` in Task 7) at compile time — no editing of the previous task's file required.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -974,8 +1007,12 @@ public static class SeedLoader
     {
         var trimmed = raw.Trim().Replace(" ", " ");
         if (trimmed.Contains('-')) return trimmed;
-        var space = trimmed.IndexOf(' ');
-        return space > 0 ? $"{trimmed[..space]}-{trimmed[(space + 1)..]}" : trimmed;
+        // Use LastIndexOf so compound department names ("Com S 2270") collapse correctly:
+        //   "Com S 2270" -> "ComS-2270", not "Com-S 2270".
+        var lastSpace = trimmed.LastIndexOf(' ');
+        return lastSpace > 0
+            ? $"{trimmed[..lastSpace].Replace(" ", "")}-{trimmed[(lastSpace + 1)..]}"
+            : trimmed;
     }
 }
 ```
@@ -1033,7 +1070,7 @@ Expected: `Passed! - Failed: 0, Passed: 4, Skipped: 0`
 - [ ] **Step 7: Commit**
 
 ```
-git add src/ISUCourseManager.Data/Seed/Json/CatalogJson.cs src/ISUCourseManager.Data/Seed/SeedLoader.cs src/ISUCourseManager.Data/Entity/PrereqUnparsed.cs src/ISUCourseManager.Data/Seed/PrereqExpressionConverter.cs tests/ISUCourseManager.Services.Tests/SeedLoaderTests.cs
+git add src/ISUCourseManager.Data/Seed/Json/CatalogJson.cs src/ISUCourseManager.Data/Seed/SeedLoader.cs src/ISUCourseManager.Data/Entity/PrereqUnparsed.cs src/ISUCourseManager.Data/Seed/PrereqExpressionConverter.cs tests/ISUCourseManager.Services.Tests/SeedLoaderTests.LoadCatalog.cs
 git commit -m "feat(seed): SeedLoader.LoadCatalog with PrereqUnparsed escape hatch for raw strings"
 ```
 
@@ -1048,11 +1085,20 @@ git commit -m "feat(seed): SeedLoader.LoadCatalog with PrereqUnparsed escape hat
 
 - [ ] **Step 1: Write failing tests**
 
-Append to `tests/ISUCourseManager.Services.Tests/SeedLoaderTests.cs` (inside the same partial class):
+Create a new file `tests/ISUCourseManager.Services.Tests/SeedLoaderTests.LoadFlow.cs`:
 
 ```csharp
-[Fact]
-public void LoadFlow_returns_DegreeFlow_with_slots()
+using FluentAssertions;
+using ISUCourseManager.Data.Entity;
+using ISUCourseManager.Data.Seed;
+using ISUCourseManager.Services.Tests.Helpers;
+
+namespace ISUCourseManager.Services.Tests;
+
+public partial class SeedLoaderTests
+{
+    [Fact]
+    public void LoadFlow_returns_DegreeFlow_with_slots()
 {
     var flow = SeedLoader.LoadFlow(RepoPaths.CybeFlowJsonPath);
     flow.Should().NotBeNull();
@@ -1097,6 +1143,7 @@ public void LoadFlow_parses_top_level_notes()
     var flow = SeedLoader.LoadFlow(RepoPaths.CybeFlowJsonPath);
     flow.Notes.Should().NotBeEmpty();
     flow.Notes.Should().Contain(n => n.Contains("flowchart is only a guide"));
+}
 }
 ```
 
@@ -1160,7 +1207,7 @@ public static DegreeFlow LoadFlow(string jsonFilePath)
         MajorName = root.Name,
         CatalogYear = root.CatalogYear,
         TotalCreditsRequired = root.TotalCreditsRequired,
-        Notes = root.Notes,
+        Notes = root.Notes.ToList(),  // copy so DTO and entity don't share the list
     };
 
     flow.Slots.AddRange(root.Slots.Select(s => MapSlot(s, flow.Id)));
@@ -1183,7 +1230,7 @@ private static FlowchartSlot MapSlot(SlotJson s, Guid degreeFlowId)
         MinGrade = s.MinGrade,
         ClassNote = s.ClassNote,
         DisplayOrder = s.DisplayOrder,
-        RecommendedPairing = s.RecommendedPairing,
+        RecommendedPairing = s.RecommendedPairing.ToList(),  // copy
     };
 }
 ```
@@ -1199,7 +1246,7 @@ Expected: `Passed! - Failed: 0, Passed: 5, Skipped: 0`
 - [ ] **Step 6: Commit**
 
 ```
-git add src/ISUCourseManager.Data/Seed/Json/FlowJson.cs src/ISUCourseManager.Data/Seed/SeedLoader.cs tests/ISUCourseManager.Services.Tests/SeedLoaderTests.cs
+git add src/ISUCourseManager.Data/Seed/Json/FlowJson.cs src/ISUCourseManager.Data/Seed/SeedLoader.cs tests/ISUCourseManager.Services.Tests/SeedLoaderTests.LoadFlow.cs
 git commit -m "feat(seed): add SeedLoader.LoadFlow"
 ```
 
@@ -1223,7 +1270,8 @@ public enum SeedIssueKind
     OrphanFlowReference,
     OrphanPrereqReference,
     OrphanCrossListing,
-    OrphanRecommendedPairing,
+    OrphanRecommendedPairingClass,    // pairing references a classId not in the catalog
+    PairingClassNotInFlow,            // pairing references a class in catalog but not in this flow (warning)
     DuplicateSlotPosition,
     CreditTotalMismatch,
     UnparsedPrereqString,
@@ -1682,7 +1730,7 @@ public void Flow_recommendedPairing_referencing_unknown_classId_emits_error()
 
     var report = SeedValidator.ValidateFlow(flow, catalog);
 
-    report.Errors.Should().Contain(i => i.Kind == SeedIssueKind.OrphanRecommendedPairing
+    report.Errors.Should().Contain(i => i.Kind == SeedIssueKind.OrphanRecommendedPairingClass
                                         && i.Message.Contains("PHANTOM-1234"));
 }
 
@@ -1701,7 +1749,7 @@ public void Flow_recommendedPairing_referencing_classId_not_in_same_flow_emits_w
 
     report.IsValid.Should().BeTrue();  // warning, not error
     report.Warnings.Should().ContainSingle()
-        .Which.Kind.Should().Be(SeedIssueKind.OrphanRecommendedPairing);
+        .Which.Kind.Should().Be(SeedIssueKind.PairingClassNotInFlow);
 }
 
 [Fact]
@@ -1761,11 +1809,11 @@ public static ValidationReport ValidateFlow(DegreeFlow flow, IEnumerable<Course>
         foreach (var pairing in slot.RecommendedPairing)
         {
             if (!classIds.Contains(pairing))
-                report.Add(SeedIssueKind.OrphanRecommendedPairing, IssueSeverity.Error,
+                report.Add(SeedIssueKind.OrphanRecommendedPairingClass, IssueSeverity.Error,
                     $"Slot {slot.ClassId} pairs with '{pairing}' which is not in the catalog",
                     location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}].recommendedPairing");
             else if (!slotClassIds.Contains(pairing))
-                report.Add(SeedIssueKind.OrphanRecommendedPairing, IssueSeverity.Warning,
+                report.Add(SeedIssueKind.PairingClassNotInFlow, IssueSeverity.Warning,
                     $"Slot {slot.ClassId} pairs with '{pairing}' which exists in catalog but not in this flow",
                     location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}].recommendedPairing");
         }
@@ -1880,12 +1928,36 @@ public class ActualSeedFileTests
 dotnet test tests/ISUCourseManager.Services.Tests/ISUCourseManager.Services.Tests.csproj --filter "FullyQualifiedName~ActualSeedFileTests" --logger "console;verbosity=detailed"
 ```
 
-**Expected outcome:** mixed.
+**Expected outcome (concrete):** `Catalog_passes_validation_with_no_errors` will **FAIL on first run** with multiple `OrphanCrossListing` and `OrphanPrereqReference` errors. This is the *expected and useful* outcome — the failure list is the artifact the user uses to drive catalog refinement.
 
-- The first two tests likely **fail** if the real seed files have orphaned references (e.g., prereqs that point to courses outside the curated catalog set, or cross-listings to non-existent codes). That's the *expected and useful* outcome — the failure messages list the exact issues.
-- The third test always passes and dumps the full warning summary.
+The roughly-known issues you should expect to surface on first run (verified by inspection of the actual catalog):
 
-This is the artifact the user uses to drive the next refinement of `isu-catalog.json` and `cybe_flowchart.json`. **Do not "fix" these tests by relaxing the assertions** — fix the data they're flagging. If a real catalog issue is genuinely out of scope (e.g., a prereq to a course we deliberately didn't include), add the missing course to the catalog instead of suppressing the test.
+1. **`OrphanCrossListing` errors** — the catalog has these cross-listing targets that aren't (yet) themselves catalog entries:
+   - `CYBE-2300 → CPRE-2300` (and similarly CYBE-2310 → CPRE-2310, CYBE-2340 → CPRE-2340, CYBE-3310 → CPRE-3310, CYBE-4400 → CPRE-4400)
+   - `CPRE-1660 → EE-1660`, `CPRE-4940 → EE-4940`
+   - `CPRE-4910 → EE-4910, SE-4910, CYBE-4910` (multi-target)
+   - `CPRE-4920 → EE-4920, SE-4920, CYBE-4920`
+   - `CPRE-4360 → CYBE-4360`, `CPRE-4370 → CYBE-4370`
+   - `COMS-3090 → SE-3090`
+   - `CPRE-4300 → CYBSC-4300`
+
+   **Root cause:** the catalog was scraped one-direction-only. To fix, add the cross-listed peer courses (CPRE-2300, EE-1660, etc.) as full catalog entries with the inverse cross-listing, OR change the validator to treat one-sided cross-listings as warnings rather than errors. **Recommend adding the peers** — the cascade engine in a future plan needs them anyway to evaluate equivalent enrollments (AC-19, AC-20).
+
+2. **`OrphanPrereqReference` errors** — structured (non-`_unparsed`) prereq trees reference these classes that aren't in the catalog:
+   - `MATH-3170` references `MATH-2010`, `COMS-2300`
+   - `STAT-3030` references `MATH-1660` (✓ this one IS in catalog — verify)
+   - Various others
+
+   **Fix:** add the missing course entries OR mark them out-of-scope by widening the catalog.
+
+3. **`UnparsedPrereqString` warnings** (~12 expected, **not errors**) — the auto-extractor flagged these for human review:
+   `CHEM-1670, COMS-2270, COMS-3090, COMS-3110, CPRE-1850, CPRE-4300, CPRE-4910, CYBE-4400, MATH-3040, MATH-3140, PHYS-2310, PHYS-2310L`
+   
+   No action required for this plan — these are flagged for human conversion in a follow-up data-cleanup task.
+
+**Do not "fix" these tests by relaxing the assertions** — fix the data they're flagging. The intent of `Catalog_passes_validation_with_no_errors` is to be the gate that proves the catalog is consistent. Once you've added the missing peer courses and structured prereqs, this test should turn green; the warning-emitting summary test will still print the 12 unparsed strings until those are also addressed.
+
+**Estimated cleanup work:** ~30 minutes to add the ~10 missing cross-listed peer courses (most fields can be lifted directly from their CYBE/CPRE counterparts).
 
 - [ ] **Step 3: Commit**
 
@@ -1914,7 +1986,7 @@ Look at the test output from `ActualSeedFileTests`. Each error in the `Combined_
 - **Fix in the seed data** (most likely): correct the typo, add the missing course, fix the cross-listing.
 - **Document as a known limitation** (rare): write a note in the seed-templates README explaining why the issue exists.
 
-For the 12 known `_unparsed` prereq warnings (per spec §11), no action needed yet — those are flagged for human conversion in a future plan.
+For the 12 known `_unparsed` prereq warnings (per spec data-model invariants (§4) and the README under `Documentation/seed-templates/`), no action needed yet — those are flagged for human conversion in a future plan.
 
 - [ ] **Step 3: Final commit if anything was tweaked**
 
@@ -1934,9 +2006,9 @@ When all tasks are complete you'll have:
 - A working .NET 8 solution scaffold (`Api`, `Services`, `Data`, plus the test project)
 - All entity POCOs from spec §4
 - A working `SeedLoader` that parses both JSON files into typed in-memory objects
-- A `SeedValidator` that runs every integrity check from spec §11 ("Validation the importer will run") plus the catalog checks
+- A `SeedValidator` that runs every integrity check from spec data-model invariants (§4) and the README under `Documentation/seed-templates/` ("Validation the importer will run") plus the catalog checks
 - A passing test suite that proves the validator works on synthetic cases
 - A failing/passing end-to-end test that validates the actual seed files in the repo
 - Frequent commits with clear messages — clean history to build on
 
-Next plan in the queue (not part of this one): EF Core + SQLite persistence, then the cascade engine, then the API, then the React frontend. See spec §11 for the open-items list.
+Next plan in the queue (not part of this one): EF Core + SQLite persistence, then the cascade engine, then the API, then the React frontend. See spec data-model invariants (§4) and the README under `Documentation/seed-templates/` for the open-items list.
