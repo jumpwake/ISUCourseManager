@@ -34,12 +34,17 @@ The product takes that mental gymnastics off the student and presents a guided, 
 - Real auth implementation; full JWT issuance/refresh.
 - Live ISU catalog scraper (seed JSON only for now; scraper later).
 - Section/time-conflict detection (only semester-level placement).
-- Term-offering data (assume every course is offered every term).
 - Intelligent elective recommendation engine (placeholder slots only for POC).
 - Multi-level undo / full audit trail.
 - Print/PDF export, notifications, collaborative editing.
 - Mobile client (API will be designed to support it; UI is web-only).
 - Hosting/deployment hardening.
+
+### Promoted in scope (was deferred)
+
+- **Term-offering data** — needed because real ISU courses are Fall-only or Spring-only (e.g., COMS 3110, ENGL 3140 are Fall-only). The cascade engine must respect these when finding `earliestValidSemester`.
+- **Cross-listings** — every CYBE course is cross-listed with a CPRE equivalent (CYBE 2300 = CPRE 2300, etc.). Taking either fulfills any slot referencing either. The data model and cascade engine must treat them as equivalent.
+- **Classification gates** — the catalog encodes prereqs like "Sophomore classification" and "Junior classification" that aren't course-based. Modeled as a new prereq node type.
 
 ## 3. Architecture
 
@@ -116,26 +121,38 @@ The full ISU catalog of courses. Read-mostly. Same data regardless of major.
 class Course {                    // table: courses
   Guid Id;
   string Code;            // "Math 1650"
-  string Name;
+  string Name;            // "Calc I" (chart abbreviation, used in UI tiles)
+  string? OfficialName;   // "Calculus I" (catalog name, used in detail views)
   decimal Credits;
+  string? CreditNote;     // "R cr", "3/4cr"
   string Department;      // "Math", "CprE", ...
   PrereqExpression? Prereqs;     // tree, JSON column
   PrereqExpression? Coreqs;      // tree, JSON column
+  List<string> CrossListedAs;    // ["CPRE 2300"] for CYBE 2300 — same physical course
+  List<Term> TypicallyOffered;   // [Fall, Spring] — empty list = unknown / assume all
   bool IsActive;
 }
+
+enum Term { Fall, Spring, Summer }
 ```
 
-**Prereq expression tree** handles AND/OR/grade gates:
+**Cross-listing semantics:** if `CourseA.CrossListedAs` contains `CourseB.Code`, then completing either course satisfies any prereq, coreq, or `FlowchartSlot` reference to either. The cascade engine and `PrereqEvaluator` consult an equivalence-class map built from the `CrossListedAs` graph at startup. UI shows the "primary" code (the one in the slot) but lets users mark completion under any equivalent code.
+
+**Prereq expression tree** handles AND/OR/grade gates and classification gates:
 
 ```csharp
 abstract class PrereqExpression { }
-class PrereqAnd    : PrereqExpression { List<PrereqExpression> Children; }
-class PrereqOr     : PrereqExpression { List<PrereqExpression> Children; }
-class PrereqCourse : PrereqExpression {
+class PrereqAnd            : PrereqExpression { List<PrereqExpression> Children; }
+class PrereqOr             : PrereqExpression { List<PrereqExpression> Children; }
+class PrereqCourse         : PrereqExpression {
   Guid CourseId;
   string? MinGrade;             // "C-" or null
   bool AcceptConcurrent;        // for "Cr or enrollment in X"
 }
+class PrereqClassification : PrereqExpression { Classification Min; }
+class PrereqCoreCredits    : PrereqExpression { decimal MinCoreCredits; }   // e.g., "29 Core Cr" gate on CprE 4910
+
+enum Classification { Freshman, Sophomore, Junior, Senior }
 ```
 
 Stored as a JSON column on `Course`.
@@ -160,15 +177,20 @@ class FlowchartSlot {             // table: flowchart_slots
   SlotKind Kind;                  // FixedClass | CategoryChoice
   Guid? CourseId;                 // when Kind = FixedClass
   string? Category;               // when Kind = CategoryChoice
-                                  //   ("GenEd", "TechElective", "CybEElective",
+                                  //   ("GenEdElective", "TechElective", "CybEElective",
                                   //    "MathElective", "CprEElective")
   decimal RequiredCredits;
+  string? CreditNote;             // "R cr", "3/4cr"
   string? MinGrade;               // grade requirement specific to this flow
+  string? ClassNote;              // "Soph Class", "Junior Class", "Requires 29 Core Credits"
   int DisplayOrder;
+  string? DisplayName;            // optional override of Course.Name for this slot's tile
 }
 
 enum SlotKind { FixedClass, CategoryChoice }
 ```
+
+`DegreeFlow` also gets a top-level `Notes: List<string>` for the chart's caveat list ("This flowchart is only a guide…", etc.).
 
 **Self-contained file format** (denormalized for human reading):
 
@@ -252,10 +274,19 @@ class WhatIfMajorSwitched  : CascadeTrigger { Guid NewDegreeFlowId; }
 
 1. Apply the trigger event to a working copy of the plan.
 2. Compute the **affected set** — walk the prereq DAG forward from the triggering course; any `PlanItem` with broken prereqs joins the set.
-3. For each affected `PlanItem`, find `earliestValidSemester` — the first semester ≥ current where all prereqs are completed/scheduled-earlier and coreqs are scheduled same-or-earlier.
+   - When evaluating "is course X completed," consult the cross-listing equivalence class — taking `EE 4910` satisfies any reference to `CPRE 4910`.
+   - Classification gates (`PrereqClassification`) are evaluated against the student's projected classification at the candidate semester (Sophomore = ≥ 30 credits earned, Junior = ≥ 60, Senior = ≥ 90 — configurable via `CascadeOptions`).
+   - Core-credit gates (`PrereqCoreCredits`, e.g. CprE 4910's "29 Core Cr") are evaluated against the running total of credits earned in courses tagged with the program's core categories.
+3. For each affected `PlanItem`, find `earliestValidSemester` — the first semester ≥ current where:
+   - All prereqs are completed (or scheduled in an earlier semester).
+   - Coreqs are scheduled in the same or earlier semester.
+   - Grade requirements on prereqs are satisfiable.
+   - **Term-offering constraint**: the candidate semester's term (Fall/Spring/Summer) is in `Course.TypicallyOffered` (if non-empty). If the candidate term is unavailable, advance to the next valid term.
 4. Topologically order moves so dependencies are placed before dependents.
 5. Detect resulting per-semester state — emit `FillGapDecision` for under-credit semesters, `SemesterOverload` warning for over-credit semesters.
 6. Return the `CascadeProposal` — never mutate persistent state.
+
+**Semester-to-term mapping:** `CascadeOptions` carries the `StartTerm` (Fall or Spring) and the engine alternates from there. E.g., `StartTerm = Fall` → Sem 1 = Fall, Sem 2 = Spring, Sem 3 = Fall, etc. Summer is never auto-assigned but the user can manually place items in Summer slots.
 
 ### Outputs
 
@@ -332,8 +363,23 @@ class MovableItem {             // a PlanItem the user could defer to alleviate 
 - **AC-16** `WhatIfMajorSwitched` to a different `DegreeFlow` → produces an overlay proposal: which `PlanItem`s map to which slots in the new flow, what's missing, what's surplus. No mutation of stored plan.
 - **AC-17** Same `Plan` overlaid against two different `DegreeFlow`s → overlays computed independently, no shared state leakage.
 
+**Cross-listing equivalence:**
+- **AC-19** Student took `EE 4910` (a cross-listing of `CPRE 4910`) → engine treats CPRE 4910 slot as filled by EE 4910 PlanItem; downstream prereqs referencing CPRE 4910 are satisfied.
+- **AC-20** Slot references `CYBE 2310`; student has CPRE 2310 in their PlanItems → overlay correctly maps CPRE 2310 to the slot.
+
+**Term offerings:**
+- **AC-21** Cascade tries to place COMS 3110 (Fall-only) into a Spring semester → engine advances to next Fall term and reports the move with reason "term-offering constraint."
+- **AC-22** Course with empty `TypicallyOffered` is treated as available every term (back-compat for partial catalog data).
+
+**Classification gates:**
+- **AC-23** `PrereqClassification(Sophomore)` on CPRE 2810 → engine projects classification at candidate semester from cumulative credits; rejects placement when projected classification < required.
+- **AC-24** Cumulative credits computed from completed PlanItems + planned earlier-semester PlanItems → consistent with how `earliestValidSemester` walks forward.
+
+**Core-credit gates:**
+- **AC-25** `PrereqCoreCredits(29)` on CprE 4910 → engine sums credits from PlanItems whose Course's category is part of the program's core (per `MajorPath.CoreCategories`); blocks placement until threshold is met.
+
 **Validation entry point (used by every read):**
-- **AC-18** `Engine.Validate(plan, flow)` returns the same set of issues that would be detected if every PlanItem were re-checked individually — exhaustive and consistent with cascade behavior.
+- **AC-18** `Engine.Validate(plan, flow)` returns the same set of issues that would be detected if every PlanItem were re-checked individually — exhaustive and consistent with cascade behavior. Includes cross-listing, term-offering, and classification-gate checks.
 
 ## 6. API Surface
 
@@ -451,6 +497,7 @@ Single-level undo via `Plan.PreviousSnapshotJson` — overwritten on each succes
 class ValidationIssueDto {
   ValidationIssueKind Kind;     // BrokenPrereq | BrokenCoreq | GradeRequirementUnmet
                                 // | SemesterOverload | InsufficientCredits
+                                // | TermNotOffered | ClassificationGateUnmet | CoreCreditsGateUnmet
   Guid? PlanItemId;
   int Semester;
   string Message;               // "Math 1660 needs Math 1650 with C- (currently in Sem 4)"
@@ -536,13 +583,17 @@ Recording the journey for context in future sessions:
 | 13 | Single-level undo via plan snapshot column | Covers common case; multi-level deferred |
 | 14 | TDD-first on cascade engine; numbered ACs in spec | Engine quality is the product's value |
 | 15 | Frontend testing intentionally lighter than backend | Most logic is server-side |
+| 16 | Cross-listings as first-class data on `Course` | Catalog analysis revealed pervasive cross-listings (every CYBE course has CPRE equivalent); ignoring them would mis-evaluate completed coursework |
+| 17 | Term-offering data promoted into POC scope | Real ISU has Fall-only courses (COMS 3110, ENGL 3140) — cascade engine that ignores this would suggest invalid placements |
+| 18 | New prereq node types: `PrereqClassification`, `PrereqCoreCredits` | Catalog encodes "Sophomore classification" and "29 Core Cr" gates that aren't expressible as course prereqs |
+| 19 | Schema extensions adopted from user's flow file: `Notes`, `CreditNote`, `ClassNote`, slot-level `DisplayName` | Preserves chart's display nuance (R cr, 3/4cr, "Soph Class") and supports concise UI tiles vs. full official names |
 
 ## 11. Open items for the implementation plan
 
 These are knowingly deferred to the writing-plans phase rather than left ambiguous in the spec:
 
 - **UI plan-view layout** — three mockups exist (`.superpowers/brainstorm/.../plan-layout-v2.html`); decision to be made during frontend work.
-- **CybE 2025-26 catalog seed contents** — extract course list, prereqs, coreqs, grade requirements from the printed flowchart + the technical-elective PDF in `Documentation/`.
-- **CybE 2025-26 flow seed contents** — semester placement, slot kinds, and required credits for each cell.
+- **CybE 2025-26 catalog seed contents** — partially complete. `Data/cybe_flowchart.json` is committed (45 slots across 8 semesters). `isu-catalog.json` is being generated from `Data/2025-2026_Catalog_Final.pdf` — see `Documentation/seed-templates/`.
+- **Flow file fixes from catalog analysis**: STAT-3030 → STAT-3300 (renumbered course); add missing prereqs to CYBE-2300, CYBE-2310, CYBE-2340, CPRE-3100; add MATH-1660 coreq to PHYS-2310 and PHYS-2310L.
 - **Soft/hard credit caps per semester** — defaults to be picked (e.g., target 15, soft cap 18, hard cap 20 — confirm with the user during planning).
 - **Test-data fixture builder** — design of `CybEFixture.cs` to give every cascade test a realistic baseline.
