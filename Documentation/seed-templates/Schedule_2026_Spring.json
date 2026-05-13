@@ -1,0 +1,162 @@
+[
+  {
+    "courseCode": "CPRE 1850",
+    "courseTitle": "Introduction to Computer Engineering and Problem Solving I",
+    "credits": 3,
+    "gradingBasis": "Graded",
+    "sectionId": "CPRE 1850-A",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Laboratory",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["T"],
+      "startTime": "4:25 PM",
+      "endTime": "6:10 PM",
+      "roomCode": "2048 COOVER",
+      "roomName": "Coover Hall"
+    },
+    "instructor": "Thomas Earl Daniels",
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  },
+  {
+    "courseCode": "CPRE 1850",
+    "courseTitle": "Introduction to Computer Engineering and Problem Solving I",
+    "credits": 3,
+    "gradingBasis": "Graded",
+    "sectionId": "CPRE 1850-01",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Lecture",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["T", "R"],
+      "startTime": "1:10 PM",
+      "endTime": "2:00 PM",
+      "roomCode": "1312 HOOVER",
+      "roomName": "Hoover Hall"
+    },
+    "instructor": "Thomas Earl Daniels",
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  },
+  {
+    "courseCode": "CHEM 1670",
+    "courseTitle": "General Chemistry for Engineering Students",
+    "credits": 4,
+    "gradingBasis": "Graded",
+    "sectionId": "CHEM 1670-01",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Lecture",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["M", "W", "F"],
+      "startTime": "8:50 AM",
+      "endTime": "9:40 AM",
+      "roomCode": "1002 GILMAN",
+      "roomName": "Gilman Hall"
+    },
+    "instructor": "Thomas Greenbowe (Retired - Active)",
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  },
+  {
+    "courseCode": "CHEM 1670",
+    "courseTitle": "General Chemistry for Engineering Students",
+    "credits": 4,
+    "gradingBasis": "Graded",
+    "sectionId": "CHEM 1670-H",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Discussion",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["T"],
+      "startTime": "3:20 PM",
+      "endTime": "4:10 PM",
+      "roomCode": "1813 GILMAN",
+      "roomName": "Gilman Hall"
+    },
+    "instructor": "Thomas Greenbowe (Retired - Active)",
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  },
+  {
+    "courseCode": "MATH 1650",
+    "courseTitle": "Calculus I",
+    "credits": 4,
+    "gradingBasis": "Graded",
+    "sectionId": "MATH 1650-03",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Lecture",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["M", "W", "F"],
+      "startTime": "12:05 PM",
+      "endTime": "12:55 PM",
+      "roomCode": "0101 CARVER",
+      "roomName": "Carver Hall"
+    },
+    "instructor": "Timothy McNicholl",
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  },
+  {
+    "courseCode": "MATH 1650",
+    "courseTitle": "Calculus I",
+    "credits": 4,
+    "gradingBasis": "Graded",
+    "sectionId": "MATH 1650-K",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Discussion",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["R"],
+      "startTime": "12:05 PM",
+      "endTime": "12:55 PM",
+      "roomCode": "0132 CARVER",
+      "roomName": "Carver Hall"
+    },
+    "instructor": null,
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  },
+  {
+    "courseCode": "CPRE 1660",
+    "courseTitle": "Professional Programs Orientation",
+    "credits": 0,
+    "gradingBasis": "Satisfactory/Fail",
+    "sectionId": "CPRE 1660-03",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Lecture",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["R"],
+      "startTime": "2:15 PM",
+      "endTime": "3:05 PM",
+      "roomCode": "0171 DURHAM",
+      "roomName": "Charles W. Durham and Margre Henningson Durham Center For Computation and Communication"
+    },
+    "instructor": "Seth Schroeder",
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  },
+  {
+    "courseCode": "ENGL 2500",
+    "courseTitle": "Written, Oral, Visual, and Electronic Composition",
+    "credits": 3,
+    "gradingBasis": "Graded",
+    "sectionId": "ENGL 2500-53",
+    "registrationStatus": "Registered",
+    "instructionalFormat": "Lecture",
+    "deliveryMode": "In-Person",
+    "meetingPattern": {
+      "days": ["M", "W", "F"],
+      "startTime": "9:55 AM",
+      "endTime": "10:45 AM",
+      "roomCode": "0108 CURTISS",
+      "roomName": "Curtiss Hall"
+    },
+    "instructor": null,
+    "startDate": "01/20/2026",
+    "endDate": "05/15/2026"
+  }
+]

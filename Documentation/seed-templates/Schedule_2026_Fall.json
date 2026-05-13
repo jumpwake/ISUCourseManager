@@ -1,0 +1,44 @@
+[
+  {
+    "courseCode": "Math 1430",
+    "courseTitle": "",
+    "credits": 4,
+    "gradingBasis": "Graded",
+    "sectionId": "CPRE 1430"
+  },
+  {
+    "courseCode": "Engr 1010",
+    "courseTitle": "",
+    "credits": 0,
+    "gradingBasis": "Graded",
+    "sectionId": "ENGR 1010"
+  },
+  {
+    "courseCode": "Lib 1600",
+    "courseTitle": "",
+    "credits": 1,
+    "gradingBasis": "Graded",
+    "sectionId": "LIB 1600"
+  },
+  {
+    "courseCode": "Engl 1500",
+    "courseTitle": "",
+    "credits": 3,
+    "gradingBasis": "Graded",
+    "sectionId": "ENGL 1500"
+  },
+  {
+    "courseCode": "Cons Issues",
+    "courseTitle": "",
+    "credits": 3,
+    "gradingBasis": "Graded",
+    "sectionId": "CONS ISSUES"
+  },
+  {
+    "courseCode": "Phil 1010",
+    "courseTitle": "",
+    "credits": 3,
+    "gradingBasis": "Graded",
+    "sectionId": "PHIL 1010"
+  }
+]
