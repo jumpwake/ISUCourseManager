@@ -1,0 +1,82 @@
+{
+  "code": "CYBE",
+  "name": "Cyber Security Engineering",
+  "catalogYear": "2025-26",
+  "totalCreditsRequired": 125,
+  "slots": [
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "MATH-1650",
+      "requiredCredits": 4,
+      "minGrade": "C-",
+      "displayOrder": 1,
+      "prereqs": [],
+      "coreqs": []
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "ENGR-1010",
+      "requiredCredits": 0,
+      "minGrade": null,
+      "displayOrder": 2
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "CPRE-1850",
+      "requiredCredits": 3,
+      "minGrade": null,
+      "displayOrder": 3,
+      "prereqs": [],
+      "coreqs": ["MATH-1650"]
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "CHEM-1670",
+      "requiredCredits": 4,
+      "displayOrder": 4
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "LIB-1600",
+      "requiredCredits": 1,
+      "displayOrder": 5
+    },
+    {
+      "semester": 1,
+      "kind": "FixedClass",
+      "classId": "ENGL-1500",
+      "requiredCredits": 3,
+      "minGrade": "C-",
+      "displayOrder": 6
+    },
+    {
+      "semester": 2,
+      "kind": "FixedClass",
+      "classId": "MATH-1660",
+      "requiredCredits": 4,
+      "minGrade": "C-",
+      "displayOrder": 1,
+      "prereqs": [{ "classId": "MATH-1650", "minGrade": "C-" }],
+      "coreqs": []
+    },
+    {
+      "semester": 8,
+      "kind": "CategoryChoice",
+      "category": "TechElective",
+      "requiredCredits": 3,
+      "displayOrder": 2
+    },
+    {
+      "semester": 8,
+      "kind": "CategoryChoice",
+      "category": "GenEd",
+      "requiredCredits": 3,
+      "displayOrder": 3
+    }
+  ]
+}
