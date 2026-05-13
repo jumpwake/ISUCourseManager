@@ -15,12 +15,12 @@ The example files in this folder (`*.example.json`) are valid starting points yo
 
 - **`classId`** — uppercase department + dash + number. `MATH-1650`, `CPRE-1850`, `COMS-2270`. Stable across catalog years; used for cross-references inside prereq trees and from flow files.
 - **`code`** (display string) — keep the original spacing as it appears on the chart: `"Math 1650"`, `"Com S 2270"`, `"CprE 1850"`. This is what the UI shows.
-- **`category`** values for `CategoryChoice` slots — pick from a small fixed vocabulary so the wizard knows how to suggest fillers. Suggested set: `GenEd`, `MathElective`, `TechElective`, `CybEElective`, `CprEElective`. Add more if the chart calls for it (e.g., `Engl`, `Physics`).
+- **`slotType`** values — fixed enum vocabulary. Use one of: `DegreeClass` (specific required course; pair with `classId`), `ElectiveGenEd`, `ElectiveMath`, `ElectiveTech`, `ElectiveCybE`, `ElectiveCprE`. Adding a new elective category is a code change (new enum value), not a free-text string.
 
 ## Things to double-check while transcribing
 
 - **Grade requirements come in two flavors.** On a slot, `minGrade` is what you must *earn* in that course (e.g., the chart annotates CprE 1850 with "C- or better"). On a prereq tree node, `minGrade` is what you must have *earned previously* coming in. Easy to mix up.
-- **`Engr 1010 (R cr)`** — the chart shows "R cr" for registration, no credit. Model as `credits: 0` in the catalog and `requiredCredits: 0` on the slot. The UI will display "R" as a label.
+- **`Engr 1010 (R cr)`** — the chart shows "R cr" for registration, no credit. Model as `credits: 0` in the catalog (with `creditNote: "R cr"`). The slot itself does NOT carry `requiredCredits` for `DegreeClass` slots (it's read from `Course.Credits`), so this is purely a catalog-level setting.
 - **Coreqs vs prereqs.** Per the chart legend: solid red = co-req, dashed red = pre-req. CprE 1850's relationship with Math 1650 is a coreq.
 - **OR-prereqs from the elective PDF.** Many tech electives have alternatives like "CprE 308 or ComS 252 or 352" — those are `Or` nodes in the prereq tree.
 
@@ -156,12 +156,11 @@ Trees nest arbitrarily deep. Use `null` if the course has no prereqs.
   "slots": [
     {
       "semester": 1,                   // 1..8
-      "kind": "FixedClass",            // "FixedClass" or "CategoryChoice"
-      "classId": "MATH-1650",          // present when kind = FixedClass
-      "category": null,                // present when kind = CategoryChoice
+      "slotType": "DegreeClass",       // see "Slot types" below
+      "classId": "MATH-1650",          // required when slotType = DegreeClass
       "name": "Calc I",                // chart's short name (for UI tiles)
-      "requiredCredits": 4,
-      "creditNote": null,              // "R cr", "3/4cr" if applicable
+      // requiredCredits is OMITTED for DegreeClass slots — pulled from Course.Credits
+      "creditNote": null,              // "R cr", "3/4cr" — chart-specific display nuance
       "minGrade": "C-",                // grade required to earn in this slot, or null
       "classNote": null,               // "Soph Class", "Junior Class", "29 Core Cr" annotations
       "displayOrder": 1,               // position within the row, for layout
@@ -172,9 +171,9 @@ Trees nest arbitrarily deep. Use `null` if the course has no prereqs.
 }
 ```
 
-**Slot kinds:**
-- `"FixedClass"` — a specific course assigned to this semester (e.g., Math 1650 in Sem 1). Set `classId`.
-- `"CategoryChoice"` — a placeholder slot like the chart's "Gen Ed Elective 3cr" cells. Set `category`.
+**Slot types:**
+- `"DegreeClass"` — a specific required course. Set `classId`. Do NOT set `requiredCredits` (it comes from `Course.Credits`).
+- `"ElectiveGenEd"` / `"ElectiveMath"` / `"ElectiveTech"` / `"ElectiveCybE"` / `"ElectiveCprE"` — placeholder slots the user fills with a course of their choice from that category. Set `requiredCredits` to declare the credit budget the user must satisfy. Do NOT set `classId`.
 
 **No `prereqs` or `coreqs` on slots** — those are universal facts about a course, so they live in the catalog (`Course.Prereqs`). Hard coreqs from the catalog are encoded as `acceptConcurrent: true` flags within prereq trees (ISU's "credit or concurrent enrollment in X" phrasing).
 
@@ -183,53 +182,48 @@ Trees nest arbitrarily deep. Use `null` if the course has no prereqs.
 ### Realistic flow examples
 
 ```jsonc
-// Fixed course slot in Sem 1
+// DegreeClass slot in Sem 1 (required class — credits come from Course.Credits)
 {
   "semester": 1,
-  "kind": "FixedClass",
+  "slotType": "DegreeClass",
   "classId": "MATH-1650",
   "name": "Calc I",
-  "requiredCredits": 4,
   "minGrade": "C-",
   "displayOrder": 1
 }
 
-// Fixed course with chart-recommended pairing
+// DegreeClass with chart-recommended pairing
 {
   "semester": 1,
-  "kind": "FixedClass",
+  "slotType": "DegreeClass",
   "classId": "CPRE-1850",
   "name": "CprE Prob Solv",
-  "requiredCredits": 3,
   "displayOrder": 3,
   "recommendedPairing": ["MATH-1650"]   // chart's red-solid line; soft hint
 }
 
-// Engr 1010 — registration only, 0 credit
+// Engr 1010 — registration only (R cr lives on Course; slot just references it)
 {
   "semester": 1,
-  "kind": "FixedClass",
+  "slotType": "DegreeClass",
   "classId": "ENGR-1010",
   "name": "Orientation",
-  "requiredCredits": 0,
   "creditNote": "R cr",
   "displayOrder": 2
 }
 
-// Category placeholder — "Gen Ed Elective 3cr" from the chart
+// Gen-Ed elective placeholder — "Gen Ed Elective 3cr" from the chart
 {
   "semester": 1,
-  "kind": "CategoryChoice",
-  "category": "GenEdElective",
-  "requiredCredits": 3,
+  "slotType": "ElectiveGenEd",
+  "requiredCredits": 3,                 // user fills this slot with any 3-cr GenEd
   "displayOrder": 5
 }
 
 // Tech elective placeholder in Sem 7
 {
   "semester": 7,
-  "kind": "CategoryChoice",
-  "category": "TechElective",
+  "slotType": "ElectiveTech",
   "requiredCredits": 3,
   "displayOrder": 4
 }
@@ -246,7 +240,8 @@ When the importer loads these files (described in design spec §10 open items), 
 3. Verify every `recommendedPairing` entry references a course that exists in the catalog and is also referenced by another slot in the same flow.
 4. Reject duplicate `classId` entries in the catalog.
 5. Reject duplicate `(semester, displayOrder)` pairs within a single flow.
-6. Sum the per-slot `requiredCredits` and warn if it doesn't match `totalCreditsRequired`.
+6. Compute the flow's total credits as `sum(Course.Credits for DegreeClass slots) + sum(slot.requiredCredits for Elective* slots)` and warn if it doesn't match `totalCreditsRequired`.
+7. Verify every `Elective*` slot has `requiredCredits` set (non-null). Verify every `DegreeClass` slot has `classId` set (non-null). Reject violations.
 
 If you want to test data partway through, you can submit a partial catalog + partial flow — the importer will tell you what's missing.
 

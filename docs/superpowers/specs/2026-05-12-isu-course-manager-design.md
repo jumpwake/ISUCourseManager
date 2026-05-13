@@ -287,24 +287,43 @@ class FlowchartSlot {             // table: flowchart_slots
   Guid Id;
   Guid DegreeFlowId;
   int Semester;                   // recommended placement (1..8)
-  SlotKind Kind;                  // FixedClass | CategoryChoice
-  Guid? CourseId;                 // when Kind = FixedClass
-  string? Category;               // when Kind = CategoryChoice
-                                  //   ("GenEdElective", "TechElective", "CybEElective",
-                                  //    "MathElective", "CprEElective")
-  decimal RequiredCredits;
-  string? CreditNote;             // "R cr", "3/4cr"
+  SlotType SlotType;              // single enum captures both "is this a specific class
+                                  //   or a placeholder?" and "if placeholder, which category?"
+  string? ClassId;                // populated when SlotType == DegreeClass
+                                  //   (refers to Course.ClassId, e.g. "MATH-1650")
+  decimal? RequiredCredits;       // null when SlotType == DegreeClass — credits come from
+                                  //   Course.Credits via the ClassId join. Set on Elective*
+                                  //   slots to declare the credit budget the user must fill.
+  string? CreditNote;             // "R cr", "3/4cr" — chart-specific display annotation
   string? MinGrade;               // grade requirement specific to this flow
   string? ClassNote;              // "Soph Class", "Junior Class", "Requires 29 Core Credits"
   int DisplayOrder;
   string? DisplayName;            // optional override of Course.Name for this slot's tile
-  List<Guid> RecommendedPairing;  // chart's red-solid lines: this flow recommends taking
+  List<string> RecommendedPairing; // chart's red-solid lines: this flow recommends taking
                                   //   these courses in the same semester. Soft hint to the
                                   //   cascade engine (warning, not a hard block).
 }
 
-enum SlotKind { FixedClass, CategoryChoice }
+/// <summary>
+/// What this flowchart slot is asking for. DegreeClass = a specific required course
+/// (set ClassId). The Elective* values are placeholders the user fills with their
+/// own choice from the catalog, filtered to that category. The cascade engine and
+/// category-search queries switch on this single enum.
+/// </summary>
+enum SlotType
+{
+    DegreeClass,        // specific required course (ClassId is populated)
+    ElectiveGenEd,      // any approved general-education elective (3 cr typical)
+    ElectiveMath,       // any approved math elective
+    ElectiveTech,       // any approved technical elective (open list)
+    ElectiveCybE,       // any approved Cyber Security Engineering elective
+    ElectiveCprE,       // any approved Computer Engineering elective
+}
 ```
+
+**Why one enum instead of two fields:** The previous design had `Kind: SlotKind { FixedClass, CategoryChoice }` plus a separate `Category: string?`. That allowed invalid combinations to be representable (e.g. `Kind=FixedClass` with `Category="GenEdElective"`) and forced the cascade engine to switch on two correlated fields. Collapsing them into a single typed enum makes the slot's purpose self-documenting and lets the engine drive category-search queries (`"give me all courses eligible for this slot"`) directly off the enum value via a `CategoryFor(SlotType)` mapping.
+
+**Why `RequiredCredits` is nullable:** For `DegreeClass` slots the credit value already lives on `Course.Credits` (e.g., MATH-1650 = 4 cr). Duplicating it on the slot creates drift risk. For `Elective*` slots there's no specific course yet, so the slot itself must declare the credit budget the user must satisfy when they fill it. The validator computes a flow's total credits as `sum(Course.Credits for DegreeClass slots) + sum(slot.RequiredCredits for Elective slots)`.
 
 **No `Prereqs` or `Coreqs` on `FlowchartSlot`** — those live on `Course` (Tier 1, the catalog) as the single source of truth. The catalog's prereq trees encode hard coreqs via `acceptConcurrent: true` flags on `PrereqCourse` nodes (matching ISU's "credit or concurrent enrollment in X" phrasing). The flow's `RecommendedPairing` captures the chart's *curriculum-recommended* pairings that aren't catalog-enforced (e.g., CprE 1850 + Math 1650: catalog allows either-or via placement, chart recommends taking them together).
 
@@ -324,12 +343,12 @@ enum SlotKind { FixedClass, CategoryChoice }
     "Lab and lecture must be passed in the same semester ..."
   ],
   "slots": [
-    { "semester": 1, "kind": "FixedClass", "classId": "MATH-1650",
+    { "semester": 1, "slotType": "DegreeClass", "classId": "MATH-1650",
       "name": "Calc I", "requiredCredits": 4, "minGrade": "C-", "displayOrder": 1 },
-    { "semester": 1, "kind": "FixedClass", "classId": "CPRE-1850",
+    { "semester": 1, "slotType": "DegreeClass", "classId": "CPRE-1850",
       "name": "CprE Prob Solv", "requiredCredits": 3, "displayOrder": 3,
       "recommendedPairing": ["MATH-1650"] },
-    { "semester": 1, "kind": "CategoryChoice", "category": "GenEdElective",
+    { "semester": 1, "slotType": "ElectiveGenEd",
       "requiredCredits": 3, "displayOrder": 5 },
     // ...
   ]
@@ -399,10 +418,9 @@ erDiagram
         Guid Id PK
         Guid DegreeFlowId FK
         int Semester "1..8 recommended"
-        SlotKind Kind "FixedClass or CategoryChoice"
-        string ClassId FK "to Course.ClassId, null for CategoryChoice"
-        string Category "GenEdElective etc, null for FixedClass"
-        decimal RequiredCredits
+        SlotType SlotType "DegreeClass / ElectiveGenEd / ElectiveMath / ElectiveTech / ElectiveCybE / ElectiveCprE"
+        string ClassId FK "to Course.ClassId, set only when SlotType=DegreeClass"
+        decimal RequiredCredits "nullable, set only when SlotType is Elective* (DegreeClass uses Course.Credits)"
         string CreditNote
         string MinGrade
         string ClassNote "Soph Class etc"
@@ -433,7 +451,7 @@ erDiagram
     }
 
     DegreeFlow ||--o{ FlowchartSlot : "has slots"
-    FlowchartSlot }o--o| Course : "references when FixedClass"
+    FlowchartSlot }o--o| Course : "references when SlotType=DegreeClass"
     Student ||--|| Plan : "owns one"
     Plan }o--|| DegreeFlow : "follows"
     Plan ||--o{ PlanItem : "contains"
@@ -805,6 +823,8 @@ Recording the journey for context in future sessions:
 | 20 | `Prereqs` and `Coreqs` removed from `FlowchartSlot` — catalog (`Course.Prereqs`) is the single source of truth | Once we had the actual catalog, duplicating prereqs in the flow created drift risk with no real benefit; catalog encodes hard coreqs via `acceptConcurrent` flags |
 | 21 | Flow keeps soft `RecommendedPairing` (renamed from coreqs) for the chart's red-solid lines | Captures curriculum-recommended pairings (e.g., CprE 1850 + Math 1650) that aren't catalog-enforced; engine emits a `RecommendedPairingBroken` warning + offers a `ReunitePairing` decision |
 | 22 | `Course.ClassId` (string, e.g. `"MATH-1650"`) is the stable semantic key, separate from the surrogate `Guid Id` and the human-readable `Code` (`"Math 1650"`) | Seed JSON uses `classId` as the canonical foreign-key form; mixing it with `Code` (display string with spaces) caused brittleness; surrogate `Id` is for EF joins, `ClassId` is for cross-references. PlanItem.CourseId is `string` referencing `ClassId` so plans survive catalog re-seeds |
+| 23 | `FlowchartSlot.Kind` + `FlowchartSlot.Category` collapsed into a single `SlotType` enum (`DegreeClass`, `ElectiveGenEd`, `ElectiveMath`, `ElectiveTech`, `ElectiveCybE`, `ElectiveCprE`) | One typed field instead of two correlated string-and-enum fields. Eliminates invalid combos (Kind=FixedClass + Category="GenEd"). Category-search queries (`"give me courses eligible for this elective slot"`) drive directly off the enum value via a `CategoryFor(SlotType)` mapping. New elective categories require an enum addition rather than a free-text string |
+| 24 | `FlowchartSlot.RequiredCredits` is nullable; populated only for `Elective*` slots | `DegreeClass` slots already point at a `Course` whose `Credits` field is authoritative — duplicating it on the slot is drift risk. For elective slots there's no specific course yet, so the slot must declare the credit budget the user has to fill |
 
 ## 11. Open items for the implementation plan
 

@@ -12,29 +12,26 @@
   "slots": [
     {
       "semester": 1,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "MATH-1650",
       "name": "Calc I",
-      "requiredCredits": 4,
       "minGrade": "C-",
       "displayOrder": 1
     },
     {
       "semester": 1,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "ENGR-1010",
       "name": "Orientation",
-      "requiredCredits": 0,
       "creditNote": "R cr",
       "minGrade": null,
       "displayOrder": 2
     },
     {
       "semester": 1,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-1850",
       "name": "CprE Prob Solv",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 3,
       "recommendedPairing": [
@@ -43,46 +40,41 @@
     },
     {
       "semester": 1,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CHEM-1670",
       "name": "Engr Chem",
-      "requiredCredits": 4,
       "minGrade": null,
       "displayOrder": 4
     },
     {
       "semester": 1,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "LIB-1600",
       "name": "Lib Instruction",
-      "requiredCredits": 1,
       "minGrade": null,
       "displayOrder": 5
     },
     {
       "semester": 1,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "ENGL-1500",
       "name": "Crit Think & Com",
-      "requiredCredits": 3,
       "minGrade": "C-",
       "displayOrder": 6
     },
     {
       "semester": 2,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "MATH-1660",
       "name": "Calc II",
-      "requiredCredits": 4,
       "minGrade": "C-",
       "displayOrder": 1
     },
     {
       "semester": 2,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "PHYS-2310",
       "name": "Classical Phys I (lecture)",
-      "requiredCredits": 4,
       "minGrade": null,
       "displayOrder": 2,
       "recommendedPairing": [
@@ -91,10 +83,9 @@
     },
     {
       "semester": 2,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "PHYS-2310L",
       "name": "Classical Phys I (lab)",
-      "requiredCredits": 1,
       "minGrade": null,
       "displayOrder": 3,
       "recommendedPairing": [
@@ -103,242 +94,214 @@
     },
     {
       "semester": 2,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-1660",
       "name": "Professional Prog",
-      "requiredCredits": 0,
       "creditNote": "R cr",
       "minGrade": null,
       "displayOrder": 4
     },
     {
       "semester": 2,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "COMS-2270",
       "name": "Intro Program",
-      "requiredCredits": 4,
       "minGrade": "C-",
       "displayOrder": 5
     },
     {
       "semester": 2,
-      "kind": "CategoryChoice",
-      "category": "GenEdElective",
+      "slotType": "ElectiveGenEd",
       "requiredCredits": 3,
       "displayOrder": 6
     },
     {
       "semester": 3,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "MATH-2670",
       "name": "Diff Eq/Lap",
-      "requiredCredits": 4,
       "minGrade": null,
       "displayOrder": 1
     },
     {
       "semester": 3,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CYBE-2300",
       "name": "Cyber Secr. Infra",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 2
     },
     {
       "semester": 3,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-2810",
       "name": "Digital Logic",
-      "requiredCredits": 4,
       "minGrade": null,
       "classNote": "Soph Class",
       "displayOrder": 3
     },
     {
       "semester": 3,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "COMS-2280",
       "name": "Data Structures",
-      "requiredCredits": 3,
       "minGrade": "C-",
       "displayOrder": 4
     },
     {
       "semester": 4,
-      "kind": "CategoryChoice",
-      "category": "MathElective",
+      "slotType": "ElectiveMath",
       "requiredCredits": 3,
       "creditNote": "3/4cr",
       "displayOrder": 1
     },
     {
       "semester": 4,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CYBE-2310",
       "name": "Cyber Sec. Concept/Tool",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 2
     },
     {
       "semester": 4,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-2880",
       "name": "Embedded Systems",
-      "requiredCredits": 4,
       "minGrade": null,
       "displayOrder": 3
     },
     {
       "semester": 4,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CYBE-2340",
       "name": "Ethics in Sec",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 4
     },
     {
       "semester": 4,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "ENGL-2500",
       "name": "WOVE Comp",
-      "requiredCredits": 3,
       "minGrade": "C-",
       "displayOrder": 5
     },
     {
       "semester": 5,
-      "kind": "CategoryChoice",
-      "category": "GenEdElective",
+      "slotType": "ElectiveGenEd",
       "requiredCredits": 3,
       "displayOrder": 1
     },
     {
       "semester": 5,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CYBE-3310",
       "name": "Appl of Crypt",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 2
     },
     {
       "semester": 5,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-3810",
       "name": "Cpr Org & Design",
-      "requiredCredits": 4,
       "minGrade": null,
       "displayOrder": 3
     },
     {
       "semester": 5,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "COMS-3090",
       "name": "Software Dev",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 4
     },
     {
       "semester": 5,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-3100",
       "name": "Foundtn CprE",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 5
     },
     {
       "semester": 6,
-      "kind": "CategoryChoice",
-      "category": "GenEdElective",
+      "slotType": "ElectiveGenEd",
       "requiredCredits": 3,
       "displayOrder": 1
     },
     {
       "semester": 6,
-      "kind": "CategoryChoice",
-      "category": "CybEElective",
+      "slotType": "ElectiveCybE",
       "requiredCredits": 3,
       "displayOrder": 2
     },
     {
       "semester": 6,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-3080",
       "name": "Operating Sys",
-      "requiredCredits": 4,
       "minGrade": null,
       "displayOrder": 3
     },
     {
       "semester": 6,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "COMS-3110",
       "name": "Algor Analys",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 4
     },
     {
       "semester": 6,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "ENGL-3140",
       "name": "Technical Com",
-      "requiredCredits": 3,
       "minGrade": "C-",
       "classNote": "Junior Class",
       "displayOrder": 5
     },
     {
       "semester": 7,
-      "kind": "CategoryChoice",
-      "category": "GenEdElective",
+      "slotType": "ElectiveGenEd",
       "requiredCredits": 3,
       "displayOrder": 1
     },
     {
       "semester": 7,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "STAT-3030",
       "name": "Stat for ComS",
-      "requiredCredits": 3,
       "minGrade": null,
       "displayOrder": 2
     },
     {
       "semester": 7,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-4910",
       "name": "Senior Design I",
-      "requiredCredits": 3,
       "minGrade": null,
       "classNote": "Requires 29 Core Credits",
       "displayOrder": 3
     },
     {
       "semester": 7,
-      "kind": "CategoryChoice",
-      "category": "CybEElective",
+      "slotType": "ElectiveCybE",
       "requiredCredits": 3,
       "displayOrder": 4
     },
     {
       "semester": 7,
-      "kind": "CategoryChoice",
-      "category": "CybEElective",
+      "slotType": "ElectiveCybE",
       "requiredCredits": 3,
       "displayOrder": 5
     },
     {
       "semester": 7,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-4940",
       "name": "Portfolio",
-      "requiredCredits": 0,
       "creditNote": "R cr",
       "minGrade": null,
       "displayOrder": 6,
@@ -348,45 +311,39 @@
     },
     {
       "semester": 8,
-      "kind": "CategoryChoice",
-      "category": "GenEdElective",
+      "slotType": "ElectiveGenEd",
       "requiredCredits": 3,
       "displayOrder": 1
     },
     {
       "semester": 8,
-      "kind": "CategoryChoice",
-      "category": "TechElective",
+      "slotType": "ElectiveTech",
       "requiredCredits": 3,
       "displayOrder": 2
     },
     {
       "semester": 8,
-      "kind": "FixedClass",
+      "slotType": "DegreeClass",
       "classId": "CPRE-4920",
       "name": "Senior Design II",
-      "requiredCredits": 2,
       "minGrade": null,
       "displayOrder": 3
     },
     {
       "semester": 8,
-      "kind": "CategoryChoice",
-      "category": "TechElective",
+      "slotType": "ElectiveTech",
       "requiredCredits": 3,
       "displayOrder": 4
     },
     {
       "semester": 8,
-      "kind": "CategoryChoice",
-      "category": "CybEElective",
+      "slotType": "ElectiveCybE",
       "requiredCredits": 3,
       "displayOrder": 5
     },
     {
       "semester": 8,
-      "kind": "CategoryChoice",
-      "category": "CprEElective",
+      "slotType": "ElectiveCprE",
       "requiredCredits": 3,
       "displayOrder": 6
     }

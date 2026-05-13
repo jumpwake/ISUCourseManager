@@ -45,7 +45,7 @@ src/
     │   ├── PrereqCourse.cs
     │   ├── PrereqClassification.cs
     │   ├── PrereqCoreCredits.cs
-    │   └── Enums.cs                               SlotKind, Term, PlanItemStatus, Classification
+    │   └── Enums.cs                               SlotType, Term, PlanItemStatus, Classification
     └── Seed/
         ├── SeedLoader.cs                          public entry point: loads catalog + flow files
         ├── PrereqExpressionConverter.cs           System.Text.Json polymorphic converter
@@ -221,10 +221,19 @@ Create `src/ISUCourseManager.Data/Entity/Enums.cs`:
 ```csharp
 namespace ISUCourseManager.Data.Entity;
 
-public enum SlotKind
+/// <summary>
+/// What this flowchart slot represents. DegreeClass = a specific required course
+/// (paired with ClassId). The Elective* values are placeholder slots the user fills
+/// with their own choice from the catalog filtered to that category.
+/// </summary>
+public enum SlotType
 {
-    FixedClass,
-    CategoryChoice,
+    DegreeClass,        // specific required course (ClassId is populated)
+    ElectiveGenEd,      // any approved general-education elective
+    ElectiveMath,       // any approved math elective
+    ElectiveTech,       // any approved technical elective (open list)
+    ElectiveCybE,       // any approved Cyber Security Engineering elective
+    ElectiveCprE,       // any approved Computer Engineering elective
 }
 
 public enum Term
@@ -264,7 +273,7 @@ Expected: `Build succeeded. 0 Warning(s) 0 Error(s)`
 
 ```
 git add src/ISUCourseManager.Data/Entity/Enums.cs
-git commit -m "feat(domain): add SlotKind, Term, PlanItemStatus, Classification enums"
+git commit -m "feat(domain): add SlotType, Term, PlanItemStatus, Classification enums"
 ```
 
 ---
@@ -662,11 +671,11 @@ public sealed class FlowchartSlot
     public Guid Id { get; init; } = Guid.NewGuid();
     public Guid DegreeFlowId { get; init; }
     public required int Semester { get; init; }
-    public required SlotKind Kind { get; init; }
-    public string? ClassId { get; init; }                 // when Kind = FixedClass
-    public string? Category { get; init; }                // when Kind = CategoryChoice
-    public string? DisplayName { get; init; }             // e.g., chart abbreviation
-    public required decimal RequiredCredits { get; init; }
+    public required SlotType SlotType { get; init; }       // single enum: DegreeClass or Elective*
+    public string? ClassId { get; init; }                  // populated when SlotType == DegreeClass
+    public string? DisplayName { get; init; }              // chart abbreviation override
+    public decimal? RequiredCredits { get; init; }         // null for DegreeClass (uses Course.Credits);
+                                                           //   set for Elective* slots (declares budget)
     public string? CreditNote { get; init; }
     public string? MinGrade { get; init; }
     public string? ClassNote { get; init; }
@@ -1109,24 +1118,24 @@ public partial class SeedLoaderTests
 }
 
 [Fact]
-public void LoadFlow_parses_FixedClass_slot()
+public void LoadFlow_parses_DegreeClass_slot()
 {
     var flow = SeedLoader.LoadFlow(RepoPaths.CybeFlowJsonPath);
     var math1650 = flow.Slots.Single(s => s.ClassId == "MATH-1650");
-    math1650.Kind.Should().Be(SlotKind.FixedClass);
+    math1650.SlotType.Should().Be(SlotType.DegreeClass);
     math1650.Semester.Should().Be(1);
-    math1650.RequiredCredits.Should().Be(4m);
+    math1650.RequiredCredits.Should().BeNull("DegreeClass slots use Course.Credits, not slot-level credits");
     math1650.MinGrade.Should().Be("C-");
 }
 
 [Fact]
-public void LoadFlow_parses_CategoryChoice_slot()
+public void LoadFlow_parses_Elective_slot()
 {
     var flow = SeedLoader.LoadFlow(RepoPaths.CybeFlowJsonPath);
-    var anyGenEd = flow.Slots.FirstOrDefault(s => s.Kind == SlotKind.CategoryChoice && s.Category == "GenEdElective");
+    var anyGenEd = flow.Slots.FirstOrDefault(s => s.SlotType == SlotType.ElectiveGenEd);
     anyGenEd.Should().NotBeNull();
     anyGenEd!.ClassId.Should().BeNull();
-    anyGenEd.RequiredCredits.Should().BeGreaterThan(0m);
+    anyGenEd.RequiredCredits.Should().BeGreaterThan(0m, "Elective* slots declare their credit budget");
 }
 
 [Fact]
@@ -1177,11 +1186,10 @@ internal sealed class FlowJsonRoot
 internal sealed class SlotJson
 {
     [JsonPropertyName("semester")] public int Semester { get; init; }
-    [JsonPropertyName("kind")] public string Kind { get; init; } = "FixedClass";
+    [JsonPropertyName("slotType")] public string SlotType { get; init; } = "DegreeClass";
     [JsonPropertyName("classId")] public string? ClassId { get; init; }
-    [JsonPropertyName("category")] public string? Category { get; init; }
     [JsonPropertyName("name")] public string? Name { get; init; }
-    [JsonPropertyName("requiredCredits")] public decimal RequiredCredits { get; init; }
+    [JsonPropertyName("requiredCredits")] public decimal? RequiredCredits { get; init; }
     [JsonPropertyName("creditNote")] public string? CreditNote { get; init; }
     [JsonPropertyName("minGrade")] public string? MinGrade { get; init; }
     [JsonPropertyName("classNote")] public string? ClassNote { get; init; }
@@ -1216,21 +1224,20 @@ public static DegreeFlow LoadFlow(string jsonFilePath)
 
 private static FlowchartSlot MapSlot(SlotJson s, Guid degreeFlowId)
 {
-    var kind = Enum.Parse<SlotKind>(s.Kind);
+    var slotType = Enum.Parse<SlotType>(s.SlotType);
     return new FlowchartSlot
     {
         DegreeFlowId = degreeFlowId,
         Semester = s.Semester,
-        Kind = kind,
+        SlotType = slotType,
         ClassId = s.ClassId,
-        Category = s.Category,
         DisplayName = s.Name,
-        RequiredCredits = s.RequiredCredits,
+        RequiredCredits = s.RequiredCredits,   // nullable; only Elective* slots set this
         CreditNote = s.CreditNote,
         MinGrade = s.MinGrade,
         ClassNote = s.ClassNote,
         DisplayOrder = s.DisplayOrder,
-        RecommendedPairing = s.RecommendedPairing.ToList(),  // copy
+        RecommendedPairing = s.RecommendedPairing.ToList(),
     };
 }
 ```
@@ -1276,6 +1283,9 @@ public enum SeedIssueKind
     CreditTotalMismatch,
     UnparsedPrereqString,
     InvalidGrade,
+    MissingElectiveCredits,           // Elective* slot has no requiredCredits
+    RedundantSlotCredits,             // DegreeClass slot has requiredCredits set (warning)
+    UnexpectedClassIdOnElective,      // Elective* slot has classId set (warning)
 }
 
 public enum IssueSeverity
@@ -1673,15 +1683,16 @@ git commit -m "feat(validation): catalog cross-listing and prereq reference chec
 Append to `SeedValidatorTests`:
 
 ```csharp
-private static FlowchartSlot MakeSlot(int sem, int order, string? classId = null, string? category = null,
-                                      decimal credits = 3m, params string[] pairing) => new()
+private static FlowchartSlot MakeSlot(int sem, int order, string? classId = null,
+                                      SlotType slotType = SlotType.DegreeClass,
+                                      decimal? credits = null, params string[] pairing) => new()
 {
     Semester = sem,
     DisplayOrder = order,
-    Kind = classId is not null ? SlotKind.FixedClass : SlotKind.CategoryChoice,
+    SlotType = slotType,
     ClassId = classId,
-    Category = category,
-    RequiredCredits = credits,
+    // For DegreeClass slots, credits are null (read from Course.Credits); for Elective* slots, credits is set.
+    RequiredCredits = slotType == SlotType.DegreeClass ? null : (credits ?? 3m),
     RecommendedPairing = pairing.ToList(),
 };
 
@@ -1755,13 +1766,13 @@ public void Flow_recommendedPairing_referencing_classId_not_in_same_flow_emits_w
 [Fact]
 public void Flow_credit_total_not_matching_sum_emits_warning()
 {
-    var catalog = new[] { MakeCourse("MATH-1650"), MakeCourse("MATH-1660") };
+    var catalog = new[] { MakeCourse("MATH-1650"), MakeCourse("MATH-1660") };  // each 3 cr
     var flow = new DegreeFlow
     {
         MajorCode = "X", MajorName = "X", CatalogYear = "Y",
-        TotalCreditsRequired = 100, // ← intentional mismatch (sum is 8)
-        Slots = { MakeSlot(1, 1, classId: "MATH-1650", credits: 4),
-                  MakeSlot(2, 1, classId: "MATH-1660", credits: 4) },
+        TotalCreditsRequired = 100, // intentional mismatch — actual sum is 6 (3+3 from Course.Credits)
+        Slots = { MakeSlot(1, 1, classId: "MATH-1650"),
+                  MakeSlot(2, 1, classId: "MATH-1660") },
     };
 
     var report = SeedValidator.ValidateFlow(flow, catalog);
@@ -1794,15 +1805,30 @@ public static ValidationReport ValidateFlow(DegreeFlow flow, IEnumerable<Course>
 
     foreach (var slot in flow.Slots)
     {
-        if (slot.Kind == SlotKind.FixedClass)
+        if (slot.SlotType == SlotType.DegreeClass)
         {
             if (slot.ClassId is null)
                 report.Add(SeedIssueKind.MissingClassId, IssueSeverity.Error,
-                    $"Slot at semester {slot.Semester} order {slot.DisplayOrder} is FixedClass but has no classId",
+                    $"Slot at semester {slot.Semester} order {slot.DisplayOrder} is DegreeClass but has no classId",
                     location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
             else if (!classIds.Contains(slot.ClassId))
                 report.Add(SeedIssueKind.OrphanFlowReference, IssueSeverity.Error,
                     $"Slot references classId '{slot.ClassId}' not in catalog",
+                    location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+            if (slot.RequiredCredits is not null)
+                report.Add(SeedIssueKind.RedundantSlotCredits, IssueSeverity.Warning,
+                    $"DegreeClass slot for {slot.ClassId} declares requiredCredits={slot.RequiredCredits} — should be null (use Course.Credits)",
+                    location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+        }
+        else  // Elective* slot
+        {
+            if (slot.RequiredCredits is null)
+                report.Add(SeedIssueKind.MissingElectiveCredits, IssueSeverity.Error,
+                    $"Elective slot ({slot.SlotType}) at semester {slot.Semester} order {slot.DisplayOrder} has no requiredCredits",
+                    location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+            if (slot.ClassId is not null)
+                report.Add(SeedIssueKind.UnexpectedClassIdOnElective, IssueSeverity.Warning,
+                    $"Elective slot ({slot.SlotType}) at semester {slot.Semester} order {slot.DisplayOrder} has classId='{slot.ClassId}' — should be null",
                     location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
         }
 
@@ -1828,7 +1854,21 @@ public static ValidationReport ValidateFlow(DegreeFlow flow, IEnumerable<Course>
             $"{dupe.Count()} slots share semester {dupe.Key.Semester} displayOrder {dupe.Key.DisplayOrder}",
             location: $"flow:{flow.MajorCode}.slot[{dupe.Key.Semester},{dupe.Key.DisplayOrder}]");
 
-    var sum = flow.Slots.Sum(s => s.RequiredCredits);
+    // Sum DegreeClass slots from Course.Credits + Elective* slots from slot.RequiredCredits.
+    var coursesByClassId = catalog.ToDictionary(c => c.ClassId);
+    decimal sum = 0m;
+    foreach (var slot in flow.Slots)
+    {
+        if (slot.SlotType == SlotType.DegreeClass && slot.ClassId is not null
+            && coursesByClassId.TryGetValue(slot.ClassId, out var course))
+        {
+            sum += course.Credits;
+        }
+        else if (slot.SlotType != SlotType.DegreeClass)
+        {
+            sum += slot.RequiredCredits ?? 0m;
+        }
+    }
     if (sum != flow.TotalCreditsRequired)
         report.Add(SeedIssueKind.CreditTotalMismatch, IssueSeverity.Warning,
             $"Sum of slot credits ({sum}) does not match totalCreditsRequired ({flow.TotalCreditsRequired})",
