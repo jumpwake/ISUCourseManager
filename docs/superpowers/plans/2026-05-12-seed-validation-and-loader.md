@@ -36,8 +36,8 @@ src/
     │   ├── Course.cs
     │   ├── DegreeFlow.cs
     │   ├── FlowchartSlot.cs
-    │   ├── Plan.cs
-    │   ├── PlanItem.cs
+    │   ├── StudentCourse.cs                  (replaces PlanItem; no PlanId)
+    │   ├── StudentDegreeFlow.cs              (junction with Status — replaces Plan.SelectedDegreeFlowId)
     │   ├── Student.cs
     │   ├── PrereqExpression.cs                    abstract base
     │   ├── PrereqAnd.cs
@@ -45,7 +45,8 @@ src/
     │   ├── PrereqCourse.cs
     │   ├── PrereqClassification.cs
     │   ├── PrereqCoreCredits.cs
-    │   └── Enums.cs                               SlotType, Term, PlanItemStatus, Classification
+    │   └── Enums.cs                               SlotType, Term, Season, StudentCourseStatus,
+    │                                              StudentDegreeFlowStatus, Classification
     └── Seed/
         ├── SeedLoader.cs                          public entry point: loads catalog + flow files
         ├── PrereqExpressionConverter.cs           System.Text.Json polymorphic converter
@@ -243,13 +244,29 @@ public enum Term
     Summer,
 }
 
-public enum PlanItemStatus
+public enum Season
+{
+    Summer = 1,
+    Fall   = 2,
+    Winter = 3,
+    Spring = 4,
+}
+
+public enum StudentCourseStatus
 {
     Planned,
     InProgress,
     Completed,
     Failed,
     Withdrawn,
+}
+
+public enum StudentDegreeFlowStatus
+{
+    Pending,
+    Active,
+    Deleted,
+    Completed,
 }
 
 public enum Classification
@@ -273,7 +290,7 @@ Expected: `Build succeeded. 0 Warning(s) 0 Error(s)`
 
 ```
 git add src/ISUCourseManager.Data/Entity/Enums.cs
-git commit -m "feat(domain): add SlotType, Term, PlanItemStatus, Classification enums"
+git commit -m "feat(domain): add SlotType, Term, Season, StudentCourseStatus, StudentDegreeFlowStatus, Classification enums"
 ```
 
 ---
@@ -701,12 +718,14 @@ git commit -m "feat(domain): add DegreeFlow and FlowchartSlot entities"
 
 ---
 
-## Task 6: Student / Plan / PlanItem entities
+## Task 6: Student / StudentCourse / StudentDegreeFlow entities
 
 **Files:**
 - Create: `src/ISUCourseManager.Data/Entity/Student.cs`
-- Create: `src/ISUCourseManager.Data/Entity/Plan.cs`
-- Create: `src/ISUCourseManager.Data/Entity/PlanItem.cs`
+- Create: `src/ISUCourseManager.Data/Entity/StudentCourse.cs`
+- Create: `src/ISUCourseManager.Data/Entity/StudentDegreeFlow.cs`
+
+The student's academic record (`StudentCourse`) lives directly on `Student` — no `Plan` aggregate. Degree-flow associations are a separate junction (`StudentDegreeFlow`) so a student can hold many flows simultaneously, each with its own lifecycle status (Pending exploration / Active enrollment / Deleted abandonment / Completed graduation). See spec §4 Tier 3 for the full rationale.
 
 - [ ] **Step 1: Create Student.cs**
 
@@ -717,37 +736,54 @@ public sealed class Student
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public required string DisplayName { get; init; }
+
+    // Convenience navigation collections (EF maps these via FK on the child).
+    public List<StudentCourse> Courses { get; init; } = new();
+    public List<StudentDegreeFlow> DegreeFlows { get; init; } = new();
 }
 ```
 
-- [ ] **Step 2: Create Plan.cs**
+- [ ] **Step 2: Create StudentCourse.cs**
 
 ```csharp
 namespace ISUCourseManager.Data.Entity;
 
-public sealed class Plan
+/// <summary>
+/// One enrollment record. Lives directly on Student — independent of any DegreeFlow,
+/// so the same StudentCourse[] overlays cleanly against any flow the student is
+/// associated with (Active or Pending). Status carries the lifecycle of this single
+/// enrollment; AcademicTerm gives the chronological position (YYYYSS).
+/// </summary>
+public sealed class StudentCourse
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public required Guid StudentId { get; init; }
-    public required Guid SelectedDegreeFlowId { get; init; }
-    public string? PreviousSnapshotJson { get; init; }
-    public List<PlanItem> Items { get; init; } = new();
+    public required string CourseId { get; init; }            // matches Course.ClassId (e.g. "MATH-1650")
+    public required int AcademicTerm { get; init; }           // YYYYSS — see AcademicTerm helper
+    public required StudentCourseStatus Status { get; init; }
+    public string? Grade { get; init; }                       // populated for Completed/Failed
 }
 ```
 
-- [ ] **Step 3: Create PlanItem.cs**
+- [ ] **Step 3: Create StudentDegreeFlow.cs**
 
 ```csharp
 namespace ISUCourseManager.Data.Entity;
 
-public sealed class PlanItem
+/// <summary>
+/// Junction associating a Student with a DegreeFlow + lifecycle Status. A student
+/// can have many of these — multiple Active rows model double majors; Pending rows
+/// model what-if exploration without commitment. No uniqueness constraint on
+/// (StudentId, Status=Active).
+/// </summary>
+public sealed class StudentDegreeFlow
 {
     public Guid Id { get; init; } = Guid.NewGuid();
-    public Guid PlanId { get; init; }
-    public required string CourseId { get; init; }       // matches Course.ClassId
-    public required int Semester { get; init; }
-    public required PlanItemStatus Status { get; init; }
-    public string? Grade { get; init; }
+    public required Guid StudentId { get; init; }
+    public required Guid DegreeFlowId { get; init; }
+    public required StudentDegreeFlowStatus Status { get; init; }
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public DateTime? StatusChangedAt { get; init; }
 }
 ```
 
@@ -762,8 +798,128 @@ Expected: `Build succeeded.`
 - [ ] **Step 5: Commit**
 
 ```
-git add src/ISUCourseManager.Data/Entity/Student.cs src/ISUCourseManager.Data/Entity/Plan.cs src/ISUCourseManager.Data/Entity/PlanItem.cs
-git commit -m "feat(domain): add Student, Plan, PlanItem entities"
+git add src/ISUCourseManager.Data/Entity/Student.cs src/ISUCourseManager.Data/Entity/StudentCourse.cs src/ISUCourseManager.Data/Entity/StudentDegreeFlow.cs
+git commit -m "feat(domain): add Student, StudentCourse, StudentDegreeFlow entities"
+```
+
+---
+
+## Task 6b: AcademicTerm helper
+
+**Files:**
+- Create: `src/ISUCourseManager.Data/Entity/AcademicTerm.cs`
+- Test: `tests/ISUCourseManager.Services.Tests/AcademicTermTests.cs`
+
+`StudentCourse.AcademicTerm` is a 6-digit int packing `YYYY` (academic-cycle ending year) + `SS` (Season enum value). The helper makes encode/decode and term comparisons tidy. Since this is pure logic, TDD it.
+
+- [ ] **Step 1: Write failing tests**
+
+Create `tests/ISUCourseManager.Services.Tests/AcademicTermTests.cs`:
+
+```csharp
+using FluentAssertions;
+using ISUCourseManager.Data.Entity;
+
+namespace ISUCourseManager.Services.Tests;
+
+public class AcademicTermTests
+{
+    [Theory]
+    [InlineData(2026, Season.Summer, 202601)]
+    [InlineData(2026, Season.Fall,   202602)]
+    [InlineData(2026, Season.Winter, 202603)]
+    [InlineData(2026, Season.Spring, 202604)]
+    public void Encode_packs_year_and_season(int year, Season season, int expected)
+    {
+        AcademicTerm.Encode(year, season).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(202601, 2026, Season.Summer)]
+    [InlineData(202602, 2026, Season.Fall)]
+    [InlineData(202604, 2026, Season.Spring)]
+    public void Decode_unpacks_year_and_season(int term, int expectedYear, Season expectedSeason)
+    {
+        var (y, s) = AcademicTerm.Decode(term);
+        y.Should().Be(expectedYear);
+        s.Should().Be(expectedSeason);
+    }
+
+    [Fact]
+    public void Encoded_terms_sort_chronologically_within_a_year()
+    {
+        var terms = new[]
+        {
+            AcademicTerm.Encode(2026, Season.Spring),
+            AcademicTerm.Encode(2026, Season.Summer),
+            AcademicTerm.Encode(2026, Season.Winter),
+            AcademicTerm.Encode(2026, Season.Fall),
+        };
+        terms.Order().Should().Equal(202601, 202602, 202603, 202604);
+    }
+
+    [Fact]
+    public void Encoded_terms_sort_chronologically_across_years()
+    {
+        AcademicTerm.Encode(2025, Season.Spring).Should().BeLessThan(AcademicTerm.Encode(2026, Season.Summer));
+    }
+
+    [Fact]
+    public void Decode_throws_on_invalid_season()
+    {
+        Action act = () => AcademicTerm.Decode(202699);  // 99 isn't a valid Season
+        act.Should().Throw<ArgumentException>();
+    }
+}
+```
+
+- [ ] **Step 2: Run tests to verify failure**
+
+```
+dotnet test tests/ISUCourseManager.Services.Tests/ISUCourseManager.Services.Tests.csproj --filter "FullyQualifiedName~AcademicTermTests"
+```
+
+Expected: build error — `AcademicTerm` class doesn't exist yet.
+
+- [ ] **Step 3: Create AcademicTerm.cs**
+
+```csharp
+namespace ISUCourseManager.Data.Entity;
+
+/// <summary>
+/// Encode/decode for the YYYYSS AcademicTerm packed-int format.
+/// Year is the *ending* year of the academic cycle (school year 2025-26 → 2026).
+/// Season values: Summer=1, Fall=2, Winter=3, Spring=4 (chronological within year).
+/// </summary>
+public static class AcademicTerm
+{
+    public static int Encode(int year, Season season)
+        => year * 100 + (int)season;
+
+    public static (int Year, Season Season) Decode(int term)
+    {
+        var year = term / 100;
+        var seasonInt = term % 100;
+        if (!Enum.IsDefined(typeof(Season), seasonInt))
+            throw new ArgumentException($"Invalid season {seasonInt} in AcademicTerm {term}", nameof(term));
+        return (year, (Season)seasonInt);
+    }
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+```
+dotnet test tests/ISUCourseManager.Services.Tests/ISUCourseManager.Services.Tests.csproj --filter "FullyQualifiedName~AcademicTermTests"
+```
+
+Expected: `Passed! - Failed: 0, Passed: 5, Skipped: 0`
+
+- [ ] **Step 5: Commit**
+
+```
+git add src/ISUCourseManager.Data/Entity/AcademicTerm.cs tests/ISUCourseManager.Services.Tests/AcademicTermTests.cs
+git commit -m "feat(domain): AcademicTerm encode/decode helper with Season enum"
 ```
 
 ---

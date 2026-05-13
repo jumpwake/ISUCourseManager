@@ -12,7 +12,9 @@ The product takes that mental gymnastics off the student and presents a guided, 
 
 **POC target user:** one student (Kevin's son) following the **Cyber Security Engineering (CybE) 2025-26** flowchart. Architecture must extend cleanly to multiple students and multiple majors.
 
-**Future direction:** mobile app reusing the same API; intelligent elective recommendations; more majors; multi-flow overlays for major-change planning.
+**Future direction:** mobile app reusing the same API; intelligent elective recommendations; more majors; multi-flow overlays for major-change planning. Two specific features that the data model already supports but are deferred from POC implementation:
+- **Closest matching degree:** given a student's `StudentCourse[]`, rank all `DegreeFlow`s by overlay completion percentage. Surfaces "you're 2 classes from finishing Software Engineering — want to consider switching?"
+- **Minor support:** a separate `MinorRequirement` entity (likely modeled like a small `DegreeFlow`) and `StudentMinor` junction. Overlay function works identically — minors are just smaller flows.
 
 ## 2. Scope
 
@@ -69,7 +71,7 @@ ISUCourseManager.sln
 │   │                                  CatalogService, IPlanRepository, ...
 │   └── ISUCourseManager.Data/
 │       ├── Entity/                    POCO entities (Course, DegreeFlow,
-│       │                              FlowchartSlot, Plan, PlanItem, Student)
+│       │                              FlowchartSlot, Plan, StudentCourse, Student)
 │       ├── Configurations/            EF Fluent API configs
 │       ├── Repositories/              EF implementations of I*Repository
 │       ├── Migrations/
@@ -121,7 +123,7 @@ The full ISU catalog of courses. Read-mostly. Same data regardless of major.
 class Course {                    // table: courses
   Guid Id;                // surrogate primary key (DB)
   string ClassId;         // "MATH-1650" — stable semantic key, referenced from
-                          //   slots, prereq trees, cross-listings, and PlanItem
+                          //   slots, prereq trees, cross-listings, and StudentCourse
   string Code;            // "Math 1650" — display string (chart format)
   string Name;            // "Calc I" — chart abbreviation, used in UI tiles
   string? OfficialName;   // "Calculus I" — catalog name, used in detail views
@@ -250,8 +252,8 @@ var cpre4940 = new Course
 
 When the engine evaluates whether `CPRE-4940` can be placed in semester N for a given student:
 
-1. **Prereqs check (Or):** at least one of `CPRE-2320`, `EE-2320`, or `CYBE-2340` must be `Completed` in a `PlanItem` with semester < N. Cross-listing equivalence applies — a student who took `CYBE-2340` satisfies any reference to `CPRE-2340` (and vice versa).
-2. **Coreqs check (Or with `acceptConcurrent`):** at least one of `CPRE-4910` or `EE-4910` must be in a `PlanItem` with semester ≤ N (because `acceptConcurrent: true` means "or enrolled in this term").
+1. **Prereqs check (Or):** at least one of `CPRE-2320`, `EE-2320`, or `CYBE-2340` must be `Completed` in a `StudentCourse` with semester < N. Cross-listing equivalence applies — a student who took `CYBE-2340` satisfies any reference to `CPRE-2340` (and vice versa).
+2. **Coreqs check (Or with `acceptConcurrent`):** at least one of `CPRE-4910` or `EE-4910` must be in a `StudentCourse` with semester ≤ N (because `acceptConcurrent: true` means "or enrolled in this term").
 3. If both pass, the placement is valid. If either fails, the engine returns `NoValidSemester` for the candidate, advances to N+1, and retries.
 
 #### Other realistic shapes you'll see in the catalog
@@ -357,33 +359,84 @@ enum SlotType
 
 **No `prereqs` or `coreqs` per slot** — those live on `Course` (Tier 1). Importer ensures each `classId` exists in `courses`, then inserts `DegreeFlow` + `FlowchartSlot` rows.
 
-### Tier 3: Student Plan (the user's xref)
+### Tier 3: Student state — courses + flow associations (no `Plan` entity)
+
+The student's academic record (`StudentCourse[]`) lives **independently of any degree flow**. A separate junction table (`StudentDegreeFlow[]`) associates the student with one or more flows, each with its own lifecycle status. This decoupling is intentional:
+
+- Undeclared students have `StudentCourse`s but zero `StudentDegreeFlow`s.
+- Major switching is a status transition on the junction, not a data move.
+- Double majors are first-class — multiple `StudentDegreeFlow` rows with `Status=Active`.
+- The same `StudentCourse[]` overlays cleanly against any flow (Active or Pending), enabling what-if exploration and future features like "closest matching degree."
 
 ```csharp
-class Student { Guid Id; string DisplayName; }
+class Student {                       // table: students
+  Guid Id;
+  string DisplayName;
+}
 
-class Plan {                      // table: plans
+class StudentCourse {                 // table: student_courses
+  Guid Id;
+  Guid StudentId;                     // courses live directly on Student — no Plan layer
+  string CourseId;                    // → Course.ClassId (e.g., "MATH-1650")
+                                      //   string semantic FK, stable across catalog re-seeds
+  int AcademicTerm;                   // YYYYSS encoding — see "Academic term encoding" below
+  StudentCourseStatus Status;         // Planned | InProgress | Completed | Failed | Withdrawn
+  string? Grade;                      // populated for Completed/Failed
+}
+
+enum StudentCourseStatus { Planned, InProgress, Completed, Failed, Withdrawn }
+
+class StudentDegreeFlow {             // table: student_degree_flows  (junction)
   Guid Id;
   Guid StudentId;
-  Guid SelectedDegreeFlowId;      // the flow they're following
-  string? PreviousSnapshotJson;   // for single-level undo
+  Guid DegreeFlowId;                  // → DegreeFlow.Id
+  StudentDegreeFlowStatus Status;     // Pending | Active | Deleted | Completed
+  DateTime CreatedAt;                 // when this association was created
+  DateTime? StatusChangedAt;          // when Status last transitioned (null if never changed)
 }
 
-class PlanItem {                  // table: plan_items — the xref
-  Guid Id;
-  Guid PlanId;
-  string CourseId;                // matches Course.ClassId (e.g., "MATH-1650")
-                                  //   — string semantic FK, not Guid surrogate FK,
-                                  //   so PlanItems are stable across catalog re-seeds
-  int Semester;                   // past, present, or future
-  PlanItemStatus Status;          // Planned | InProgress | Completed | Failed | Withdrawn
-  string? Grade;                  // populated for Completed/Failed
+enum StudentDegreeFlowStatus {
+  Pending,        // student is exploring or considering this flow
+  Active,         // currently following this flow (multiple Active allowed for double major)
+  Deleted,        // soft-deleted; was Active or Pending, now abandoned
+  Completed,      // graduated under this flow
 }
-
-enum PlanItemStatus { Planned, InProgress, Completed, Failed, Withdrawn }
 ```
 
-The `PlanItem` table holds the student's full academic record: prior semesters (`Status = Completed/Failed`), current semester (`Status = InProgress`), and future plans (`Status = Planned`).
+**`StudentCourse` is the student's full academic record:** prior terms (`Status = Completed/Failed`), current term (`InProgress`), planned future terms (`Planned`), and abandoned attempts (`Withdrawn`). Independent of degree-flow choice — the same record powers every overlay.
+
+**No uniqueness constraint** on `(StudentId, Status=Active)` — double majors are explicitly supported.
+
+#### Academic term encoding
+
+`StudentCourse.AcademicTerm` is a 6-digit int packing `YYYY` (academic-cycle ending year) + `SS` (season). Example: Fall 2025 in academic year 2025-26 encodes as `202602`.
+
+```csharp
+enum Season { Summer = 1, Fall = 2, Winter = 3, Spring = 4 }
+
+// Helper — lives in Services/AcademicTerm.cs
+static class AcademicTerm
+{
+    public static (int Year, Season Season) Decode(int term);     // 202602 → (2026, Fall)
+    public static int Encode(int year, Season season);             // (2026, Fall) → 202602
+    public static AcademicTerm Next(AcademicTerm current);         // sequence walk
+}
+```
+
+**Convention:** `Year` is the *ending* year of the academic cycle. Academic year 2025-26 → `2026`. Both Fall 2025 and Spring 2026 belong to that cycle; both encode with `2026` as the year. Winter is retained even though ISU's standard calendar is Summer/Fall/Spring — covers winter-session enrollments and future-proofs the schema.
+
+The encoding gives true chronological ordering: `202601` (Summer 2026) < `202602` (Fall 2026) < `202603` (Winter 2026) < `202604` (Spring 2026).
+
+#### Overlay as a first-class capability
+
+Because `StudentCourse` is independent of any `DegreeFlow`, the **overlay function** — given `(IReadOnlyList<StudentCourse>, DegreeFlow, Catalog)` produce slot-fill mapping + unfilled requirements + surplus courses — becomes a core analytical primitive, not a one-off "what-if" feature:
+
+- **Major switching** ("show my coursework against CprE 2025-26") = overlay
+- **Future: closest matching degree** ("of all flows in the catalog, which would I be closest to completing?") = overlay × N
+- **Future: minor evaluation** ("am I close to satisfying a Math minor?") = overlay against minor-requirement flows
+- **Default plan rendering** ("show my CybE plan") = overlay against the active flow
+
+The overlay function is purely deterministic — same inputs always produce the same output, no hidden state.
 
 ### Visual ER diagram
 
@@ -434,28 +487,30 @@ erDiagram
         string DisplayName
     }
 
-    Plan {
+    StudentCourse {
         Guid Id PK
         Guid StudentId FK
-        Guid SelectedDegreeFlowId FK
-        json PreviousSnapshotJson "single-level undo"
+        string CourseId FK "to Course.ClassId (string semantic FK)"
+        int AcademicTerm "YYYYSS — 202602 = Fall 2026"
+        StudentCourseStatus Status "Planned/InProgress/Completed/Failed/Withdrawn"
+        string Grade
     }
 
-    PlanItem {
+    StudentDegreeFlow {
         Guid Id PK
-        Guid PlanId FK
-        string CourseId FK "to Course.ClassId (string semantic FK)"
-        int Semester
-        PlanItemStatus Status "Planned/InProgress/Completed/Failed/Withdrawn"
-        string Grade
+        Guid StudentId FK
+        Guid DegreeFlowId FK
+        StudentDegreeFlowStatus Status "Pending/Active/Deleted/Completed"
+        DateTime CreatedAt
+        DateTime StatusChangedAt
     }
 
     DegreeFlow ||--o{ FlowchartSlot : "has slots"
     FlowchartSlot }o--o| Course : "references when SlotType=DegreeClass"
-    Student ||--|| Plan : "owns one"
-    Plan }o--|| DegreeFlow : "follows"
-    Plan ||--o{ PlanItem : "contains"
-    PlanItem }o--|| Course : "is an enrollment in"
+    Student ||--o{ StudentCourse : "has academic record"
+    Student ||--o{ StudentDegreeFlow : "associated with flows"
+    StudentDegreeFlow }o--|| DegreeFlow : "references"
+    StudentCourse }o--|| Course : "is an enrollment in"
 ```
 
 **Notes on the diagram:**
@@ -463,16 +518,20 @@ erDiagram
 - **Three tiers, color-coded by purpose** (not visible in pure ER but follows the entity grouping):
   - Tier 1 (read-mostly catalog): `Course`
   - Tier 2 (per-flow recommendation): `DegreeFlow`, `FlowchartSlot`
-  - Tier 3 (per-student state): `Student`, `Plan`, `PlanItem`
+  - Tier 3 (per-student state): `Student`, `StudentCourse`, `StudentDegreeFlow`
+- **No `Plan` entity** — Student is the root, with `StudentCourse[]` (academic record) and `StudentDegreeFlow[]` (flow associations with lifecycle status) as direct children. `Plan` was redundant once courses were decoupled from flows.
 - **`json` columns are EF Core JSON columns**, not separate tables. `CrossListedAs`, `RecommendedPairing`, `Prereqs`, `Coreqs`, `Notes`, `TypicallyOffered` are all stored as JSON. They could be normalized into join tables in a future plan if query patterns demand it (e.g., "find every course that lists X as a prereq"), but for the POC the JSON shape is simpler and matches the seed-file format.
-- **`FlowchartSlot.ClassId` and `PlanItem.CourseId` are string semantic FKs** referencing `Course.ClassId`, not surrogate-key joins on `Course.Id`. This makes plans and slots survive `Course` row re-seeds (the ClassId stays stable; the surrogate Guid does not).
+- **`FlowchartSlot.ClassId` and `StudentCourse.CourseId` are string semantic FKs** referencing `Course.ClassId`, not surrogate-key joins on `Course.Id`. This makes student records and slots survive `Course` row re-seeds (the ClassId stays stable; the surrogate Guid does not).
 - **Cross-listings are not enforced by the DB.** The validator and the cascade engine consult the `Course.CrossListedAs` JSON list at runtime; equivalence is computed in-memory.
 
 ### Why this tiering matters
 
-- **Switching majors is just a different lens.** No data moves; only the rendered overlay changes.
+- **Courses exist independent of degree choice.** Undeclared students still take classes. Major switchers don't lose their record. The data model reflects that reality.
+- **Switching majors is just a status transition.** Mark the old `StudentDegreeFlow` as `Deleted`, mark the new one as `Active`. No data moves; the overlay just renders against a different flow.
+- **Multiple Active flows = double major.** No special-casing needed; the model supports it natively.
 - **Catalog-prereqs are canonical.** Cascade engine reads them from `Course`, never from a flow file. A flow file may include them (for self-containment) but they're validated on import.
-- **A `PlanItem` doesn't know which flow slot it satisfies.** That mapping is computed fresh on render — keeps invariants simple, no stale bindings to invalidate.
+- **A `StudentCourse` doesn't know which flow slot it satisfies.** That mapping is computed fresh on render via the overlay function — keeps invariants simple, no stale bindings to invalidate.
+- **Overlay is the rendering primitive.** The same function powers active-flow display, what-if exploration, and (future) closest-match suggestions and minor evaluation.
 
 ## 5. Cascade Engine
 
@@ -482,37 +541,41 @@ Pure C# in `Services/`. No DB, no I/O, no clocks. Given `(Plan, DegreeFlow, Cata
 
 ```csharp
 class CascadeRequest {
-  Plan CurrentPlan;
-  DegreeFlow ActiveFlow;
+  Student Student;
+  StudentDegreeFlow ActiveAssociation;  // junction row identifying which Active flow to operate on
+  DegreeFlow Flow;                      // the actual flow definition (joined from association)
+  IReadOnlyList<StudentCourse> Courses; // the student's full academic record (all flows)
   IReadOnlyList<Course> Catalog;        // every course referenced
   CascadeTrigger Trigger;
-  CascadeOptions Options;               // target/cap credits per semester
+  CascadeOptions Options;               // target/cap credits per semester, projection rules
 }
 
 abstract class CascadeTrigger { }
-class CourseFailed         : CascadeTrigger { Guid PlanItemId; string Grade; }
-class CourseSkipped        : CascadeTrigger { Guid PlanItemId; int? RescheduledTo; }
-class CourseAddedToSem     : CascadeTrigger { Guid CourseId; int Semester; }
-class CourseRemovedFromSem : CascadeTrigger { Guid PlanItemId; }
-class CourseSubstituted    : CascadeTrigger { Guid PlanItemId; Guid NewCourseId; }
+class CourseFailed         : CascadeTrigger { Guid StudentCourseId; string Grade; }
+class CourseSkipped        : CascadeTrigger { Guid StudentCourseId; int? RescheduledToTerm; }
+class CourseAddedToTerm    : CascadeTrigger { string CourseId; int AcademicTerm; }
+class CourseRemovedFromTerm: CascadeTrigger { Guid StudentCourseId; }
+class CourseSubstituted    : CascadeTrigger { Guid StudentCourseId; string NewCourseId; }
 class WhatIfMajorSwitched  : CascadeTrigger { Guid NewDegreeFlowId; }
 ```
+
+**Why a multi-flow-aware request:** A student with multiple `Active` flows (double major) might trigger a cascade that affects more than one degree path. The engine operates on `ActiveAssociation` (one focal flow) per call. The controller dispatches a separate cascade run per Active flow when a triggered change has cross-flow impact, then surfaces both proposals to the wizard.
 
 ### Algorithm
 
 1. Apply the trigger event to a working copy of the plan.
-2. Compute the **affected set** — walk the prereq DAG forward from the triggering course; any `PlanItem` with broken prereqs joins the set.
+2. Compute the **affected set** — walk the prereq DAG forward from the triggering course; any `StudentCourse` with broken prereqs joins the set.
    - When evaluating "is course X completed," consult the cross-listing equivalence class — taking `EE 4910` satisfies any reference to `CPRE 4910`.
    - Classification gates (`PrereqClassification`) are evaluated against the student's projected classification at the candidate semester (Sophomore = ≥ 30 credits earned, Junior = ≥ 60, Senior = ≥ 90 — configurable via `CascadeOptions`).
    - Core-credit gates (`PrereqCoreCredits`, e.g. CprE 4910's "29 Core Cr") are evaluated against the running total of credits earned in courses tagged with the program's core categories.
-3. For each affected `PlanItem`, find `earliestValidSemester` — the first semester ≥ current where:
+3. For each affected `StudentCourse`, find `earliestValidSemester` — the first semester ≥ current where:
    - All prereqs are completed (or scheduled in an earlier semester).
    - Hard coreqs (catalog-derived `acceptConcurrent: true` references) are scheduled in the same or earlier semester.
    - Grade requirements on prereqs are satisfiable.
    - **Term-offering constraint**: the candidate semester's term (Fall/Spring/Summer) is in `Course.TypicallyOffered` (if non-empty). If the candidate term is unavailable, advance to the next valid term.
 4. Topologically order moves so dependencies are placed before dependents.
 5. Detect resulting per-semester state — emit `FillGapDecision` for under-credit semesters, `SemesterOverload` warning for over-credit semesters.
-6. **Soft-pairing pass**: for every PlanItem in a `RecommendedPairing`, check whether its paired item is still in the same semester. If not, emit `RecommendedPairingBroken` warning and offer a `ReunitePairing` decision (move the orphan to keep the pairing intact). User can accept or override.
+6. **Soft-pairing pass**: for every StudentCourse in a `RecommendedPairing`, check whether its paired item is still in the same semester. If not, emit `RecommendedPairingBroken` warning and offer a `ReunitePairing` decision (move the orphan to keep the pairing intact). User can accept or override.
 7. Return the `CascadeProposal` — never mutate persistent state.
 
 **Semester-to-term mapping:** `CascadeOptions` carries the `StartTerm` (Fall or Spring) and the engine alternates from there. E.g., `StartTerm = Fall` → Sem 1 = Fall, Sem 2 = Spring, Sem 3 = Fall, etc. Summer is never auto-assigned but the user can manually place items in Summer slots.
@@ -521,16 +584,16 @@ class WhatIfMajorSwitched  : CascadeTrigger { Guid NewDegreeFlowId; }
 
 ```csharp
 class CascadeProposal {
-  Plan ProposedPlan;
+  IReadOnlyList<StudentCourse> ProposedCourses;   // hypothetical post-cascade StudentCourse[]
   IReadOnlyList<CascadeMove> Moves;
   IReadOnlyList<DecisionPoint> Decisions;
   IReadOnlyList<Warning> Warnings;
-  int ProjectedGraduationSemester;
+  int ProjectedGraduationTerm;                    // AcademicTerm-encoded (YYYYSS)
 }
 
 class CascadeMove {
-  Guid PlanItemId; string CourseCode;
-  int FromSemester, ToSemester;
+  Guid StudentCourseId; string CourseCode;
+  int FromAcademicTerm, ToAcademicTerm;           // YYYYSS encoding
   string Reason;
 }
 
@@ -545,7 +608,7 @@ class ConfirmOverloadDecision: DecisionPoint {
   decimal CurrentCredits; decimal SoftCap; List<MovableItem> CanDeferToLater;
 }
 
-class Warning { WarningKind Kind; string Message; List<Guid> RelatedPlanItemIds; }
+class Warning { WarningKind Kind; string Message; List<Guid> RelatedStudentCourseIds; }
 enum WarningKind { SemesterOverload, GraduationPushed, GradeRequirementUnmet, NoValidSemester, RecommendedPairingBroken }
 
 // Supporting types referenced by DecisionPoint subclasses:
@@ -553,8 +616,8 @@ class SlotOption {              // a generic flowchart-slot suggestion to fill a
   string Category;              // "GenEd", "TechElective", ...
   decimal Credits;
 }
-class MovableItem {             // a PlanItem the user could defer to alleviate overload
-  Guid PlanItemId; string CourseCode; decimal Credits;
+class MovableItem {             // a StudentCourse the user could defer to alleviate overload
+  Guid StudentCourseId; string CourseCode; decimal Credits;
   int EarliestPossibleSemester; // engine-computed alternative placement
 }
 ```
@@ -589,12 +652,12 @@ class MovableItem {             // a PlanItem the user could defer to alleviate 
 - **AC-15** Circular prereq encountered (data error) → engine surfaces a clear error rather than spinning.
 
 **Multi-major / overlay (forward-looking, tested now to keep the model honest):**
-- **AC-16** `WhatIfMajorSwitched` to a different `DegreeFlow` → produces an overlay proposal: which `PlanItem`s map to which slots in the new flow, what's missing, what's surplus. No mutation of stored plan.
+- **AC-16** `WhatIfMajorSwitched` to a different `DegreeFlow` → produces an overlay proposal: which `StudentCourse`s map to which slots in the new flow, what's missing, what's surplus. No mutation of stored plan.
 - **AC-17** Same `Plan` overlaid against two different `DegreeFlow`s → overlays computed independently, no shared state leakage.
 
 **Cross-listing equivalence:**
-- **AC-19** Student took `EE 4910` (a cross-listing of `CPRE 4910`) → engine treats CPRE 4910 slot as filled by EE 4910 PlanItem; downstream prereqs referencing CPRE 4910 are satisfied.
-- **AC-20** Slot references `CYBE 2310`; student has CPRE 2310 in their PlanItems → overlay correctly maps CPRE 2310 to the slot.
+- **AC-19** Student took `EE 4910` (a cross-listing of `CPRE 4910`) → engine treats CPRE 4910 slot as filled by EE 4910 StudentCourse; downstream prereqs referencing CPRE 4910 are satisfied.
+- **AC-20** Slot references `CYBE 2310`; student has CPRE 2310 in their StudentCourses → overlay correctly maps CPRE 2310 to the slot.
 
 **Soft pairings (recommendedPairing):**
 - **AC-26** CprE 1850 (Sem 1) has `recommendedPairing: [MATH-1650]`. User skips Math 1650 from Sem 1 → catalog allows CprE 1850 to remain (placement OR Math 1430 OR Math 1650). Engine emits `RecommendedPairingBroken` warning + `ReunitePairing` decision suggesting CprE 1850 also move to wherever Math 1650 went. User can accept (move both) or override (leave CprE 1850 in Sem 1).
@@ -606,37 +669,48 @@ class MovableItem {             // a PlanItem the user could defer to alleviate 
 
 **Classification gates:**
 - **AC-23** `PrereqClassification(Sophomore)` on CPRE 2810 → engine projects classification at candidate semester from cumulative credits; rejects placement when projected classification < required.
-- **AC-24** Cumulative credits computed from completed PlanItems + planned earlier-semester PlanItems → consistent with how `earliestValidSemester` walks forward.
+- **AC-24** Cumulative credits computed from completed StudentCourses + planned earlier-semester StudentCourses → consistent with how `earliestValidSemester` walks forward.
 
 **Core-credit gates:**
-- **AC-25** `PrereqCoreCredits(29)` on CprE 4910 → engine sums credits from PlanItems whose Course's category is part of the program's core (per `MajorPath.CoreCategories`); blocks placement until threshold is met.
+- **AC-25** `PrereqCoreCredits(29)` on CprE 4910 → engine sums credits from StudentCourses whose Course's category is part of the program's core (per `MajorPath.CoreCategories`); blocks placement until threshold is met.
 
 **Validation entry point (used by every read):**
-- **AC-18** `Engine.Validate(plan, flow)` returns the same set of issues that would be detected if every PlanItem were re-checked individually — exhaustive and consistent with cascade behavior. Includes cross-listing, term-offering, and classification-gate checks.
+- **AC-18** `Engine.Validate(courses, flow)` returns the same set of issues that would be detected if every StudentCourse were re-checked individually — exhaustive and consistent with cascade behavior. Includes cross-listing, term-offering, and classification-gate checks.
+
+**Multi-flow / overlay-as-primitive:**
+- **AC-28** Student has Active=CybE + Pending=CprE; cascading a CybE-triggered change does not modify the Pending flow's overlay or any data behind it. The Pending overlay remains a pure read on the same `StudentCourse[]`.
+- **AC-29** Student has two Active flows (CybE + CprE double major); a triggered cascade reports its impact on both flows by running the engine once per Active association and merging the proposals before presenting to the wizard.
+- **AC-30** Overlay function is purely deterministic: given the same `(IReadOnlyList<StudentCourse>, DegreeFlow, IReadOnlyList<Course>)` inputs, returns the same `(SlotFillMap, UnfilledSlots, SurplusCourses, CompletionPercent)` output every time. No hidden state, no I/O, no clock dependence.
+- **AC-31** Overlay correctly maps cross-listed enrollments: a `StudentCourse` with `CourseId="EE-4910"` satisfies a `FlowchartSlot` referencing `CPRE-4910` (per `Course.CrossListedAs`), counted exactly once.
 
 ## 6. API Surface
 
 REST + JSON. Base path `/api/v1`. Behind JWT-stub middleware; `User.FindFirst("studentId")` is the active student.
 
 ```
-GET    /api/v1/catalog/courses            → CourseDto[]
-GET    /api/v1/catalog/courses/{id}       → CourseDetailDto
-GET    /api/v1/catalog/courses?dept=CprE  (optional filter)
+GET    /api/v1/catalog/courses                      → CourseDto[]
+GET    /api/v1/catalog/courses/{id}                 → CourseDetailDto
+GET    /api/v1/catalog/courses?dept=CprE            (optional filter)
 
-GET    /api/v1/flows                      → DegreeFlowSummaryDto[]
-GET    /api/v1/flows/{id}                 → DegreeFlowDetailDto
+GET    /api/v1/flows                                → DegreeFlowSummaryDto[]
+GET    /api/v1/flows/{id}                           → DegreeFlowDetailDto
 
-GET    /api/v1/me                         → StudentDto
-GET    /api/v1/me/plan                    → PlanDto (with PlanItems + ValidationIssues)
-PUT    /api/v1/me/plan                    → PlanDto (e.g., switch SelectedDegreeFlowId)
+GET    /api/v1/me                                   → StudentDto
 
-GET    /api/v1/me/plan/items              → PlanItemDto[]
-POST   /api/v1/me/plan/items              → PlanDto (with refreshed ValidationIssues)
-PUT    /api/v1/me/plan/items/{id}         → PlanDto
-DELETE /api/v1/me/plan/items/{id}         → 204
+GET    /api/v1/me/courses?term=&status=             → StudentCourseDto[]
+POST   /api/v1/me/courses                           → StudentCourseDto
+PUT    /api/v1/me/courses/{id}                      → StudentCourseDto
+DELETE /api/v1/me/courses/{id}                      → 204
 
-POST   /api/v1/cascade/preview            → CascadeProposalDto
-POST   /api/v1/cascade/apply              → PlanDto (committed)
+GET    /api/v1/me/flows?status=                     → StudentDegreeFlowDto[]
+POST   /api/v1/me/flows                             → StudentDegreeFlowDto
+PUT    /api/v1/me/flows/{id}/status                 → StudentDegreeFlowDto
+DELETE /api/v1/me/flows/{id}                        → 204
+
+GET    /api/v1/me/flows/{id}/overlay                → OverlayDto
+
+POST   /api/v1/cascade/preview                      → CascadeProposalDto
+POST   /api/v1/cascade/apply                        → StudentCourseDto[] + StudentDegreeFlowDto[] (changed)
 ```
 
 ### Cascade preview/apply: stateless iteration
@@ -656,7 +730,7 @@ The wizard is client-orchestrated. The client carries the trigger and accumulati
 ```jsonc
 // response
 {
-  "proposedPlan": { /* hypothetical Plan + items */ },
+  "proposedCourses": [ /* hypothetical post-cascade StudentCourse[] */ ],
   "moves": [
     { "planItemId": "...", "courseCode": "CprE 1850", "from": 1, "to": 2,
       "reason": "Coreq Math 1650 moved to Sem 2" }
@@ -664,13 +738,13 @@ The wizard is client-orchestrated. The client carries the trigger and accumulati
   "decisions": [],          // empty when ready to apply
   "warnings": [
     { "kind": "SemesterOverload", "message": "Sem 2 = 22 cr (cap 18)",
-      "relatedPlanItemIds": [...] }
+      "relatedStudentCourseIds": [...] }
   ],
   "projectedGraduationSemester": 9
 }
 ```
 
-`/apply` accepts the same body shape, runs the engine once more for safety, persists in a transaction, and returns the new `PlanDto`. Returns 409 if server state has changed since the preview.
+`/apply` accepts the same body shape, runs the engine once more for safety, persists in a transaction, and returns the changed `StudentCourseDto[]` plus any affected `StudentDegreeFlowDto[]`. Returns 409 if server state has changed since the preview.
 
 ### Cross-cutting
 
@@ -687,11 +761,11 @@ Routine actions hit raw REST endpoints. Each mutation response includes refreshe
 
 | User action | API call |
 |---|---|
-| Drag a course from catalog into a semester | `POST /me/plan/items` |
-| Move a planned course between semesters | `PUT /me/plan/items/{id}` |
-| Pick a specific elective for a placeholder slot | `PUT /me/plan/items/{id}` |
-| Mark course InProgress / Completed (passing) | `PUT /me/plan/items/{id}` |
-| Remove a course | `DELETE /me/plan/items/{id}` |
+| Drag a course from catalog into a semester | `POST /me/courses` |
+| Move a planned course between semesters | `PUT /me/courses/{id}` |
+| Pick a specific elective for a placeholder slot | `PUT /me/courses/{id}` |
+| Mark course InProgress / Completed (passing) | `PUT /me/courses/{id}` |
+| Remove a course | `DELETE /me/courses/{id}` |
 
 The frontend renders `ValidationIssues` from the server — **no duplicated rule logic in TypeScript**. Issues appear as red badges on affected tiles plus a "fix prereq issues" banner that opens the wizard if the user wants help.
 
@@ -715,12 +789,12 @@ The wizard fires only when the user takes an action that intentionally changes t
 4. UI surfaces remaining `decisions` one at a time; user answers each.
 5. After each answer, `/preview` is called again with accumulating `decisionAnswers`; eventually `decisions` is empty.
 6. User reviews any final `warnings` (e.g., overload), accepts or modifies.
-7. `POST /cascade/apply` commits inside a transaction; new `PlanDto` returned.
+7. `POST /cascade/apply` commits inside a transaction; changed `StudentCourseDto[]` and any affected `StudentDegreeFlowDto[]` returned.
 8. UI animates from current to proposed; toast confirms ("Graduation now Spring '29 — one semester later").
 
 ### Undo
 
-Single-level undo via `Plan.PreviousSnapshotJson` — overwritten on each successful `/apply`. POC scope; multi-level history is later.
+Undo is **deferred**. The previous spec proposed a `Plan.PreviousSnapshotJson` single-level undo, but that field disappeared with the `Plan` entity. Multi-level history (action log) is a future feature; in the POC, the wizard's preview-then-apply flow lets users back out *before* committing, which covers the common case.
 
 ## 8. Validation (server-computed)
 
@@ -731,13 +805,13 @@ class ValidationIssueDto {
   ValidationIssueKind Kind;     // BrokenPrereq | BrokenCoreq | GradeRequirementUnmet
                                 // | SemesterOverload | InsufficientCredits
                                 // | TermNotOffered | ClassificationGateUnmet | CoreCreditsGateUnmet
-  Guid? PlanItemId;
+  Guid? StudentCourseId;
   int Semester;
   string Message;               // "Math 1660 needs Math 1650 with C- (currently in Sem 4)"
 }
 ```
 
-Returned alongside every `PlanDto` (read or mutation response). Computed by reusing the same prereq evaluator the cascade engine uses — single source of truth, no duplication in TypeScript.
+Returned alongside every overlay or course-mutation response. Computed by reusing the same prereq evaluator the cascade engine uses — single source of truth, no duplication in TypeScript.
 
 ## 9. Testing Strategy (TDD-first)
 
@@ -809,7 +883,7 @@ Recording the journey for context in future sessions:
 | 6 | React + Vite + TS / ASP.NET Core / EF Core / SQLite (POC) → SQL Server (prod) | Production architecture from day 1, scoped feature surface |
 | 7 | 3 backend projects: Api / Services / Data; entities in Data/Entity | User's standard layout |
 | 8 | JWT/claims auth — stubbed middleware for POC, real impl later | Defer auth complexity, keep the boundary in place |
-| 9 | Three-tier domain model: Catalog (registrar) / DegreeFlow / Plan+PlanItem (xref) | Clean separation; enables overlay/major-switch |
+| 9 | Three-tier domain model: Catalog (registrar) / DegreeFlow / Plan+StudentCourse (xref) | Clean separation; enables overlay/major-switch |
 | 10 | Prereqs canonical on `Course`; flow JSON denormalizes for self-containment | Single source of truth, human-readable files |
 | 11 | Stateless `/cascade/preview` with accumulating answers | Simpler server; client orchestrates wizard |
 | 12 | Direct mutations always succeed; warnings via server-computed ValidationIssues | Simple UI, no rule duplication |
@@ -822,9 +896,15 @@ Recording the journey for context in future sessions:
 | 19 | Schema extensions adopted from user's flow file: `Notes`, `CreditNote`, `ClassNote`, slot-level `DisplayName` | Preserves chart's display nuance (R cr, 3/4cr, "Soph Class") and supports concise UI tiles vs. full official names |
 | 20 | `Prereqs` and `Coreqs` removed from `FlowchartSlot` — catalog (`Course.Prereqs`) is the single source of truth | Once we had the actual catalog, duplicating prereqs in the flow created drift risk with no real benefit; catalog encodes hard coreqs via `acceptConcurrent` flags |
 | 21 | Flow keeps soft `RecommendedPairing` (renamed from coreqs) for the chart's red-solid lines | Captures curriculum-recommended pairings (e.g., CprE 1850 + Math 1650) that aren't catalog-enforced; engine emits a `RecommendedPairingBroken` warning + offers a `ReunitePairing` decision |
-| 22 | `Course.ClassId` (string, e.g. `"MATH-1650"`) is the stable semantic key, separate from the surrogate `Guid Id` and the human-readable `Code` (`"Math 1650"`) | Seed JSON uses `classId` as the canonical foreign-key form; mixing it with `Code` (display string with spaces) caused brittleness; surrogate `Id` is for EF joins, `ClassId` is for cross-references. PlanItem.CourseId is `string` referencing `ClassId` so plans survive catalog re-seeds |
+| 22 | `Course.ClassId` (string, e.g. `"MATH-1650"`) is the stable semantic key, separate from the surrogate `Guid Id` and the human-readable `Code` (`"Math 1650"`) | Seed JSON uses `classId` as the canonical foreign-key form; mixing it with `Code` (display string with spaces) caused brittleness; surrogate `Id` is for EF joins, `ClassId` is for cross-references. StudentCourse.CourseId is `string` referencing `ClassId` so plans survive catalog re-seeds |
 | 23 | `FlowchartSlot.Kind` + `FlowchartSlot.Category` collapsed into a single `SlotType` enum (`DegreeClass`, `ElectiveGenEd`, `ElectiveMath`, `ElectiveTech`, `ElectiveCybE`, `ElectiveCprE`) | One typed field instead of two correlated string-and-enum fields. Eliminates invalid combos (Kind=FixedClass + Category="GenEd"). Category-search queries (`"give me courses eligible for this elective slot"`) drive directly off the enum value via a `CategoryFor(SlotType)` mapping. New elective categories require an enum addition rather than a free-text string |
 | 24 | `FlowchartSlot.RequiredCredits` is nullable; populated only for `Elective*` slots | `DegreeClass` slots already point at a `Course` whose `Credits` field is authoritative — duplicating it on the slot is drift risk. For elective slots there's no specific course yet, so the slot must declare the credit budget the user has to fill |
+| 25 | `PlanItem` renamed to `StudentCourse` and decoupled from any flow (no `PlanId` FK); courses live directly on `Student` | A student takes classes regardless of major status — undeclared, mid-switch, double-major all work without contortions. The same `StudentCourse[]` overlays cleanly against any flow |
+| 26 | `Plan` entity removed entirely | Once courses were decoupled from flows, `Plan` had nothing to do (no items to contain, no `SelectedDegreeFlowId` to hold). `Student` is now the root |
+| 27 | `StudentDegreeFlow` junction with `Status` (Pending / Active / Deleted / Completed) replaces `Plan.SelectedDegreeFlowId` | Major switching is a status transition, not a data move. Multiple Active rows = double major, supported natively. Pending = what-if exploration without commitment |
+| 28 | `StudentCourse.Semester` (was 1..N sequence) removed; `AcademicTerm` (YYYYSS encoding: 202602 = Fall 2026) is the chronological identifier | True chronology beats sequence. Year is the *ending* year of the academic cycle (25-26 → 2026); season values: Summer=1, Fall=2, Winter=3, Spring=4. Winter retained for future / winter-session use |
+| 29 | Overlay (`StudentCourse[]` + `DegreeFlow` → fit) elevated to a first-class core capability, not a one-off "what-if" | Same function powers active-flow rendering, what-if exploration, and (future) closest-matching-degree suggestions and minor evaluation. Pure / deterministic by design |
+| 30 | Single-level undo (`Plan.PreviousSnapshotJson`) dropped; rely on wizard preview-then-apply for back-out | Removing `Plan` left undo without a home; the wizard's preview already lets the user cancel before any commit, which covers the common case. Multi-level action log deferred |
 
 ## 11. Open items for the implementation plan
 
