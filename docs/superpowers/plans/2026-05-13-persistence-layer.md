@@ -14,6 +14,8 @@
 
 **Out of scope (later plans):** Cascade engine (plan #3), API controllers (plan #4), AI service (plan #5), React frontend (plan #6). EF migrations targeting SQL Server (provider swap in deployment plan, later).
 
+> **Addendum specs (added after this plan was written):** `2026-05-13-external-transfer-v1-design.md` adds an `EnrollmentSource` enum + 3 nullable transfer fields (`TransferInstitution`, `TransferExternalCourseCode`, `TransferNote`) to `StudentCourse` — these need EF mapping in `StudentCourseConfiguration` (Task 7) and will appear in the InitialCreate migration (Task 8). `2026-05-13-pending-grade-and-coreq-cascade-design.md` adds `PendingGradeDependency` to the cascade-engine `ValidationIssueKind`, plus `Severity` and `RelatedStudentCourseId` fields to the cascade-engine `ValidationIssueDto`; the cascade engine itself is plan #3, so the addendum is informational here — but note that no schema change is required for the pending-grade state (it's `Status = Completed + Grade = null`, both already supported by the existing column shape).
+
 ---
 
 ## File structure
@@ -848,6 +850,8 @@ git commit -m "feat(data): DegreeFlow + FlowchartSlot configurations with JSON c
 - Create: `src/ISUCourseManager.Data/Configurations/StudentDegreeFlowConfiguration.cs`
 - Test: `tests/ISUCourseManager.Data.Tests/StudentConfigurationTests.cs`
 
+> **Addendum:** `StudentCourseConfiguration` below maps the four external-transfer fields added by `docs/superpowers/specs/2026-05-13-external-transfer-v1-design.md` (§3): `EnrollmentSource` (stored as a string discriminator, matching the project-wide enum convention used by `StudentCourseStatus`, `SlotType`, etc.) plus three nullable transfer-metadata strings. The cross-field invariant ("External requires institution + external course code; Internal forbids any transfer field") is enforced server-side in the Service layer (per the addendum spec §8), not via a database `CHECK` constraint — that keeps the rule reusable across providers and lets the API return a friendly 400 rather than a SQL error.
+
 - [ ] **Step 1: Write the failing tests**
 
 Create `tests/ISUCourseManager.Data.Tests/StudentConfigurationTests.cs`:
@@ -1021,6 +1025,22 @@ public class StudentCourseConfiguration : IEntityTypeConfiguration<StudentCourse
         builder.Property(c => c.Status).HasConversion<string>().HasMaxLength(16);
         builder.Property(c => c.Grade).HasMaxLength(8);
 
+        // External-transfer addendum (2026-05-13-external-transfer-v1-design.md §3).
+        // EnrollmentSource stored as string (matches StudentCourseStatus / SlotType convention).
+        // Default Internal so existing rows are unaffected by the additive migration.
+        builder.Property(c => c.EnrollmentSource)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .HasDefaultValue(EnrollmentSource.Internal);
+        builder.Property(c => c.TransferInstitution).HasMaxLength(200);          // free text
+        builder.Property(c => c.TransferExternalCourseCode).HasMaxLength(50);    // e.g. "MATH 113"
+        builder.Property(c => c.TransferNote).HasMaxLength(1000);                // free-text note
+        // NOTE: The cross-field rule
+        //   EnrollmentSource = External => TransferInstitution AND TransferExternalCourseCode NOT NULL
+        //   EnrollmentSource = Internal => all Transfer* fields NULL
+        // is enforced in the Service layer (returning 400 on violation), not via a SQL CHECK
+        // constraint — keeps the rule provider-portable and yields friendlier API errors.
+
         // Compound index lets us query "courses for student X in term Y" fast
         builder.HasIndex(c => new { c.StudentId, c.AcademicTerm });
     }
@@ -1133,6 +1153,8 @@ This generates 3 files under `src/ISUCourseManager.Data/Migrations/`:
 - `ApplicationDbContextModelSnapshot.cs`
 
 Open the `<timestamp>_InitialCreate.cs` file. Verify it creates 6 tables: `courses`, `degree_flows`, `flowchart_slots`, `students`, `student_courses`, `student_degree_flows`. If any table is missing, a configuration is misregistered.
+
+> **Addendum check:** the `student_courses` table should include four columns added by the external-transfer addendum spec — `enrollment_source` (string, default `"Internal"`), `transfer_institution` (nullable string), `transfer_external_course_code` (nullable string), `transfer_note` (nullable string). Don't hand-edit the migration — these come automatically from the entity (Task 6 of plan #1) plus the configuration (Task 7 above). If they're missing, one of those is out of sync.
 
 - [ ] **Step 5: Apply the migration to a real SQLite file as a smoke test**
 
@@ -1731,6 +1753,8 @@ git commit -m "feat(data): IStudentRepository + EF impl with course CRUD"
 - Create: `src/ISUCourseManager.Data/Seed/DbSeedRunner.cs`
 - Test: `tests/ISUCourseManager.Data.Tests/DbSeedRunnerTests.cs`
 
+> **Addendum scope note:** The `DbSeedRunner` here only seeds the **catalog** (`isu-catalog.json` → `Course[]`) and the **degree flow** (`cybe_flowchart.json` → `DegreeFlow` + `FlowchartSlot[]`). It does **not** seed student data (Luke's actual `StudentCourse` records, including any external-transfer enrollments from `student-luke.json`). Student-data seeding — and therefore the mapping of the `EnrollmentSource` / `Transfer*` fields added by the external-transfer addendum — is handled by a later plan (the student-bootstrap / fixture-loader plan). The catalog and flow JSONs do not contain `StudentCourse` records, so no DTO mapping changes are needed in this task.
+
 - [ ] **Step 1: Write the failing tests**
 
 Create `tests/ISUCourseManager.Data.Tests/DbSeedRunnerTests.cs`:
@@ -2044,5 +2068,7 @@ When all tasks are complete you'll have:
 - The API project starts cleanly, applies migrations, runs the idempotent seed
 - 29 new tests in `ISUCourseManager.Data.Tests`, all green
 - Clean foundation for plan #3 (cascade engine — operates on entities loaded via these repositories)
+
+**Verification:** Verify the entity and configuration code matches the spec amendments captured by the addendum specs (`docs/superpowers/specs/2026-05-13-external-transfer-v1-design.md` and `docs/superpowers/specs/2026-05-13-pending-grade-and-coreq-cascade-design.md` — links above). Specifically confirm `StudentCourseConfiguration` maps `EnrollmentSource` (string-converted, defaulting to `Internal`) plus the three nullable `Transfer*` columns, and that the generated `InitialCreate` migration contains the corresponding columns on `student_courses`.
 
 Next plan in the queue: **Plan #3 — Cascade engine** (pure C# implementation of the spec's algorithm + 31 acceptance criteria, depending on this plan's repositories for loading data into the engine's pure-function inputs).

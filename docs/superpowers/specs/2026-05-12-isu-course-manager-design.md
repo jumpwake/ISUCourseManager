@@ -393,12 +393,29 @@ class StudentCourse {                 // table: student_courses
   Guid StudentId;                     // courses live directly on Student — no Plan layer
   string CourseId;                    // → Course.ClassId (e.g., "MATH-1650")
                                       //   string semantic FK, stable across catalog re-seeds
+                                      //   For EnrollmentSource=External, still references the ISU
+                                      //   equivalent so validation/cascade work uniformly.
   int AcademicTerm;                   // YYYYSS encoding — see "Academic term encoding" below
   StudentCourseStatus Status;         // Planned | InProgress | Completed | Failed | Withdrawn
-  string? Grade;                      // populated for Completed/Failed
+  string? Grade;                      // populated for Completed/Failed.
+                                      //   Status=Completed + Grade=null is the "grade pending"
+                                      //   state — see addendum spec
+                                      //   2026-05-13-pending-grade-and-coreq-cascade-design.md.
+  EnrollmentSource EnrollmentSource;  // Internal (default) | External — added by addendum spec
+                                      //   2026-05-13-external-transfer-v1-design.md
+  string? TransferInstitution;        // required when EnrollmentSource=External; null otherwise
+  string? TransferExternalCourseCode; // required when EnrollmentSource=External; null otherwise
+  string? TransferNote;               // optional; null otherwise
 }
 
 enum StudentCourseStatus { Planned, InProgress, Completed, Failed, Withdrawn }
+// Status=Completed with Grade=null/empty means "course finished, grade pending."
+// See addendum spec 2026-05-13-pending-grade-and-coreq-cascade-design.md for behavior.
+
+enum EnrollmentSource { Internal = 1, External = 2 }
+// Default Internal. External enrollments record an approved transfer; CourseId still
+// references the ISU equivalent. See addendum spec
+// 2026-05-13-external-transfer-v1-design.md for the full feature.
 
 class StudentDegreeFlow {             // table: student_degree_flows  (junction)
   Guid Id;
@@ -599,6 +616,8 @@ class FixCurrentState      : CascadeTrigger { }   // re-derive valid placements 
    - When evaluating "is course X completed," consult the cross-listing equivalence class — taking `EE 4910` satisfies any reference to `CPRE 4910`.
    - Classification gates (`PrereqClassification`) are evaluated against the student's projected classification at the candidate semester (Sophomore = ≥ 30 credits earned, Junior = ≥ 60, Senior = ≥ 90 — configurable via `CascadeOptions`).
    - Core-credit gates (`PrereqCoreCredits`, e.g. CprE 4910's "29 Core Cr") are evaluated against the running total of credits earned in courses tagged with the program's core categories.
+   - **Pending-grade prereqs** (a prereq with `Status=Completed, Grade=null`) provisionally satisfy the prereq edge (don't block) but emit `PendingGradeDependency` warnings on dependents — see addendum spec `2026-05-13-pending-grade-and-coreq-cascade-design.md` §3.
+2a. **Co-req transitive flagging** — for each `StudentCourse` in the affected set, find its **same-term hard co-req partners** (other Planned StudentCourses in the same `AcademicTerm` that reference each other via `Course.Prereqs` with `acceptConcurrent: true`); add them to the affected set. Repeat until the set stabilizes (fixed-point — handles A↔B mutual co-reqs without infinite recursion). Soft `RecommendedPairing` partners are NOT added by this step. Issued as `BrokenCoreq` with `RelatedStudentCourseId` pointing to the partner. See addendum spec §4.
 3. For each affected `StudentCourse`, find `earliestValidSemester` — the first semester ≥ current where:
    - All prereqs are completed (or scheduled in an earlier semester).
    - Hard coreqs (catalog-derived `acceptConcurrent: true` references) are scheduled in the same or earlier semester.
@@ -713,6 +732,16 @@ class MovableItem {             // a StudentCourse the user could defer to allev
 - **AC-29** Student has two Active flows (CybE + CprE double major); a triggered cascade reports its impact on both flows by running the engine once per Active association and merging the proposals before presenting to the wizard.
 - **AC-30** Overlay function is purely deterministic: given the same `(IReadOnlyList<StudentCourse>, DegreeFlow, IReadOnlyList<Course>)` inputs, returns the same `(SlotFillMap, UnfilledSlots, SurplusCourses, CompletionPercent)` output every time. No hidden state, no I/O, no clock dependence.
 - **AC-31** Overlay correctly maps cross-listed enrollments: a `StudentCourse` with `CourseId="EE-4910"` satisfies a `FlowchartSlot` referencing `CPRE-4910` (per `Course.CrossListedAs`), counted exactly once.
+
+**Pending grade & co-req cascade (added by addendum `2026-05-13-pending-grade-and-coreq-cascade-design.md`):**
+- **AC-32** A Planned course whose prereq has `Status=Completed, Grade=null` AND whose prereq edge has a min-grade requirement emits a `PendingGradeDependency` warning (severity Warning, not Error). When the grade later posts, re-validation clears or escalates accordingly.
+- **AC-33** A Planned course whose prereq has `Status=Completed, Grade=null` AND whose prereq edge has no min-grade requirement emits no issue (no risk to surface).
+- **AC-34** When MATH 1650 is graded D (below the C- requirement), MATH 1660 (Planned, prereq) and PHYS 2310 (Planned, prereq) are flagged via `GradeRequirementUnmet`; PHYS 2310L (Planned, hard co-req of PHYS 2310 via `acceptConcurrent: true`) is flagged transitively via the Step 2a co-req cascade as `BrokenCoreq` with `RelatedStudentCourseId` pointing to PHYS 2310. Soft pairings are unaffected.
+- **AC-35** Step 2a co-req cascade is fixed-point: a chain of N mutually co-req'd Planned courses are all flagged when any one becomes invalid, with no infinite loop.
+
+**External transfer (added by addendum `2026-05-13-external-transfer-v1-design.md`):**
+- **AC-36** A `StudentCourse` with `EnrollmentSource=External` and the required transfer fields persists and reads back unchanged; `EnrollmentSource=Internal` enrollments must have all transfer fields null.
+- **AC-37** A Completed external enrollment satisfies a downstream prereq exactly like a Completed internal enrollment with the same grade. No special-casing in the prereq evaluator.
 
 ## 6. API Surface
 
@@ -895,13 +924,25 @@ class ValidationIssueDto {
                                 // | SemesterOverload | InsufficientCredits
                                 // | TermNotOffered | ClassificationGateUnmet | CoreCreditsGateUnmet
                                 // | RecommendedPairingBroken
-  Guid? StudentCourseId;        // affected enrollment, when applicable
+                                // | PendingGradeDependency  ← added by pending-grade addendum
+  IssueSeverity Severity;       // Error (default for most kinds) | Warning
+                                //   PendingGradeDependency = Warning;
+                                //   RecommendedPairingBroken = Warning;
+                                //   all others = Error.
+  Guid? StudentCourseId;        // affected enrollment (the dependent), when applicable
+  Guid? RelatedStudentCourseId; // root-cause enrollment when this issue is a sibling of others
+                                //   sharing one cause (e.g., the pending-grade course, or the
+                                //   co-req partner that broke). Server groups siblings by this.
   int Semester;
   string Message;               // "Math 1660 needs Math 1650 with C- (currently in Sem 4)"
 }
+
+enum IssueSeverity { Error, Warning }
 ```
 
 Returned alongside every overlay or course-mutation response. Computed by reusing the same prereq evaluator the cascade engine uses — single source of truth, no duplication in TypeScript.
+
+**Sibling grouping:** issues whose `RelatedStudentCourseId` matches are presented as a sibling group in the UI (right-panel breadcrumb "Issue X of N · root cause: [course]"). See addendum `2026-05-13-pending-grade-and-coreq-cascade-design.md` §5.
 
 ## 9. Testing Strategy (TDD-first)
 
@@ -1003,6 +1044,11 @@ Recording the journey for context in future sessions:
 | 36 | New `GET /me/courses/pull-forward-candidates` endpoint | Backs the slot picker's "Pull from a later semester" section. Server filters and ranks Planned StudentCourses from later semesters that match the empty slot's category — keeps the picker fast without client-side filtering of the full course list |
 | 37 | `RecommendedPairingBroken` added to `ValidationIssueDto.Kind` | Lets the slot picker and action menu's suggested-fix card surface AC-26 broken-pairing warnings consistently with prereq/coreq/overload issues |
 | 38 | Auto-Fix and Mark-Failed both use the wizard's preview/apply protocol with auto-answered DecisionPoints | Reuses the cascade engine's existing Mode B contract; client provides defaults instead of prompting the user. Each `DecisionPoint` subclass defines a `RecommendedDefault` for this purpose |
+| 39 | `Status=Completed` + `Grade=null` is the canonical "grade pending" state — no new status enum value | Lifecycle field stays clean; nullable Grade already carries the right shape. See addendum spec `2026-05-13-pending-grade-and-coreq-cascade-design.md` |
+| 40 | Pending-grade prereqs **provisionally satisfy** dependents and emit `PendingGradeDependency` (Severity=Warning), not blocking errors | Don't freeze planning while awaiting registrar; surface risk via warning. Re-validation on next mutation/read transitions warning↔error based on posted grade |
+| 41 | Hard co-reqs cascade transitively (Step 2a); soft `RecommendedPairing` partners do not | Hard co-reqs are scheduling requirements (lab+lecture); soft pairings are advisory. Reuses existing `BrokenCoreq` kind with `RelatedStudentCourseId` pointing to the partner |
+| 42 | `ValidationIssueDto` gains a `Severity` field and a `RelatedStudentCourseId` field | Severity makes the warning-vs-error distinction explicit (needed for banner + tile color rules). RelatedStudentCourseId enables server-side sibling grouping for the right-panel "Issue X of N · root cause" breadcrumb |
+| 43 | External transfer (`EnrollmentSource=External`) modeled as a single-table extension on `StudentCourse` (not a sibling entity) | Simpler queries, fits existing flat schema. CourseId still references the ISU equivalent so validation/cascade work uniformly. Validation treats External Complete identically to Internal Complete — system trusts the student's recorded approval. v1 omits a curated transfer-equivalency catalog and AI recommendations; deferred to phase 2. See addendum spec `2026-05-13-external-transfer-v1-design.md` |
 
 ## 11. Open items for the implementation plan
 

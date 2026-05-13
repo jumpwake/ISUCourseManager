@@ -12,6 +12,8 @@
 
 **Out of scope (later plans):** EF Core + SQLite persistence, repositories, ApplicationDbContext, migrations. Cascade engine, validation, wizard. ASP.NET Core API. React frontend. Auth.
 
+> **Addendum specs (added after this plan was written):** `2026-05-13-external-transfer-v1-design.md` adds an `EnrollmentSource` enum + 3 nullable transfer fields (`TransferInstitution`, `TransferExternalCourseCode`, `TransferNote`) to `StudentCourse`. `2026-05-13-pending-grade-and-coreq-cascade-design.md` adds `PendingGradeDependency` to the cascade-engine `ValidationIssueKind`, plus `Severity` and `RelatedStudentCourseId` fields to the cascade-engine `ValidationIssueDto`. The external-transfer additions are reflected in the entity tasks below (Tasks 2 and 6); the cascade-engine addendum touches a different `ValidationIssueKind`/`ValidationIssueDto` (the runtime cascade engine, not this plan's seed validator) and is therefore out of scope here — see clarifying note in Task 10.
+
 ---
 
 ## File structure
@@ -47,7 +49,8 @@ src/
     │   ├── PrereqClassification.cs
     │   ├── PrereqCoreCredits.cs
     │   └── Enums.cs                               SlotType, Term, Season, StudentCourseStatus,
-    │                                              StudentDegreeFlowStatus, Classification
+    │                                              StudentDegreeFlowStatus, Classification,
+    │                                              EnrollmentSource (added by xt addendum)
     └── Seed/
         ├── SeedLoader.cs                          public entry point: loads catalog + flow files
         ├── PrereqExpressionConverter.cs           System.Text.Json polymorphic converter
@@ -216,6 +219,8 @@ git commit -m "feat: bootstrap .NET 8 solution with Api/Services/Data projects"
 
 Enums are just lookups; no test needed beyond the `dotnet build` they enable.
 
+> **Addendum:** The `EnrollmentSource` enum below was added by the external-transfer addendum spec (`docs/superpowers/specs/2026-05-13-external-transfer-v1-design.md` §3). It discriminates Internal (default — taken at ISU) from External (taken at another institution and transferred back) enrollments on `StudentCourse`.
+
 - [ ] **Step 1: Create Enums.cs**
 
 Create `src/ISUCourseManager.Data/Entity/Enums.cs`:
@@ -276,6 +281,17 @@ public enum Classification
     Sophomore,
     Junior,
     Senior,
+}
+
+/// <summary>
+/// Discriminator on StudentCourse: Internal = taken at ISU (default);
+/// External = taken at another institution and transferred back as ISU credit.
+/// Added by external-transfer addendum spec (2026-05-13).
+/// </summary>
+public enum EnrollmentSource
+{
+    Internal = 1,  // taken at ISU (default)
+    External = 2,  // taken at an external institution, transferred back
 }
 ```
 
@@ -728,6 +744,8 @@ git commit -m "feat(domain): add DegreeFlow and FlowchartSlot entities"
 
 The student's academic record (`StudentCourse`) lives directly on `Student` — no `Plan` aggregate. Degree-flow associations are a separate junction (`StudentDegreeFlow`) so a student can hold many flows simultaneously, each with its own lifecycle status (Pending exploration / Active enrollment / Deleted abandonment / Completed graduation). See spec §4 Tier 3 for the full rationale.
 
+> **Addendum:** The four `EnrollmentSource` / `Transfer*` fields on `StudentCourse` below come from the external-transfer addendum spec (`docs/superpowers/specs/2026-05-13-external-transfer-v1-design.md` §3). They're additive and nullable; `EnrollmentSource` defaults to `Internal` so existing records are unaffected. Server-side enforcement of the "External requires institution + external course code; Internal forbids any transfer field" invariant happens later in the Service layer (and is mirrored in EF configuration in the persistence-layer plan).
+
 - [ ] **Step 1: Create Student.cs**
 
 ```csharp
@@ -763,6 +781,16 @@ public sealed class StudentCourse
     public required int AcademicTerm { get; init; }           // YYYYSS — see AcademicTerm helper
     public required StudentCourseStatus Status { get; init; }
     public string? Grade { get; init; }                       // populated for Completed/Failed
+                                                              // Note: Status=Completed + Grade=null is the
+                                                              // "grade pending" state (pending-grade addendum spec).
+
+    // External-transfer addendum (2026-05-13-external-transfer-v1-design.md §3).
+    // CourseId still references the ISU equivalent regardless of EnrollmentSource;
+    // the Transfer* fields capture the external enrollment metadata.
+    public EnrollmentSource EnrollmentSource { get; set; } = EnrollmentSource.Internal;
+    public string? TransferInstitution { get; set; }          // required when EnrollmentSource = External
+    public string? TransferExternalCourseCode { get; set; }   // required when EnrollmentSource = External
+    public string? TransferNote { get; set; }                 // optional free-text note
 }
 ```
 
@@ -1421,6 +1449,8 @@ git commit -m "feat(seed): add SeedLoader.LoadFlow"
 **Files:**
 - Create: `src/ISUCourseManager.Services/Validation/ValidationIssue.cs`
 - Create: `src/ISUCourseManager.Services/Validation/ValidationReport.cs`
+
+> **Clarification (re: pending-grade-and-coreq-cascade addendum):** The `ValidationIssue` / `SeedIssueKind` types defined in this task validate **seed-file (catalog + flow JSON) integrity** — duplicate classIds, orphan cross-listings, prereq references that don't resolve, etc. They are a **separate type family** from the runtime cascade engine's `ValidationIssueDto` / `ValidationIssueKind` (which lives in a later plan and surfaces per-student plan issues like `BrokenPrereq`, `GradeRequirementUnmet`, and the addendum's new `PendingGradeDependency`). Do NOT add `PendingGradeDependency`, `Severity`, or `RelatedStudentCourseId` to the seed `ValidationIssue` here — those belong to the cascade engine's distinct DTO and will be added by the plan that builds it.
 
 - [ ] **Step 1: Create ValidationIssue.cs**
 
@@ -2210,5 +2240,7 @@ When all tasks are complete you'll have:
 - A passing test suite that proves the validator works on synthetic cases
 - A failing/passing end-to-end test that validates the actual seed files in the repo
 - Frequent commits with clear messages — clean history to build on
+
+**Verification:** Verify the entity and configuration code matches the spec amendments captured by the addendum specs (`docs/superpowers/specs/2026-05-13-external-transfer-v1-design.md` and `docs/superpowers/specs/2026-05-13-pending-grade-and-coreq-cascade-design.md` — links above). Specifically confirm `Enums.cs` includes `EnrollmentSource` and `StudentCourse.cs` includes the four `EnrollmentSource` / `Transfer*` fields.
 
 Next plan in the queue (not part of this one): EF Core + SQLite persistence, then the cascade engine, then the API, then the React frontend. See spec data-model invariants (§4) and the README under `Documentation/seed-templates/` for the open-items list.
