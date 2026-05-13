@@ -1,0 +1,91 @@
+{
+  "_comment": "Luke's actual ISU enrollment data, normalized to match the spec'd Student / StudentCourse / StudentDegreeFlow format (system spec §4 Tier 3). Source: registrar dumps in Schedule_2026_Spring.json + Schedule_2026_Fall.json (raw section/scheduling data discarded — only the fields the spec models are kept). All grades null because nothing is completed yet.",
+
+  "student": {
+    "displayName": "Luke"
+  },
+
+  "degreeFlows": [
+    {
+      "degreeFlowCode": "CYBE",
+      "catalogYear": "2025-26",
+      "status": "Active",
+      "_note": "Active CybE 2025-26 — Luke's primary major"
+    }
+  ],
+
+  "courses": [
+    {
+      "_term": "Spring 2026 (currently in-progress · Jan 20 – May 15, 2026)",
+      "courseId": "CPRE-1850",
+      "academicTerm": 202604,
+      "status": "InProgress",
+      "grade": null
+    },
+    {
+      "courseId": "CHEM-1670",
+      "academicTerm": 202604,
+      "status": "InProgress",
+      "grade": null
+    },
+    {
+      "courseId": "MATH-1650",
+      "academicTerm": 202604,
+      "status": "InProgress",
+      "grade": null
+    },
+    {
+      "courseId": "CPRE-1660",
+      "academicTerm": 202604,
+      "status": "InProgress",
+      "grade": null
+    },
+    {
+      "courseId": "ENGL-2500",
+      "academicTerm": 202604,
+      "status": "InProgress",
+      "grade": null
+    },
+
+    {
+      "_term": "Fall 2026 (planned · Aug – Dec 2026)",
+      "courseId": "MATH-1430",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": null,
+      "_validationNote": "MATH-1430 (Pre-Calc) is referenced in some catalog prereqs but does not have its own entry in isu-catalog.json yet — needs adding."
+    },
+    {
+      "courseId": "ENGR-1010",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": null
+    },
+    {
+      "courseId": "LIB-1600",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": null
+    },
+    {
+      "courseId": "ENGL-1500",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": null
+    },
+    {
+      "courseId": "CONS-ISSUES",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": null,
+      "_validationNote": "Source row read 'Cons Issues' / sectionId 'CONS ISSUES' — not a real ISU course code. Probably a Gen-Ed placeholder; needs the actual classId before it can validate against the catalog."
+    },
+    {
+      "courseId": "PHIL-1010",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": null,
+      "_validationNote": "PHIL-1010 not yet in isu-catalog.json — needs adding (would be a GenEd-eligible course)."
+    }
+  ]
+}
