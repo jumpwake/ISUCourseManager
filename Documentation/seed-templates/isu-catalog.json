@@ -79,7 +79,19 @@
       "creditNote": null,
       "department": "ComS",
       "prereqs": {
-        "_unparsed": "Minimum of C- in (COMS 2280; MATH 1650)"
+        "type": "And",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2280",
+            "minGrade": "C-"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1650",
+            "minGrade": "C-"
+          }
+        ]
       },
       "coreqs": null,
       "crossListedAs": [
@@ -100,7 +112,37 @@
       "creditNote": null,
       "department": "ComS",
       "prereqs": {
-        "_unparsed": "(COMS 2300 or CPRE 3100) and (Minimum of C- in COMS 2280, ENGL 1500, and MATH 1660)"
+        "type": "And",
+        "children": [
+          {
+            "type": "Or",
+            "children": [
+              {
+                "type": "Course",
+                "classId": "COMS-2300"
+              },
+              {
+                "type": "Course",
+                "classId": "CPRE-3100"
+              }
+            ]
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2280",
+            "minGrade": "C-"
+          },
+          {
+            "type": "Course",
+            "classId": "ENGL-1500",
+            "minGrade": "C-"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660",
+            "minGrade": "C-"
+          }
+        ]
       },
       "coreqs": null,
       "crossListedAs": [],
@@ -903,7 +945,36 @@
       "creditNote": null,
       "department": "Phys",
       "prereqs": {
-        "_unparsed": "[MATH 1650 or (MATH 1630X and 1640X)] and credit or enrollment in MATH 1660"
+        "type": "And",
+        "children": [
+          {
+            "type": "Or",
+            "children": [
+              {
+                "type": "Course",
+                "classId": "MATH-1650"
+              },
+              {
+                "type": "And",
+                "children": [
+                  {
+                    "type": "Course",
+                    "classId": "MATH-1630X"
+                  },
+                  {
+                    "type": "Course",
+                    "classId": "MATH-1640X"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660",
+            "acceptConcurrent": true
+          }
+        ]
       },
       "coreqs": null,
       "crossListedAs": [],
@@ -923,7 +994,33 @@
       "creditNote": null,
       "department": "Phys",
       "prereqs": {
-        "_unparsed": "MATH 1650 and (credit or concurrent enrollment in MATH 1660) and (credit or concurrent enrollment in PHYS 2310 or PHYS 2410)"
+        "type": "And",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1650"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660",
+            "acceptConcurrent": true
+          },
+          {
+            "type": "Or",
+            "children": [
+              {
+                "type": "Course",
+                "classId": "PHYS-2310",
+                "acceptConcurrent": true
+              },
+              {
+                "type": "Course",
+                "classId": "PHYS-2410",
+                "acceptConcurrent": true
+              }
+            ]
+          }
+        ]
       },
       "coreqs": null,
       "crossListedAs": [],

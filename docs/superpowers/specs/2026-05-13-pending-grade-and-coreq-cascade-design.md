@@ -17,9 +17,15 @@ Two related additions, both surfaced by Luke's actual current state (Spring 2026
    - tell the student which planned courses are at risk if the grade lands below the requirement
    - re-evaluate cleanly when the grade posts
 
-2. **Co-req transitive cascade.** When a course becomes invalid, every Planned course that has it as a hard co-req (catalog `acceptConcurrent: true` pairing) should also be flagged. Example: if PHYS 2310 is invalidated, PHYS 2310L (its lab co-req in the same term) is invalidated transitively.
+2. **Co-req transitive cascade.** When a course becomes invalid, every Planned course that has it as a hard co-req (catalog `acceptConcurrent: true` pairing) should also be flagged. Example: if PHYS 2310 is invalidated for any reason, PHYS 2310L (its lab co-req in the same term, declared via `"PHYS-2310" + acceptConcurrent: true` in PHYS 2310L's prereq edges) is invalidated transitively.
 
-Both interact at the same scenario: MATH 1650 grade pending → if it ultimately fails, MATH 1660 + PHYS 2310 break (direct prereq), and PHYS 2310L breaks via its co-req with PHYS 2310.
+Both features were surfaced by Luke's actual current state. The full chain that motivated the design is multi-step (each step exists in the catalog independently — they just happen to compose):
+
+1. **Direct grade break.** MATH 1650 grade pending → if it falls below C-, MATH 1660 breaks via its `minGrade: "C-"` prereq edge to MATH 1650. *(This is the only edge with an explicit minGrade — PHYS 2310 also has a MATH 1650 prereq, but the catalog records no minimum on it.)*
+2. **`acceptConcurrent` displacement.** Cascade engine defers MATH 1660 to a later term. PHYS 2310's prereq edge to MATH 1660 has `acceptConcurrent: true` (must be in same or earlier term). With MATH 1660 moved away, that edge fails — PHYS 2310 breaks.
+3. **Step 2a co-req cascade.** PHYS 2310L has PHYS 2310 listed with `acceptConcurrent: true`. With PHYS 2310 invalidated, Step 2a transitively flags PHYS 2310L.
+
+End state: a sibling-issue group of three Planned courses (MATH 1660, PHYS 2310, PHYS 2310L), all tracing back to one root cause (MATH 1650's grade). The chain proves the three pieces compose correctly across multiple cascade steps. Each piece is also tested in isolation (AC-PG-1..5, AC-CR-1..3 below).
 
 ## 2. Scope
 
@@ -88,9 +94,11 @@ PendingGradeDependency  // Severity = Warning
 
 ### 4.1 Background
 
-The catalog already encodes hard co-reqs as a prereq node with `acceptConcurrent: true` (system spec §4 catalog model). Example: PHYS 2310 lists MATH 1650 with `acceptConcurrent: true` (a co-req that may be taken concurrently). The PHYS 2310/PHYS 2310L lecture/lab pairing is also a hard co-req: each references the other with `acceptConcurrent: true`, and they must be in the same term.
+The catalog encodes hard co-reqs as a prereq edge with `acceptConcurrent: true` (system spec §4 catalog model). Example from Luke's plan, after the catalog completion:
+- **PHYS 2310** has MATH 1650 as a hard prereq (no concurrent option) and MATH 1660 as a prereq with `acceptConcurrent: true` (i.e., may be taken concurrently in the same term).
+- **PHYS 2310L** has MATH 1650 as a hard prereq, MATH 1660 with `acceptConcurrent: true`, AND **PHYS 2310 with `acceptConcurrent: true`** — that last edge is the lab/lecture co-req that AC-35 exercises.
 
-The existing cascade engine evaluates prereqs (including `acceptConcurrent` ones) when a course is moved or graded, but does not currently propagate invalidation **across co-req edges in the same term**.
+The existing cascade engine evaluates prereqs (including `acceptConcurrent` ones) when a course is moved or graded, but does not currently propagate invalidation **across co-req edges in the same term** — that's what Step 2a adds.
 
 ### 4.2 New algorithm step (system spec §5)
 
@@ -108,7 +116,7 @@ This makes PHYS 2310L automatically follow PHYS 2310 when PHYS 2310 breaks.
 
 Reuse the existing `BrokenCoreq` kind. The `ValidationIssueDto` distinguishes the transitive case via:
 - `relatedCourseId` = the co-req partner that broke
-- `message` = e.g., `"Co-req PHYS 2310 is invalid (broken prereq on MATH 1650)."`
+- `message` = e.g., `"Co-req PHYS 2310 is invalid (acceptConcurrent partner MATH 1660 deferred)."`
 
 ### 4.4 Soft `RecommendedPairing` is unaffected
 
@@ -132,13 +140,13 @@ The grouping is derived server-side: issues whose `relatedCourseId` matches and 
 
 ### Suggested-fix card addresses the chain
 
-When sibling issues exist, suggested-fix cards (system spec §5 cascade engine output) propose **chain-level** moves rather than single-tile fixes. Example for the MATH 1650 → {MATH 1660, PHYS 2310, PHYS 2310L} case:
+When sibling issues exist, suggested-fix cards (system spec §5 cascade engine output) propose **chain-level** moves rather than single-tile fixes. Example for the MATH 1650 grade-fail multi-step chain (Goal §1 above) — root cause MATH 1650 grade, sibling group {MATH 1660, PHYS 2310, PHYS 2310L}:
 
 ```
 ★ Retake MATH 1650 in Sem 3 + defer MATH 1660, PHYS 2310, PHYS 2310L to Sem 4
 ```
 
-Single-tile fixes (e.g., "Remove MATH 1660 only") remain available as alternatives.
+This addresses the root cause (re-pass MATH 1650 with C-) AND the displaced dependents in one move. Single-tile fixes (e.g., "Remove MATH 1660 only") remain available as alternatives.
 
 ## 6. UI — tile visuals
 
