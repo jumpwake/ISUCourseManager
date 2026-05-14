@@ -1,0 +1,18 @@
+.mark {
+  background: linear-gradient(135deg, var(--ai-start) 0%, var(--ai-end) 100%);
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mark::before {
+  content: "✦";
+  font-size: 10px;
+}
