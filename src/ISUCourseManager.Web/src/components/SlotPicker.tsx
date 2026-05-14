@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
-import type { ElectiveSlotType, UnfilledTile } from '../data/types.ts';
+import type { Course, ElectiveSlotType, UnfilledTile } from '../data/types.ts';
 import { academicTermToLabel } from '../data/academicTerm.ts';
 import { catalogById } from '../data/catalog.ts';
 import styles from './SlotPicker.module.css';
@@ -9,9 +10,24 @@ type Props = {
   onClose: () => void;
 };
 
+const CATALOG_RESULT_CAP = 20;
+const CATALOG_DEFAULT_COUNT = 8;
+
 export function SlotPicker({ tile, onClose }: Props) {
+  const [query, setQuery] = useState('');
+
+  const trimmed = query.trim().toLowerCase();
+  const isSearching = trimmed.length > 0;
+
+  const catalogResults: Course[] = isSearching
+    ? filterCatalog(trimmed)
+    : Array.from(catalogById.values()).slice(0, CATALOG_DEFAULT_COUNT);
+
+  const catalogBadge = isSearching
+    ? `${catalogResults.length} match${catalogResults.length === 1 ? '' : 'es'}`
+    : undefined;
+
   const ctx = contextLine(tile);
-  const catalogPreview = Array.from(catalogById.values()).slice(0, 8);
 
   return (
     <div className={styles.picker}>
@@ -34,21 +50,36 @@ export function SlotPicker({ tile, onClose }: Props) {
       </div>
 
       <div className={styles.body}>
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder="Search catalog…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search catalog"
+        />
+
         <Section title="Pull from a later semester">
           <p className={styles.emptyMessage}>No pull-forward candidates yet.</p>
         </Section>
 
-        <Section title="Add a new course from the catalog">
-          {catalogPreview.map((course) => (
-            <button key={course.classId} type="button" className={styles.card}>
-              <span className={styles.cardContent}>
-                <span className={styles.cardName}>{course.code}</span>
-                <span className={styles.cardMeta}>
-                  {course.name} · {course.credits}cr · {course.department}
+        <Section title="Add a new course from the catalog" badge={catalogBadge}>
+          {catalogResults.length > 0 ? (
+            catalogResults.map((course) => (
+              <button key={course.classId} type="button" className={styles.card}>
+                <span className={styles.cardContent}>
+                  <span className={styles.cardName}>{course.code}</span>
+                  <span className={styles.cardMeta}>
+                    {course.name} · {course.credits}cr · {course.department}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            ))
+          ) : (
+            <p className={styles.emptyMessage}>
+              No courses match "{query.trim()}".
+            </p>
+          )}
         </Section>
 
         <Section title="Leave this slot empty">
@@ -75,12 +106,43 @@ export function SlotPicker({ tile, onClose }: Props) {
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  badge,
+  children,
+}: {
+  title: string;
+  badge?: string;
+  children: ReactNode;
+}) {
   return (
     <div className={styles.section}>
-      <h3 className={styles.sectionTitle}>{title}</h3>
+      <h3 className={styles.sectionTitle}>
+        {title}
+        {badge !== undefined && <span className={styles.sectionBadge}>{badge}</span>}
+      </h3>
       {children}
     </div>
+  );
+}
+
+function filterCatalog(query: string): Course[] {
+  const matches: Course[] = [];
+  for (const course of catalogById.values()) {
+    if (matchesQuery(course, query)) {
+      matches.push(course);
+      if (matches.length >= CATALOG_RESULT_CAP) break;
+    }
+  }
+  return matches;
+}
+
+function matchesQuery(course: Course, q: string): boolean {
+  return (
+    course.classId.toLowerCase().includes(q) ||
+    course.code.toLowerCase().includes(q) ||
+    course.name.toLowerCase().includes(q) ||
+    course.department.toLowerCase().includes(q)
   );
 }
 

@@ -160,3 +160,33 @@
   border-color: #90caf9;
   cursor: default;
 }
+
+.searchInput {
+  width: 100%;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+.sectionBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: #e0e0e0;
+  color: var(--text-label);
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
