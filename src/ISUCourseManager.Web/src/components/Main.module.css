@@ -1,0 +1,12 @@
+.main {
+  grid-area: main;
+  overflow-y: auto;
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.body {
+  flex-grow: 1;
+}
