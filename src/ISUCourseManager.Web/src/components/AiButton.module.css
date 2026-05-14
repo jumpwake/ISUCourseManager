@@ -1,0 +1,32 @@
+.btn {
+  background: linear-gradient(135deg, var(--ai-start) 0%, var(--ai-end) 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.md {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.sm {
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 11px;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+}
+
+.sparkle {
+  font-size: 1.08em;
+}

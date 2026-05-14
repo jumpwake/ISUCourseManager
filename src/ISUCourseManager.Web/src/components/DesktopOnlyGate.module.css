@@ -1,0 +1,24 @@
+.gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--bg-app);
+}
+
+.message {
+  text-align: center;
+}
+
+.message h1 {
+  color: var(--navy);
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.message p {
+  color: var(--text-label);
+  font-size: 1rem;
+  margin: 0;
+}

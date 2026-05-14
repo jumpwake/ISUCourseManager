@@ -1,0 +1,12 @@
+.panel {
+  grid-area: panel;
+  background: var(--bg-app);
+  border-left: 2px solid var(--panel-accent);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden {
+  display: none;
+}

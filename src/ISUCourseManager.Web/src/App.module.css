@@ -1,0 +1,24 @@
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr 380px;
+  grid-template-rows: 56px auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "sidebar banner  panel"
+    "sidebar main    panel";
+  height: 100vh;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-app);
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--text-default);
+}
+
+.noPanel {
+  grid-template-columns: 240px 1fr;
+  grid-template-areas:
+    "topbar  topbar"
+    "sidebar banner"
+    "sidebar main";
+}
