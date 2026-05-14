@@ -15,6 +15,10 @@ public sealed class PrereqExpressionConverter : JsonConverter<PrereqExpression>
         using var doc = JsonDocument.ParseValue(ref reader);
         var root = doc.RootElement;
 
+        // Escape hatch: nodes shaped { "_unparsed": "raw catalog text" }
+        if (root.TryGetProperty("_unparsed", out var u))
+            return new PrereqUnparsed { Raw = u.GetString() ?? "" };
+
         if (!root.TryGetProperty("type", out var typeProp))
             throw new JsonException("PrereqExpression node is missing 'type' field");
 
@@ -84,6 +88,9 @@ public sealed class PrereqExpressionConverter : JsonConverter<PrereqExpression>
             case PrereqCoreCredits cc:
                 writer.WriteString("type", "CoreCredits");
                 writer.WriteNumber("minCoreCredits", cc.MinCoreCredits);
+                break;
+            case PrereqUnparsed pu:
+                writer.WriteString("_unparsed", pu.Raw);
                 break;
             default:
                 throw new JsonException($"Cannot serialize unknown PrereqExpression type: {value.GetType()}");
