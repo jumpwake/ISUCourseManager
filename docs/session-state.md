@@ -5,105 +5,91 @@
 
 ## Where we are right now
 
-- **Branch:** `ui-v1/step-3-plan-view` (Step 3 commits stacked here; the spec + plan + 13 implementation commits)
-- **HEAD:** `6e3976c` — `feat(ui): mount PlanView in Main, drop empty body placeholder`
-- **UI v1 Steps 1+2** already merged to main via PR #4. **Step 3** is on this branch awaiting PR.
-- **Plan #1 (seed validation + loader)** fully merged to main. 40 unit/integration tests pass; 1 intentional failure (the seed-data punch list) remains.
+- **Branch:** `ui-v1/step-4-action-menu` (Step 4 commits stacked here; spec + plan + 6 implementation commits)
+- **HEAD:** `a683971` — `feat(ui): wire ActionMenu — tile clicks open right panel`
+- **UI v1 Steps 1+2 + Step 3** already merged to main (Step 3 was merged locally; origin/main may lag if not pushed). **Step 4** is on this branch awaiting PR/merge.
+- **Plan #1 (seed validation + loader)** fully merged to main.
 
 ## Project shape
 
 ```
-ISUCourseManager.sln          .NET solution
-src/
-  ISUCourseManager.Api/       ASP.NET Core (placeholder Program.cs)
-  ISUCourseManager.Services/  Cascade engine + seed validator
-  ISUCourseManager.Data/      Domain entities + JSON seed loader + PrereqExpression
-  ISUCourseManager.Web/       React + Vite + TypeScript SPA   <-- Steps 1+2+3 done
-    src/
-      App.tsx                  composes the grid
-      App.module.css           grid template + .noPanel modifier
-      index.css                palette tokens + body baseline
-      data/                    NEW in Step 3
-        types.ts               type defs (Course, FlowSlot, StudentCourse, PlanTile, PlanRow, …)
-        catalog.ts / flow.ts / student.ts   JSON loaders + normalizers
-        academicTerm.ts        encode/decode helpers (YYYYSS)
-        department.ts          dept→css-class with gened fallback
-        overlay.ts             buildOverlay pure join function
-        index.ts               exports `PLAN: ReadonlyArray<PlanRow>` (module-load constant)
-        seed/                  duplicated copies of the three seed JSONs
-      components/              12 components total
-        Step 2 chrome:         TopBar, Sidebar, MainHeader, Main, RightPanel, AiButton, AiMark, DesktopOnlyGate
-        Step 3 plan view:      CourseTile, SemRow, PlanView
-tests/
-  ISUCourseManager.Services.Tests/   xUnit + FluentAssertions
+src/ISUCourseManager.Web/src/
+  App.tsx                            composes grid + selectedTile state
+  App.module.css                     grid template + .noPanel modifier
+  index.css                          palette tokens + body baseline
+  data/                              Step 3
+    types.ts / catalog.ts / flow.ts / student.ts
+    academicTerm.ts / department.ts / overlay.ts / index.ts
+    seed/  (three JSONs)
+  components/                        13 components
+    Step 2 chrome:  TopBar, Sidebar, MainHeader, Main, RightPanel,
+                    AiButton, AiMark, DesktopOnlyGate
+    Step 3 plan:    CourseTile, SemRow, PlanView
+    Step 4:         ActionMenu  (NEW)
 docs/
-  superpowers/specs/           system + UI v1 + 2 addendum specs + Step 2 + Step 3 design specs
-  superpowers/plans/           Plan #1 (done), Step 2 plan (done), Step 3 plan (done), Plans #2/#3 (not started)
-  superpowers/mockups/ui-v1/   v4 = locked layout, interaction-direct-manipulation = locked interactions
-Data/, Documentation/         seed JSON + catalog PDF
+  superpowers/specs/   system + UI v1 + 2 addenda + Step 2 + Step 3 + Step 4 specs
+  superpowers/plans/   Plan #1 (done), Step 2 plan (done), Step 3 plan (done),
+                       Step 4 plan (done), Plans #2/#3 (not started)
 ```
 
-## UI v1 — Step 3 (Plan View Overlay) — what was just done
+## UI v1 — Step 4 (Action Menu) — what was just done
 
-Replaced Step 2's empty body region with 8 sem-rows driven by the CYBE flow + Luke's seed data + ISU catalog. Built the tile + sem-row primitives and a pure overlay-join function.
+Activated the right panel for the first time with real content. Clicking a `studentCourse` tile opens the Action menu keyed to that tile. The temporary debug `[panel]` toggle from Step 2 is replaced with real selection-driven mounting.
 
-**Components added:**
-- `<CourseTile />` — discriminated render (electiveSlot / unfilledDegreeSlot / gradePending / default), 5 status states, 6 dept tints, hover lift.
-- `<SemRow />` — 96px label column with credit-color thresholds (blue 12-18, orange <12, red >18, green allCompleted), tiles flowing right with wrap.
-- `<PlanView />` — flex column of 8 SemRows; replaces Step 2's empty `.body` div in Main.
+**State plumbing:**
+- App holds `selectedTile: StudentCoursePlanTile | null` — a typed-narrow state that can only contain studentCourse tiles. Click handler ignores unfilled/elective tiles, toggles closed if re-clicking the active tile.
+- `<RightPanel />` was rewritten as a layout wrapper with `accent: 'ai' | 'action'` prop (default `'ai'`) and `children`. The `--panel-accent` CSS variable switches per accent: purple in AI mode, blue `#1976d2` in action mode. The old `hidden` prop and `.hidden` CSS rule are gone — App decides whether to render the panel at all.
 
-**Data layer (new `src/data/` module):**
-- `types.ts` — frontend types matching eventual API DTO shape (camelCase + spec's enum strings).
-- `catalog.ts` / `flow.ts` / `student.ts` — JSON loaders. `student.ts` normalizes seed's `"Complete"` → spec's `"Completed"`, and empty grade strings → `null`.
-- `overlay.ts` — pure join function: student tiles render at their actual term; unfilled DegreeClass slots render Planned placeholders at their canonical sem; Elective* slots always render as `electiveEmpty` placeholders.
-- `index.ts` — exports `PLAN: ReadonlyArray<PlanRow>` computed once at module load.
+**`<ActionMenu />` (new):**
+- Header: breadcrumb (`Sem N · Term`), H2 (`{classId} · {name}`), context line (department + credits), meta pills (Status, plus Grade when non-null).
+- Body: 4 sections (Update status / Reschedule / Replace / Remove) with 7 stub action cards (2 styled as danger). All buttons are no-op for Step 4.
+- Footer: outlined Close button.
+- Close also via `×` in the header.
 
-**Tile state coverage:**
-- v4 status states: `completed`, `inprogress`, `planned`, `failed`.
-- Pending-grade addendum: `gradePending` (Luke's MATH-1650 exercises this — Completed with null grade).
-- `electiveEmpty` placeholder (striped diagonal grey, dashed border).
+**Tile changes:**
+- `studentCourse` `<CourseTile />` variants now render as `<button>` (accessible, cursor: pointer). Other variants stay `<span>`.
+- `PlanTile.studentCourse` gained 3 fields: `deptDisplay` (catalog department string), `academicTerm` (YYYYSS), `semIdx` (1..8). Used by ActionMenu's header.
+- `.selected` ring (blue box-shadow + scale per UI spec §5) applies when the tile's classId matches `selectedClassId`.
 
-**CSS cascade decision** (per Step 3 spec §5, D4): status classes declared before dept classes so dept wins bg/border-color on equal-specificity conflicts. Net effect: Planned tiles get dashed dept-tinted borders (e.g., dashed peach for Math), Completed/InProgress tiles show dept tint as bg with status communicated via the subtitle text. Matches v4 mockup verbatim. Spec text says "status takes visual priority" but the locked v4 implements dept-wins; we followed v4.
+**Step 4 docs:**
+- `docs/superpowers/specs/2026-05-14-ui-v1-step-4-action-menu-design.md`
+- `docs/superpowers/plans/2026-05-14-ui-v1-step-4-action-menu.md`
 
-**Step 3 docs:**
-- `docs/superpowers/specs/2026-05-14-ui-v1-step-3-plan-view-overlay-design.md`
-- `docs/superpowers/plans/2026-05-14-ui-v1-step-3-plan-view-overlay.md`
+## Known follow-ups (carry to Step 5)
 
-## Known follow-ups (from final code review + user clarifications)
+User-flagged + reviewer-flagged items, deferred:
 
-These are acknowledged limitations, NOT bugs:
+- **Completed-status tiles should not show action cards.** When a user clicks a tile whose `status === 'Completed'` (including the gradePending sub-case), the action menu body should render an info message like "This course is complete — no actions available." instead of the 4 sections. Header stays as-is. Rationale: a completed course is immutable; showing stub action cards is misleading. Action: small conditional in `ActionMenu.tsx` + `.emptyMessage` CSS rule.
+- **Slot picker (the other half of the right panel).** Clicking `unfilledDegreeSlot` or `electiveSlot` tiles currently does nothing. Step 5 wires the slot picker per UI spec §10.2 / `interaction-fill-slot.html`.
+- **`selected` prop semantic looseness.** `SemRow.tsx` passes `selected={false}` to non-studentCourse tiles (instead of `undefined`). Harmless today since CourseTile's span branches don't read it. Tighten to `selected={tile.kind === 'studentCourse' ? ... : undefined}` when convenient.
+- **Action menu footer button styling.** Reviewer noted the `.closeBtn` uses outlined style (`border: 1px solid var(--border)`) rather than a true "ghost" style (borderless). Cosmetic; revisit when a shared button-system is needed.
+- **The action menu's buttons are no-op stubs.** Real mutations (move, mark completed, remove, substitute) land in a later step. Local state first, MSW-mediated later.
 
-- **Seed data is intentionally incomplete.** Captured in memory (`project-seed-data-incomplete`).
-  - `isu-catalog.json` is missing some courses Luke has actually taken (`HDFS-2390`, `PHIL-2010`). Overlay's catalog-miss `continue` silently drops them — Sem 1 shows 4 student tiles instead of the 6 named in S3-3.
-  - `flow-cybe-2025-26.example.json` has slots only for Sems 1, 2, 8. Sems 3-7 have no flow data → no Planned-placeholder fill-out for those sems. Matches Luke's actual planning state (he's completed Sem 1+2, registered for Sem 3, hasn't planned beyond).
-  - The catalog + CYBE flow sweep is a deferred data-entry task; not blocking UI iteration.
-- **`studentName` is exported from `student.ts` but unused** — placeholder for later TopBar binding.
-- **The debug `[panel]` toggle in the TopBar** is still temporary — removed once action menu / AI panel triggers exist (later step).
+## Open Step 5 directions (user has not picked yet)
 
-## Open Step 4 directions (user has not picked yet)
-
-These were on the table from Step 2's session-state:
-1. **Wire up a mock API endpoint** — add MSW, mock `GET /api/v1/me/flows` and `GET /api/v1/me/courses`, fetch data through the lifecycle instead of importing JSON. Future-shapes the `usePlan()` hook contract.
-2. **Action menu / right-panel content** — clicking a tile opens the action menu (UI spec §10.1). First real use of the right panel beyond the debug toggle.
-3. **Validation banner + tile flag markers** — start surfacing the cascade engine's output (when backend lands) on tiles. Requires backend or a faked validation source.
-4. **Test framework** — Vitest + React Testing Library + first render tests. Cheap insurance.
-5. **Catalog / flow data sweep** — hand-transcribe missing CYBE Sem 3-8 slots and the gen-ed courses Luke took (HDFS-2390, PHIL-2010). Pure data-entry. Closes the S3-3/S3-4 gaps.
-6. **Something else.**
+1. **Slot picker** (clicking unfilled slots + electives opens the 4-section picker per UI spec §10.2). Closes the click no-op for non-studentCourse tiles.
+2. **Completed-tile UX trim** (the deferred follow-up above). Small change.
+3. **MSW + data hook refactor** — swap `PLAN` constant for a `usePlan()` hook backed by MSW responses. Lays the groundwork for real mutations.
+4. **Real mutations (local state first)** — e.g., "Mark Completed" actually sets status to Completed in component state. No MSW yet.
+5. **Validation banner + tile flags** (cascade engine output rendering).
+6. **Catalog / flow data sweep** — fill the missing entries (HDFS-2390, PHIL-2010 in catalog; CYBE Sems 3-8 in flow).
+7. **Test framework** — Vitest + RTL.
+8. **Something else.**
 
 ## Key context flags
 
-- **FluentAssertions 8.10.0 is non-OSS-licensed.** Flagged twice in Plan #1; user hasn't decided whether to pin to 7.x. Not relevant to UI work but will be when the next backend plan starts.
-- **`StudentCourse` deliberately mixes `init` (identity props) with `set` (4 transfer fields).** Intentional per the external-transfer addendum spec.
-- **CSS approach is CSS Modules** + palette tokens as CSS custom properties in `src/index.css`. Stick with these for subsequent UI steps.
-- **Seed file convention:** seed JSONs (catalog, flow, student) use `"Complete"` past-tense status; the UI DTO + frontend types use spec's `"Completed"`. `src/data/student.ts:normalizeStatus` is the adapter at the boundary.
+- **Seed JSONs are intentionally incomplete.** Captured in memory (`project-seed-data-incomplete`). HDFS-2390, PHIL-2010 missing from catalog; flow has Sems 1/2/8 only.
+- **CSS approach is CSS Modules** + palette tokens as CSS custom properties in `src/index.css`. The `--panel-accent` variable is the canonical pattern for mode-dependent accents (now exercised by `accentAi` and `accentAction` in RightPanel.module.css).
+- **Stack-on-its-own-branch pattern for UI v1 work.** Each step gets its own branch from main; the Step N branch is merged into main before Step N+1 starts.
+- **Seed file `"Complete"` → spec `"Completed"`** adapter in `src/data/student.ts:normalizeStatus`.
 
 ## What NOT to do
 
 - Don't start Plan #2 (EF persistence) or Plan #3 (cascade engine) — user is staying UI-first.
-- Don't try to "fix" the failing `ActualSeedFileTests.Catalog_passes_validation_with_no_errors` — it's the intentional Task-14 punch list.
-- Don't auto-add missing courses to the catalog or auto-fill missing flow slots — the seed data sweep is a deferred task per project memory.
-- Don't remove the debug `[panel]` toggle until a real panel trigger exists.
+- Don't try to "fix" `ActualSeedFileTests.Catalog_passes_validation_with_no_errors` — intentional punch list.
+- Don't auto-add missing courses/slots to the seed JSONs — deferred per project memory.
+- Don't re-litigate the dept-tint-wins CSS cascade — that's the locked v4 behavior.
 
 ## How to confirm the user is ready
 
-When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 3 complete on `ui-v1/step-3-plan-view`. Which direction for Step 4?" and wait for their pick.
+When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 4 complete on `ui-v1/step-4-action-menu`. Which direction for Step 5?" and wait for their pick.
