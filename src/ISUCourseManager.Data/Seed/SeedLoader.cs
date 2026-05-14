@@ -53,7 +53,7 @@ public static class SeedLoader
 
     private static string NormalizeClassId(string raw)
     {
-        var trimmed = raw.Trim().Replace(" ", " ");
+        var trimmed = raw.Trim().Replace("\u00A0", " ");
         if (trimmed.Contains('-')) return trimmed;
         // Use LastIndexOf so compound department names ("Com S 2270") collapse correctly:
         //   "Com S 2270" -> "ComS-2270", not "Com-S 2270".
