@@ -5,9 +5,9 @@
 
 ## Where we are right now
 
-- **Branch:** `ui-v1/step-5-slot-picker` (Step 5 commits stacked here; spec + plan + 6 implementation commits)
-- **HEAD:** `9a66c8f` — `feat(ui): wire SlotPicker — unfilled/elective clicks open right panel`
-- **UI v1 Steps 1+2 + Step 3** merged into local main. Step 4 also merged locally (origin/main lags by ~16 commits since the last push). Step 5 is on this branch awaiting PR/merge.
+- **Branch:** `ui-v1/step-6-catalog-search` (Step 6 commits: spec + plan + 1 implementation commit)
+- **HEAD:** `82ce36b` — `feat(ui): add catalog search input to SlotPicker`
+- **UI v1 Steps 1+2 + Step 3 + Step 4 + Step 5** merged into local main (25+ commits ahead of origin/main since the last push). Step 6 is on this branch awaiting PR/merge.
 - **Plan #1 (seed validation + loader)** fully merged to main.
 
 ## Project shape
@@ -26,68 +26,54 @@ src/ISUCourseManager.Web/src/
                     AiButton, AiMark, DesktopOnlyGate
     Step 3 plan:    CourseTile, SemRow, PlanView
     Step 4:         ActionMenu       (with Completed-trim from Step 5)
-    Step 5:         SlotPicker       (NEW)
+    Step 5:         SlotPicker       (with catalog search from Step 6)
 docs/
-  superpowers/specs/   system + UI v1 + 2 addenda + Step 2/3/4/5 specs
-  superpowers/plans/   Plan #1 done; Step 2/3/4/5 plans done; Plans #2/#3 not started
+  superpowers/specs/   system + UI v1 + 2 addenda + Step 2/3/4/5/6 specs
+  superpowers/plans/   Plan #1 done; Step 2/3/4/5/6 plans done; Plans #2/#3 not started
 ```
 
-## UI v1 — Step 5 (Slot Picker + Completed-Tile Trim) — what was just done
+## UI v1 — Step 6 (Catalog Search) — what was just done
 
-The right-panel content matrix is now complete for all three tile kinds. Clicking a `studentCourse` opens the ActionMenu (Step 4 behavior preserved); clicking an `unfilledDegreeSlot` or `electiveSlot` opens the new **SlotPicker**. The Completed-tile UX trim (deferred from Step 4) now applies — Completed and gradePending tiles show only an info message, not the 4 stub action sections.
+Added a single text-input search bar at the top of the SlotPicker body. Filters the "Add a new course from the catalog" section live as the user types — substring match across `classId`, display `code`, `name`, and `department`. Empty query keeps Step 5's first-8 default. Non-empty query shows up to 20 matches; section header gains a `{N} match(es)` count badge.
 
-**New component `<SlotPicker />`:**
-- Header (blue chrome): breadcrumb (`Sem N · Term`), title `Fill this slot`, kind-specific context line, close `×`.
-- Body sections per UI spec §10.2:
-  - **Recommended** — hidden (overlay rule means Luke's current data has no Recommended candidates).
-  - **Pull from a later semester** — italic muted "No pull-forward candidates yet." message.
-  - **Add a new course from the catalog** — first 8 catalog entries as `<button>` cards (no filter, no search).
-  - **Leave this slot empty** — single muted card with credit-consequence text.
-- Footer: ghost `Cancel` (closes panel) + primary `Apply selection` (visible but `disabled`).
+The other half of the user's Step-5 sign-off feedback — an **AI chat to help fill the slot** — is still pending. Captured as a Step 7 candidate below.
 
-**State plumbing changes (App.tsx):**
-- `selected: SelectedPanel | null` — discriminated union over `actionMenu` and `slotPicker`. Replaces Step 4's `selectedTile: StudentCoursePlanTile | null`.
-- `handleTileClick` branches on `tile.kind`: studentCourse → toggle actionMenu; unfilled/elective → toggle slotPicker (via `isSameUnfilledTile`).
-- `selectedClassId` derived: only non-null when an action menu is open, so the `.selected` blue ring stays scoped to studentCourse tiles only.
+**`<SlotPicker />` changes (single file):**
+- `useState('')` for the query value, updated on every keystroke (no debounce — 100-entry catalog × O(N) filter is ~0.1ms).
+- Search `<input>` at the top of `.body` (above the 3 existing sections). 1px grey border, blue `#1976d2` focus.
+- Helper `filterCatalog` with early-exit at 20 matches; `matchesQuery` does case-insensitive substring on 4 fields.
+- Catalog section renders the result list or an italic "No courses match {query}" message when empty.
+- Section helper extended with an optional `badge?: string` prop. When the search is active, the badge reads `{N} match` (singular) or `{N} matches` (plural).
+- Other sections ("Pull from a later semester", "Leave this slot empty") unaffected.
 
-**Tile / row changes:**
-- `unfilledDegreeSlot` and `electiveSlot` PlanTile variants gained `semIdx` + `academicTerm` (for the slot-picker breadcrumb).
-- `CourseTile`'s non-studentCourse branches now render `<button>` when `onClick` is provided (else `<span>` for backwards-compat).
-- `SemRow` removed the `tile.kind === 'studentCourse'` gate on its `onClick` wiring — all three kinds get routed to App's handler.
-
-**ActionMenu Completed-trim:**
-- Body conditional: when `tile.status === 'Completed'` (which includes the gradePending case, `status='Completed' + grade=null`), the 4 sections collapse to a single centered italic message `This course is complete — no actions available.`
-- New `.emptyMessage` CSS rule.
-
-**Step 5 docs:**
-- `docs/superpowers/specs/2026-05-14-ui-v1-step-5-slot-picker-design.md`
-- `docs/superpowers/plans/2026-05-14-ui-v1-step-5-slot-picker.md`
+**Step 6 docs:**
+- `docs/superpowers/specs/2026-05-14-ui-v1-step-6-catalog-search-design.md`
+- `docs/superpowers/plans/2026-05-14-ui-v1-step-6-catalog-search.md`
 
 ## Known follow-ups (carry forward)
 
 User-flagged + reviewer-flagged items, deferred:
 
-- **Catalog search + AI conversation in the slot picker.** User suggestion at Step 5 sign-off: "Under Add a New Course From the Catalog. We need a way to search the catalog. Maybe open a chat and have a conversation with the user about what they like and maybe want to take." Maps to UI spec §10.2 ("Search input at top of body") + §10.3 (AI panel scoped to a slot). Natural Step 6+ direction. Would introduce the first AI-mediated UX in the app.
-- **Real mutations** — every action card (ActionMenu + SlotPicker) is still a no-op stub. Backend-free path: real local state mutations (e.g., "Mark Completed" actually flips the StudentCourse status). Backend path: MSW + real `/api/v1/me/courses` calls.
+- **AI chat to help fill a slot.** User repeated this at Step 6 sign-off: "we need to add an item for an AI chat when trying to fill a slot and you need help." Natural placement: an AI suggestion section / quick-ask chips above (or below) the catalog list, OR a Chat-with-AI button that opens the AI panel mode (purple accent) scoped to the slot. Per UI spec §10.2 + §10.3 + §11. Pairs naturally with MSW + the `/api/v1/ai/ask` endpoint scaffold. **Top candidate for Step 7.**
+- **Real mutations** — every action card in ActionMenu + SlotPicker is still a no-op stub. Need either local state (next step backend-free) or MSW (mock backend) before "Mark Completed", "Move to future term", etc. actually do something.
 - **Seed data sweep** — `isu-catalog.json` missing HDFS-2390, PHIL-2010; CYBE flow has only Sems 1/2/8. Captured in memory (`project-seed-data-incomplete`). Filling this in unblocks unfilledDegreeSlot tile rendering (currently no live test of that slot-picker branch).
-- **DRY refactors** flagged by reviewers:
+- **DRY refactors** flagged by reviewers across steps 4–5:
   - `electiveLabel(slotType)` duplicated in `CourseTile.tsx` and `SlotPicker.tsx` — extract to a shared helper.
   - `Section` sub-component duplicated in `ActionMenu.tsx` and `SlotPicker.tsx` — same.
-- **Cosmetic nits:**
-  - SlotPicker `cancelBtn` color is grey (`var(--text-label)`); the AC text says "blue". Visual pass confirmed, but the spec wording vs. impl could be tightened on a polish pass.
+- **Cosmetic nits** from Step 5 reviewer:
+  - SlotPicker `cancelBtn` color is grey (`var(--text-label)`); the AC text says "blue". Visual pass confirmed, but worth a polish pass.
   - SlotPicker `.muted` card still has interactive hover styles (brightens bg, blue border) — could be made truly static.
-  - `selected` prop semantic looseness on non-studentCourse tiles (Step 4 reviewer note) — partially addressed in Step 5 (gate kept) but consider tightening to `undefined`.
-- **AI panel mode (purple accent)** — the existing `--panel-accent` CSS variable system supports adding a third accent (`accentAi`) when the AI panel lands.
+- **AI panel mode (purple accent)** — the existing `--panel-accent` CSS variable system supports adding a third accent (`accentAi`) when the AI panel lands. The `RightPanel.tsx` already takes `accent: 'ai' | 'action'`; the `'ai'` branch was scaffolded in Step 4 but not yet exercised.
 
-## Open Step 6 directions (user has not picked yet)
+## Open Step 7 directions (user has not picked yet)
 
-1. **Catalog search + AI conversation in slot picker** — directly addresses the user's Step-5 sign-off feedback. Introduces AI integration architecture (UI spec §11).
-2. **Real mutations (local state first)** — make the ActionMenu / SlotPicker buttons actually do something. Required before MSW because mutations need a target.
-3. **MSW + `usePlan()` hook refactor** — swap the static `PLAN` constant for a hook backed by MSW. Lays groundwork for cascade-engine validation responses too.
-4. **Validation banner + tile flags** — start surfacing cascade-engine output. Needs backend (or faked validation source).
+1. **AI chat in slot picker** (top candidate) — addresses the deferred half of Step 5 + Step 6 user feedback. Introduces AI integration architecture (UI spec §11 — server-mediated `/api/v1/ai/ask` endpoint). Likely requires landing MSW first OR using a faked `useAi()` hook with hardcoded sample responses. Could be split: Step 7a = MSW + faked AI responses; Step 7b = real Anthropic integration.
+2. **Real mutations (local state first)** — make existing ActionMenu / SlotPicker buttons actually do something. Required before MSW because mutations need a target.
+3. **MSW + `usePlan()` hook refactor** — swap the static `PLAN` constant for a hook backed by MSW. Lays groundwork for both AI integration and real mutations.
+4. **Validation banner + tile flags** — surface cascade-engine output. Needs backend (or faked validation source).
 5. **Catalog / flow data sweep** — pure data-entry. Fills the seed gaps so all branches of the overlay + slot picker get real data.
 6. **Test framework** — Vitest + RTL + first render tests.
-7. **DRY refactors** — extract `electiveLabel` + `Section` helpers; minor cosmetic fixes.
+7. **DRY refactors** — extract `electiveLabel` + `Section` helpers; polish cosmetic nits.
 8. **Something else.**
 
 ## Key context flags
@@ -97,6 +83,7 @@ User-flagged + reviewer-flagged items, deferred:
 - **Stack-on-its-own-branch per step.** Each step gets its own branch from main and is merged before the next starts.
 - **Seed file `"Complete"` → spec `"Completed"`** adapter in `src/data/student.ts:normalizeStatus`.
 - **The right panel uses a layout wrapper pattern**: `<RightPanel accent="action">` (or `accent="ai"` for future AI mode) provides the chrome; content components (`<ActionMenu>` / `<SlotPicker>` / future `<AiPanel>`) render inside as children.
+- **No AI integration yet.** Per UI spec §11, AI calls must be server-mediated — Anthropic API never called directly from the browser. Step 7+ has to introduce either MSW or a real backend endpoint.
 
 ## What NOT to do
 
@@ -104,7 +91,8 @@ User-flagged + reviewer-flagged items, deferred:
 - Don't try to "fix" `ActualSeedFileTests.Catalog_passes_validation_with_no_errors` — intentional punch list.
 - Don't auto-add missing courses/slots to the seed JSONs — deferred per project memory.
 - Don't re-litigate the dept-tint-wins CSS cascade — that's the locked v4 behavior.
+- Don't call Anthropic API directly from the browser — UI spec §11 requires server-mediation.
 
 ## How to confirm the user is ready
 
-When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 5 complete on `ui-v1/step-5-slot-picker`. Which direction for Step 6?" and wait for their pick.
+When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 6 complete on `ui-v1/step-6-catalog-search`. Which direction for Step 7?" and wait for their pick.
