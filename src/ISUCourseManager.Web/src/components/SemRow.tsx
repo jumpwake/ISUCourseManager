@@ -24,9 +24,7 @@ export function SemRow({ row, onTileClick, selectedClassId }: Props) {
         <CourseTile
           key={tileKey(tile, i)}
           tile={tile}
-          onClick={
-            tile.kind === 'studentCourse' && onTileClick ? () => onTileClick(tile) : undefined
-          }
+          onClick={onTileClick ? () => onTileClick(tile) : undefined}
           selected={tile.kind === 'studentCourse' && selectedClassId === tile.classId}
         />
       ))}
