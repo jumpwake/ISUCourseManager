@@ -93,4 +93,53 @@ public class PrereqExpressionConverterTests
         Action act = () => JsonSerializer.Deserialize<PrereqExpression>(json, _opts);
         act.Should().Throw<JsonException>().WithMessage("*NotARealType*");
     }
+
+    [Fact]
+    public void Course_node_missing_classId_throws_JsonException()
+    {
+        var json = """{"type":"Course"}""";
+        Action act = () => JsonSerializer.Deserialize<PrereqExpression>(json, _opts);
+        act.Should().Throw<JsonException>().WithMessage("*classId*");
+    }
+
+    [Fact]
+    public void Classification_node_missing_min_throws_JsonException()
+    {
+        var json = """{"type":"Classification"}""";
+        Action act = () => JsonSerializer.Deserialize<PrereqExpression>(json, _opts);
+        act.Should().Throw<JsonException>().WithMessage("*min*");
+    }
+
+    [Fact]
+    public void Classification_node_with_unknown_value_throws_JsonException()
+    {
+        var json = """{"type":"Classification","min":"Postgrad"}""";
+        Action act = () => JsonSerializer.Deserialize<PrereqExpression>(json, _opts);
+        act.Should().Throw<JsonException>().WithMessage("*Postgrad*");
+    }
+
+    [Fact]
+    public void Classification_node_with_numeric_string_throws_JsonException()
+    {
+        // Regression: Enum.Parse silently accepted any int-shaped string as a valid enum.
+        var json = """{"type":"Classification","min":"99"}""";
+        Action act = () => JsonSerializer.Deserialize<PrereqExpression>(json, _opts);
+        act.Should().Throw<JsonException>();
+    }
+
+    [Fact]
+    public void CoreCredits_node_missing_minCoreCredits_throws_JsonException()
+    {
+        var json = """{"type":"CoreCredits"}""";
+        Action act = () => JsonSerializer.Deserialize<PrereqExpression>(json, _opts);
+        act.Should().Throw<JsonException>().WithMessage("*minCoreCredits*");
+    }
+
+    [Fact]
+    public void CoreCredits_node_with_string_minCoreCredits_throws_JsonException()
+    {
+        var json = """{"type":"CoreCredits","minCoreCredits":"29"}""";
+        Action act = () => JsonSerializer.Deserialize<PrereqExpression>(json, _opts);
+        act.Should().Throw<JsonException>().WithMessage("*number*");
+    }
 }
