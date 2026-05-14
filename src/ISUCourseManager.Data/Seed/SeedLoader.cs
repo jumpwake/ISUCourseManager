@@ -62,4 +62,42 @@ public static class SeedLoader
             ? $"{trimmed[..lastSpace].Replace(" ", "")}-{trimmed[(lastSpace + 1)..]}"
             : trimmed;
     }
+
+    public static DegreeFlow LoadFlow(string jsonFilePath)
+    {
+        var json = File.ReadAllText(jsonFilePath);
+        var root = JsonSerializer.Deserialize<FlowJsonRoot>(json, Options)
+                   ?? throw new InvalidDataException($"Flow JSON at {jsonFilePath} deserialized to null");
+
+        var flow = new DegreeFlow
+        {
+            MajorCode = root.Code,
+            MajorName = root.Name,
+            CatalogYear = root.CatalogYear,
+            TotalCreditsRequired = root.TotalCreditsRequired,
+            Notes = root.Notes.ToList(),  // copy so DTO and entity don't share the list
+        };
+
+        flow.Slots.AddRange(root.Slots.Select(s => MapSlot(s, flow.Id)));
+        return flow;
+    }
+
+    private static FlowchartSlot MapSlot(SlotJson s, Guid degreeFlowId)
+    {
+        var slotType = Enum.Parse<SlotType>(s.SlotType);
+        return new FlowchartSlot
+        {
+            DegreeFlowId = degreeFlowId,
+            Semester = s.Semester,
+            SlotType = slotType,
+            ClassId = s.ClassId,
+            DisplayName = s.Name,
+            RequiredCredits = s.RequiredCredits,
+            CreditNote = s.CreditNote,
+            MinGrade = s.MinGrade,
+            ClassNote = s.ClassNote,
+            DisplayOrder = s.DisplayOrder,
+            RecommendedPairing = s.RecommendedPairing.ToList(),
+        };
+    }
 }
