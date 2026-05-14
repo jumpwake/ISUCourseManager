@@ -51,11 +51,15 @@ export type PlanTile =
       name: string;
       credits: number;
       dept: string;
+      academicTerm: number;
+      semIdx: number;
     }
   | {
       kind: 'electiveSlot';
       slotType: ElectiveSlotType;
       requiredCredits: number;
+      academicTerm: number;
+      semIdx: number;
     };
 
 export type PlanRow = {
@@ -67,3 +71,4 @@ export type PlanRow = {
 };
 
 export type StudentCoursePlanTile = Extract<PlanTile, { kind: 'studentCourse' }>;
+export type UnfilledTile = Extract<PlanTile, { kind: 'unfilledDegreeSlot' | 'electiveSlot' }>;

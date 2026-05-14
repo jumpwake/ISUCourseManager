@@ -65,12 +65,16 @@ export function buildOverlay(
           name: course.name,
           credits: course.credits,
           dept: departmentToCssClass(course.department),
+          academicTerm,
+          semIdx,
         });
       } else {
         tiles.push({
           kind: 'electiveSlot',
           slotType: slot.slotType,
           requiredCredits: slot.requiredCredits,
+          academicTerm,
+          semIdx,
         });
       }
     }
