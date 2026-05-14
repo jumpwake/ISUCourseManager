@@ -7,6 +7,10 @@
   flex-direction: column;
 }
 
-.hidden {
-  display: none;
+.accentAi {
+  --panel-accent: var(--ai-start);
+}
+
+.accentAction {
+  --panel-accent: #1976d2;
 }
