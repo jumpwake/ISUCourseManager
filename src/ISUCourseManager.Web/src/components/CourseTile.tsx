@@ -1,9 +1,13 @@
 import type { ElectiveSlotType, PlanTile, StudentCourseStatus } from '../data/types.ts';
 import styles from './CourseTile.module.css';
 
-type Props = { tile: PlanTile };
+type Props = {
+  tile: PlanTile;
+  onClick?: () => void;
+  selected?: boolean;
+};
 
-export function CourseTile({ tile }: Props) {
+export function CourseTile({ tile, onClick, selected = false }: Props) {
   if (tile.kind === 'electiveSlot') {
     return (
       <span className={`${styles.tile} ${styles.electiveEmpty}`}>
@@ -20,22 +24,35 @@ export function CourseTile({ tile }: Props) {
       </span>
     );
   }
+
+  // studentCourse — always render as <button>
+  const selectedClass = selected ? ` ${styles.selected}` : '';
+
   if (tile.status === 'Completed' && !tile.grade) {
     return (
-      <span className={`${styles.tile} ${styles.gradePending}`}>
+      <button
+        type="button"
+        className={`${styles.tile} ${styles.gradePending}${selectedClass}`}
+        onClick={onClick}
+      >
         {tile.code}
         <small><i>grade pending</i></small>
-      </span>
+      </button>
     );
   }
+
   const statusClass = statusToClass(tile.status);
   const subtitle =
     tile.status === 'Completed' ? `${tile.grade} · ${tile.credits}cr` : `${tile.credits}cr`;
   return (
-    <span className={`${styles.tile} ${styles[statusClass]} ${styles[tile.dept]}`}>
+    <button
+      type="button"
+      className={`${styles.tile} ${styles[statusClass]} ${styles[tile.dept]}${selectedClass}`}
+      onClick={onClick}
+    >
       {tile.code}
       <small>{subtitle}</small>
-    </span>
+    </button>
   );
 }
 

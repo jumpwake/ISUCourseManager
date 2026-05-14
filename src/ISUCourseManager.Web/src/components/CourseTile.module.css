@@ -57,3 +57,14 @@
 .coms    { background-color: #f0e4ff; border-color: #b89ce0; }
 .gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
 .engl    { background-color: #fff7e6; border-color: #d4b685; }
+
+button.tile {
+  cursor: pointer;
+  font: inherit;
+}
+
+.selected {
+  box-shadow: 0 0 0 3px #1976d2, 0 4px 12px rgba(25, 118, 210, 0.4);
+  transform: scale(1.04);
+  z-index: 1;
+}
