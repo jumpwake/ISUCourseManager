@@ -9,19 +9,32 @@ type Props = {
 
 export function CourseTile({ tile, onClick, selected = false }: Props) {
   if (tile.kind === 'electiveSlot') {
-    return (
-      <span className={`${styles.tile} ${styles.electiveEmpty}`}>
+    const className = `${styles.tile} ${styles.electiveEmpty}`;
+    const inner = (
+      <>
         {electiveLabel(tile.slotType)}
         <small>{tile.requiredCredits}cr</small>
-      </span>
+      </>
+    );
+    return onClick ? (
+      <button type="button" className={className} onClick={onClick}>{inner}</button>
+    ) : (
+      <span className={className}>{inner}</span>
     );
   }
+
   if (tile.kind === 'unfilledDegreeSlot') {
-    return (
-      <span className={`${styles.tile} ${styles.planned} ${styles[tile.dept]}`}>
+    const className = `${styles.tile} ${styles.planned} ${styles[tile.dept]}`;
+    const inner = (
+      <>
         {tile.code}
         <small>{tile.credits}cr</small>
-      </span>
+      </>
+    );
+    return onClick ? (
+      <button type="button" className={className} onClick={onClick}>{inner}</button>
+    ) : (
+      <span className={className}>{inner}</span>
     );
   }
 
