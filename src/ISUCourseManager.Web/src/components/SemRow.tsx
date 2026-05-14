@@ -3,9 +3,13 @@ import { academicTermToLabel } from '../data/academicTerm.ts';
 import { CourseTile } from './CourseTile.tsx';
 import styles from './SemRow.module.css';
 
-type Props = { row: PlanRow };
+type Props = {
+  row: PlanRow;
+  onTileClick?: (tile: PlanTile) => void;
+  selectedClassId?: string | null;
+};
 
-export function SemRow({ row }: Props) {
+export function SemRow({ row, onTileClick, selectedClassId }: Props) {
   const creditClass = creditColorClass(row);
   return (
     <div className={styles.row}>
@@ -17,7 +21,14 @@ export function SemRow({ row }: Props) {
         </span>
       </div>
       {row.tiles.map((tile, i) => (
-        <CourseTile key={tileKey(tile, i)} tile={tile} />
+        <CourseTile
+          key={tileKey(tile, i)}
+          tile={tile}
+          onClick={
+            tile.kind === 'studentCourse' && onTileClick ? () => onTileClick(tile) : undefined
+          }
+          selected={tile.kind === 'studentCourse' && selectedClassId === tile.classId}
+        />
       ))}
     </div>
   );
