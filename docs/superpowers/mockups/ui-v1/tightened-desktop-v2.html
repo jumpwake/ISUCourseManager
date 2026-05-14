@@ -1,0 +1,625 @@
+<style>
+  body, .frame { background: #f6f7f9; }
+  .scenario-label {
+    background: #1f3b5d; color: white; padding: 8px 16px;
+    font-size: 13px; font-weight: 700;
+    border-radius: 6px 6px 0 0; margin-top: 24px;
+  }
+  .scenario-label .desc { font-weight: 400; color: #cfd8dc; font-size: 12px; margin-left: 8px; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr 380px;
+    grid-template-rows: 56px auto 1fr;
+    grid-template-areas:
+      "topbar topbar topbar"
+      "sidebar banner panel"
+      "sidebar main panel";
+    height: 720px;
+    border: 1px solid #d0d7de;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    background: #fff;
+    font-size: 13px;
+    color: #1f2328;
+  }
+  .app.no-banner {
+    grid-template-rows: 56px 1fr;
+    grid-template-areas:
+      "topbar topbar topbar"
+      "sidebar main panel";
+  }
+  .app.no-panel {
+    grid-template-columns: 240px 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "sidebar banner"
+      "sidebar main";
+  }
+  .app.no-panel .panel { display: none; }
+
+  /* TOPBAR */
+  .topbar {
+    grid-area: topbar; background: #1f3b5d; color: #f0f4f8;
+    display: flex; align-items: center; padding: 0 16px; gap: 16px;
+  }
+  .topbar .brand { font-weight: 700; font-size: 14px; }
+  .topbar .brand .accent { color: #ffc555; }
+  .topbar .ai-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border: none;
+    padding: 6px 12px; border-radius: 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 8px rgba(124,58,237,.3);
+  }
+  .topbar .ai-btn:hover { transform: translateY(-1px); }
+  .topbar .ai-btn .icon { font-size: 13px; }
+  .topbar .student { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cfd8dc; }
+  .topbar .student .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ffc555; color: #1f3b5d; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    grid-area: sidebar; background: #fafbfc; border-right: 1px solid #e0e0e0;
+    padding: 12px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .side-section { font-size: 11px; }
+  .side-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+    color: #8895a4; font-weight: 700; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .side-label .ai-pill {
+    text-transform: none; letter-spacing: 0;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; padding: 1px 6px; border-radius: 8px;
+    font-size: 9px; font-weight: 700;
+  }
+
+  /* Flow card */
+  .flow-card {
+    border: 1px solid #d0d7de; border-radius: 6px;
+    padding: 8px 10px; margin-bottom: 6px;
+    cursor: pointer; background: #fff;
+    position: relative;
+  }
+  .flow-card:hover { border-color: #1976d2; }
+  .flow-card.active {
+    background: #e3f2fd; border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25,118,210,.15);
+  }
+  .flow-card.pending {
+    background: #fff8e1; border-color: #ffb300; border-style: dashed;
+  }
+  .flow-card.viewing::before {
+    content: "👁"; position: absolute; top: 6px; right: 8px; font-size: 10px;
+  }
+  .flow-card .flow-name { font-weight: 700; font-size: 12px; color: #1f2328; }
+  .flow-card .flow-meta { font-size: 10px; color: #8895a4; margin-top: 2px; }
+  .flow-card .flow-progress {
+    margin-top: 4px; font-size: 10px; color: #5a6573;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .flow-card .flow-progress .bar {
+    flex-grow: 1; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden;
+  }
+  .flow-card .flow-progress .fill { height: 100%; background: #66bb6a; }
+  .flow-card .flow-status {
+    display: inline-block; padding: 1px 6px; border-radius: 8px;
+    font-size: 9px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .flow-card.active .flow-status { background: #1976d2; color: white; }
+  .flow-card.pending .flow-status { background: #ffb300; color: #5a4500; }
+
+  .add-flow {
+    text-align: center; font-size: 11px; color: #1976d2;
+    padding: 6px; cursor: pointer; border: 1px dashed #b0bec5;
+    border-radius: 6px; margin-top: 4px;
+  }
+  .add-flow:hover { background: #e3f2fd; border-color: #1976d2; }
+
+  /* Stats */
+  .stats {
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 6px;
+    padding: 10px;
+  }
+  .stats .progress-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 11px; margin-bottom: 4px;
+  }
+  .stats .progress-bar {
+    height: 6px; background: #e0e0e0; border-radius: 3px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .stats .progress-fill {
+    background: linear-gradient(90deg, #66bb6a, #43a047);
+    height: 100%; border-radius: 3px; width: 22%;
+  }
+  .stats .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 4px; font-size: 10px; color: #5a6573;
+  }
+  .stats .stat-grid strong {
+    display: block; font-size: 14px; color: #1f2328; font-weight: 700;
+  }
+
+  /* AI insights card */
+  .ai-insights {
+    background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
+    border: 1px solid #c4b5fd;
+    border-radius: 6px; padding: 10px;
+    position: relative;
+  }
+  .ai-insights .ai-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700; color: #5b21b6;
+    margin-bottom: 8px;
+  }
+  .ai-insights .ai-header .sparkle { font-size: 12px; }
+  .ai-insights .insight {
+    background: white; padding: 6px 8px; border-radius: 4px;
+    margin-bottom: 4px; font-size: 11px; line-height: 1.4;
+    border-left: 2px solid #7c3aed;
+    cursor: pointer;
+  }
+  .ai-insights .insight:hover { background: #faf5ff; }
+  .ai-insights .insight strong { color: #5b21b6; }
+  .ai-insights .insight .insight-action {
+    color: #7c3aed; font-size: 10px; font-weight: 700; margin-top: 2px;
+    display: block;
+  }
+  .ai-insights .ask-more {
+    text-align: center; font-size: 10px; color: #5b21b6;
+    padding: 4px; cursor: pointer; margin-top: 4px;
+    text-decoration: underline;
+  }
+
+  /* BANNER */
+  .banner {
+    grid-area: banner;
+    background: #ffebee; border-bottom: 1px solid #ef9a9a;
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 12px; font-size: 12px;
+  }
+  .banner.clean { background: #e8f5e9; border-color: #66bb6a; color: #1b5e20; }
+  .banner .icon {
+    font-size: 14px; background: #c62828; color: white;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-weight: 700;
+  }
+  .banner.clean .icon { background: #2e7d32; }
+  .banner .msg { flex-grow: 1; color: #c62828; font-weight: 600; }
+  .banner.clean .msg { color: #1b5e20; }
+
+  /* MAIN */
+  .main { grid-area: main; overflow-y: auto; padding: 0; background: #fff; }
+  .main-header {
+    background: #fff; padding: 10px 16px; border-bottom: 1px solid #e0e0e0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .main-header h1 { font-size: 14px; margin: 0; flex-grow: 1; }
+  .main-header .meta { font-size: 11px; color: #8895a4; }
+
+  /* Tiles */
+  .tile {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 8px; margin: 3px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; line-height: 1.15;
+    min-width: 78px; min-height: 44px;
+    background: #fff; border: 1px solid #d0d7de; color: #1f2328;
+    text-align: center; cursor: pointer; position: relative;
+  }
+  .tile small { font-weight: 400; opacity: 0.65; font-size: 10px; margin-top: 2px; }
+  .tile.completed   { background: #e8f5e9; border-color: #66bb6a; }
+  .tile.inprogress  { background: #fff8e1; border-color: #ffb300; }
+  .tile.planned     { background: #fff; border-color: #b0bec5; border-style: dashed; color: #455a64; }
+  .tile.math    { background-color: #fde2c8; border-color: #e8b585; }
+  .tile.cpre    { background-color: #e8f0fe; border-color: #a8c3eb; }
+  .tile.cybe    { background-color: #d6f0e6; border-color: #82c8a8; }
+  .tile.coms    { background-color: #f0e4ff; border-color: #b89ce0; }
+  .tile.gened   { background-color: #f0f4f8; border-color: #b8c6d4; }
+  .tile.engl    { background-color: #fff7e6; border-color: #d4b685; }
+
+  .sem-row {
+    padding: 8px 16px; border-bottom: 1px dashed #e0e0e0;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  }
+  .sem-label { width: 90px; font-size: 11px; color: #455a64; font-weight: 700; flex-shrink: 0; line-height: 1.3; }
+  .sem-label small { display: block; font-weight: 400; color: #999; }
+  .sem-label .credits { display: block; margin-top: 2px; font-size: 11px; font-weight: 700; color: #1565c0; }
+
+  /* AI CHAT PANEL (right) */
+  .panel { grid-area: panel; background: #fff; border-left: 2px solid #7c3aed; overflow-y: auto;
+    box-shadow: -4px 0 12px rgba(0,0,0,.06); display: flex; flex-direction: column; }
+  .panel-header {
+    background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
+    padding: 12px 16px;
+    border-bottom: 1px solid #c4b5fd;
+  }
+  .panel-header .ai-title {
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 13px; color: #5b21b6;
+  }
+  .panel-header .ctx { font-size: 11px; color: #5a6573; margin-top: 4px; }
+  .panel-body {
+    padding: 12px 16px; flex-grow: 1; overflow-y: auto;
+    background: #fafbfc;
+  }
+  .chat-msg {
+    margin-bottom: 12px; line-height: 1.5; font-size: 12px;
+  }
+  .chat-msg.user {
+    text-align: right;
+  }
+  .chat-msg.user .bubble {
+    background: #1976d2; color: white;
+    padding: 8px 12px; border-radius: 12px 12px 2px 12px;
+    display: inline-block; max-width: 80%; text-align: left;
+  }
+  .chat-msg.ai .bubble {
+    background: #fff; border: 1px solid #e0e0e0;
+    padding: 10px 12px; border-radius: 12px 12px 12px 2px;
+    display: inline-block; max-width: 95%;
+  }
+  .chat-msg.ai .bubble strong { color: #5b21b6; }
+  .chat-msg.ai .ai-action {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px dashed #c4b5fd;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .chat-msg.ai .action-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white; border: none;
+    padding: 4px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .chat-msg.ai .action-btn.secondary {
+    background: white; color: #5b21b6;
+    border: 1px solid #c4b5fd;
+  }
+  .chat-msg .meta { font-size: 9px; color: #8895a4; margin-top: 2px; }
+  .panel-footer {
+    padding: 12px; border-top: 1px solid #e0e0e0; background: #fff;
+  }
+  .panel-footer .input-row {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .panel-footer input {
+    flex-grow: 1; padding: 8px 12px; border: 1px solid #d0d7de;
+    border-radius: 18px; font-size: 12px; outline: none;
+  }
+  .panel-footer input:focus { border-color: #7c3aed; }
+  .panel-footer .send-btn {
+    background: #7c3aed; color: white; border: none;
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: 14px;
+  }
+  .panel-footer .quick-asks {
+    margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .panel-footer .quick-ask {
+    background: #f5f5f5; border: 1px solid #e0e0e0;
+    padding: 3px 8px; border-radius: 10px;
+    font-size: 10px; color: #5a6573; cursor: pointer;
+  }
+  .panel-footer .quick-ask:hover { background: #faf5ff; border-color: #c4b5fd; color: #5b21b6; }
+</style>
+
+<h2>Tightened desktop — flow switcher restored, AI integrations stubbed in</h2>
+<p class="subtitle">Two scenarios stacked: (1) baseline view with flow switcher and AI insights visible in the sidebar, (2) AI chat panel open in the right slot for natural-language analysis.</p>
+
+<!-- ========== STATE 1: Baseline with flow switcher + AI insights in sidebar ========== -->
+<div class="scenario-label">State 1<span class="desc">Default view: left sidebar shows Active + Pending flows with progress bars; AI insights card surfaces inline observations; right panel collapsed (no tile selected, no AI chat open).</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app no-panel">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <button class="ai-btn"><span class="icon">✦</span>Ask Claude</button>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="side-section">
+        <div class="side-label">My degree flows <span style="text-transform:none;letter-spacing:0;color:#1976d2;cursor:pointer;">+ Add</span></div>
+
+        <div class="flow-card active viewing">
+          <div class="flow-name">Cyber Security Engr</div>
+          <div class="flow-meta">CYBE · 2025-26</div>
+          <div class="flow-progress">
+            <span>22%</span>
+            <div class="bar"><div class="fill" style="width:22%;"></div></div>
+            <span>28/125</span>
+          </div>
+          <span class="flow-status">Active · viewing</span>
+        </div>
+
+        <div class="flow-card active">
+          <div class="flow-name">Math Minor</div>
+          <div class="flow-meta">MATH · 2025-26 · 12cr req</div>
+          <div class="flow-progress">
+            <span>33%</span>
+            <div class="bar"><div class="fill" style="width:33%;"></div></div>
+            <span>4/12</span>
+          </div>
+          <span class="flow-status">Active</span>
+        </div>
+
+        <div class="flow-card pending">
+          <div class="flow-name">Computer Engr</div>
+          <div class="flow-meta">CPRE · 2025-26 · what-if</div>
+          <div class="flow-progress">
+            <span>26%</span>
+            <div class="bar"><div class="fill" style="width:26%;"></div></div>
+            <span>32/123</span>
+          </div>
+          <span class="flow-status">Pending</span>
+        </div>
+
+        <div class="add-flow">+ Explore another flow (test against it)</div>
+      </div>
+
+      <div class="side-section">
+        <div class="side-label">Progress (CYBE)</div>
+        <div class="stats">
+          <div class="progress-row">
+            <span><strong>28</strong> / 125 cr</span>
+            <span style="color:#2e7d32;font-weight:700;">22%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="stat-grid">
+            <div><strong style="color:#2e7d32;">5</strong>completed</div>
+            <div><strong style="color:#ef6c00;">6</strong>in progress</div>
+            <div><strong style="color:#455a64;">22</strong>planned</div>
+            <div><strong style="color:#d4a72c;">2</strong>warnings</div>
+          </div>
+          <div style="margin-top:8px;font-size:10px;color:#5a6573;border-top:1px solid #eee;padding-top:6px;">
+            Projected graduation: <strong style="color:#1f2328;">Spring 2030</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="side-label">Insights <span class="ai-pill">✦ AI</span></div>
+        <div class="ai-insights">
+          <div class="insight">
+            You're <strong>2 classes away</strong> from also satisfying a CprE major. Worth exploring?
+            <span class="insight-action">→ Compare flows</span>
+          </div>
+          <div class="insight">
+            Your Sem 2 plan is <strong>23 credits</strong> — heavier than your Sem 1 (15 cr). Consider deferring one course.
+            <span class="insight-action">→ Suggest which one</span>
+          </div>
+          <div class="insight">
+            CprE 4360 (Digital Forensics) is popular among CybE majors and would fit your CybE Elective slot in Sem 6.
+            <span class="insight-action">→ Add to Sem 6</span>
+          </div>
+          <div class="ask-more">Ask Claude for more analysis →</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="banner clean">
+      <div class="icon">✓</div>
+      <div class="msg">All prereqs validated.</div>
+    </div>
+
+    <div class="main">
+      <div class="main-header">
+        <h1>Cyber Security Engineering — 2025-26</h1>
+        <div class="meta">Active · grad: Spring 2030</div>
+      </div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits">15 cr</span></div>
+          <span class="tile completed math">Math 1650<small>A · 4cr</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R</small></span>
+          <span class="tile completed cpre">CprE 1850<small>3cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits">19 cr</span></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits">14 cr</span></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+        </div>
+        <div style="padding:12px 16px;font-size:11px;color:#999;font-style:italic;">… (Sems 4-8 below) …</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== STATE 2: AI chat open in right panel ========== -->
+<div class="scenario-label">State 2<span class="desc">Luke clicks "Ask Claude" in the topbar (or one of the inline insights). Right panel opens with conversational AI that has full plan context. Sample exchange shows Luke asking about closest matching degree and getting actionable suggestions.</span></div>
+<div class="frame" style="padding: 0; background:#eceff1;">
+  <div class="app no-banner">
+    <div class="topbar">
+      <div class="brand">📘 ISU<span class="accent">CourseManager</span></div>
+      <button class="ai-btn" style="background:white;color:#5b21b6;border:1px solid #c4b5fd;"><span class="icon">✦</span>Chat open</button>
+      <div class="student"><span>Hi, Luke</span><div class="avatar">LB</div></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="side-section">
+        <div class="side-label">My degree flows</div>
+        <div class="flow-card active viewing">
+          <div class="flow-name">Cyber Security Engr</div>
+          <div class="flow-meta">CYBE · 2025-26 · 28/125</div>
+          <span class="flow-status">Active · viewing</span>
+        </div>
+        <div class="flow-card active">
+          <div class="flow-name">Math Minor</div>
+          <div class="flow-meta">MATH · 4/12</div>
+          <span class="flow-status">Active</span>
+        </div>
+        <div class="flow-card pending">
+          <div class="flow-name">Computer Engr</div>
+          <div class="flow-meta">CPRE · what-if</div>
+          <span class="flow-status">Pending</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="main-header">
+        <h1>Cyber Security Engineering — 2025-26</h1>
+        <div class="meta">Active</div>
+      </div>
+      <div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 1<small>Fall 2025</small><span class="credits">15 cr</span></div>
+          <span class="tile completed math">Math 1650<small>A · 4cr</small></span>
+          <span class="tile completed cpre">Engr 1010<small>R</small></span>
+          <span class="tile completed cpre">CprE 1850<small>3cr</small></span>
+          <span class="tile completed cpre">Chem 1670<small>B+ · 4cr</small></span>
+          <span class="tile completed cpre">Lib 1600<small>S · 1cr</small></span>
+          <span class="tile completed engl">Engl 1500<small>A- · 3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 2<small>Spring 2026</small><span class="credits">19 cr</span></div>
+          <span class="tile inprogress math">Math 1660<small>4cr</small></span>
+          <span class="tile inprogress math">Phys 2310<small>5cr</small></span>
+          <span class="tile inprogress coms">Com S 2270<small>4cr</small></span>
+          <span class="tile inprogress cpre">CprE 1660<small>R cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+          <span class="tile inprogress gened">Gen Ed<small>3cr</small></span>
+        </div>
+        <div class="sem-row">
+          <div class="sem-label">Sem 3<small>Fall 2026</small><span class="credits">14 cr</span></div>
+          <span class="tile planned math">Math 2670<small>4cr</small></span>
+          <span class="tile planned cybe">Cyb E 2300<small>3cr</small></span>
+          <span class="tile planned cpre">CprE 2810<small>4cr</small></span>
+          <span class="tile planned coms">Com S 2280<small>3cr</small></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI CHAT PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="ai-title">✦ Claude · degree advisor</div>
+        <div class="ctx">Knows your courses, active flows, and the catalog. Can analyze and propose moves.</div>
+      </div>
+      <div class="panel-body">
+        <div class="chat-msg user">
+          <div class="bubble">How close am I to also finishing the CprE major?</div>
+        </div>
+        <div class="chat-msg ai">
+          <div class="bubble">
+            Looking at your <strong>28 completed/in-progress credits</strong> against the CprE 2025-26 requirements, you'd be in good shape:
+            <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;">
+              <li><strong>26 of 32</strong> CprE core credits already covered (CprE 1660, 1850, 2810 in plan)</li>
+              <li>You'd need <strong>2 additional courses</strong>: CprE 4880 (Embedded II) and a Computer Engr Elective</li>
+              <li>Your current Tech Elective slots could absorb both</li>
+            </ul>
+            Switching majors would push graduation by roughly <strong>1 semester</strong> (Spring 2030 → Fall 2030).
+            <div class="ai-action">
+              <button class="action-btn">Show CprE overlay</button>
+              <button class="action-btn secondary">Make CprE Active too (double major)</button>
+            </div>
+          </div>
+          <div class="meta">Used: your CYBE plan, CPRE 2025-26 flow, catalog</div>
+        </div>
+        <div class="chat-msg user">
+          <div class="bubble">What if I move Math 1650 to next semester?</div>
+        </div>
+        <div class="chat-msg ai">
+          <div class="bubble">
+            That move would cascade. Math 1650 is a coreq for CprE 1850 and a prereq for Math 1660 and Phys 2310. Specifically:
+            <ul style="margin:6px 0 6px 18px;padding:0;font-size:12px;">
+              <li><strong>CprE 1850</strong> → must move with it (coreq)</li>
+              <li><strong>Math 1660 + Phys 2310</strong> → push from Sem 2 to Sem 3</li>
+              <li><strong>~10 downstream classes</strong> would need re-validation</li>
+            </ul>
+            I'd recommend running <strong>Auto-Fix</strong> after the move to handle the cascade automatically.
+            <div class="ai-action">
+              <button class="action-btn">Move Math 1650 + run Auto-Fix</button>
+              <button class="action-btn secondary">Just preview the cascade</button>
+            </div>
+          </div>
+          <div class="meta">Estimated tokens: 1,240 · response: 380ms</div>
+        </div>
+      </div>
+      <div class="panel-footer">
+        <div class="input-row">
+          <input type="text" placeholder="Ask Claude about your plan…" />
+          <button class="send-btn">→</button>
+        </div>
+        <div class="quick-asks">
+          <span class="quick-ask">Suggest a tech elective</span>
+          <span class="quick-ask">Why is Sem 2 heavy?</span>
+          <span class="quick-ask">Compare CYBE vs CPRE</span>
+          <span class="quick-ask">Am I on track to graduate?</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">React to:</h3>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="flow-cards" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Flow switcher cards (sidebar)</h3>
+      <p>Each flow card shows: name, code/year, completion progress bar with %, status badge (Active/Pending), and a "👁 viewing" indicator on the one currently rendered in main. Click any card to switch which flow is rendered. "+ Explore another flow" adds a new Pending row for what-if testing.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="multi-active" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Multiple Active flows shown (CYBE + Math Minor)</h3>
+      <p>The mockup shows 3 entries: Active CybE, Active Math Minor (yes — minors are first-class, deferred per spec but we can stub them), Pending CprE for what-if. Each can be switched into main view independently.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ai-button" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>"✦ Ask Claude" button in topbar</h3>
+      <p>Purple-gradient pill button between the brand and the student avatar. Always-accessible entry to the AI chat panel. Shifts to a "Chat open" state (white background) when active.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ai-insights" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>AI insights card (sidebar)</h3>
+      <p>Small purple-tinted card with 2-3 inline AI-generated observations. Each insight is clickable with a one-line action ("→ Compare flows", "→ Suggest which one", "→ Add to Sem 6"). Auto-refreshes as plan changes.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ai-chat" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>AI chat panel (right side)</h3>
+      <p>Shares the right-slot real estate with the action menu — only one at a time. Conversational interface; AI has full context of plan + active flows + catalog. Responses can include action buttons that apply changes directly. Quick-ask chips at bottom prime common questions.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ai-cost" onclick="toggleSelect(this)">
+    <div class="letter">F</div>
+    <div class="content">
+      <h3>AI cost / latency transparency</h3>
+      <p>Each AI response shows "Estimated tokens: 1,240 · response: 380ms" in small grey text. Lets you see what's being spent and how fast. Could be opt-in via settings.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#666;">
+On AI: the Anthropic API integration is implemented as a server-side service — frontend just calls our API, which calls Anthropic with the student's plan context as a tool (so Claude can read AND propose mutations the student confirms). Action buttons in chat responses are executed against our existing /me/courses and /cascade endpoints — Claude doesn't talk directly to the user's data, our service mediates.
+</p>

@@ -1,0 +1,78 @@
+{
+  "code": "CYBE",
+  "name": "Cyber Security Engineering",
+  "catalogYear": "2025-26",
+  "totalCreditsRequired": 125,
+  "notes": [
+    "This flowchart is only a guide. For more detailed information including prerequisites and co-requisites, see the ISU Catalog.",
+    "Lab and lecture must be passed in the same semester to receive credit for CprE/CybE/EE courses."
+  ],
+  "slots": [
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "MATH-1650",
+      "name": "Calc I",
+      "minGrade": "C-",
+      "displayOrder": 1
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "ENGR-1010",
+      "name": "Orientation",
+      "creditNote": "R cr",
+      "displayOrder": 2
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-1850",
+      "name": "CprE Prob Solv",
+      "displayOrder": 3,
+      "recommendedPairing": ["MATH-1650"]
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "CHEM-1670",
+      "name": "Engr Chem",
+      "displayOrder": 4
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "LIB-1600",
+      "name": "Lib Instruction",
+      "displayOrder": 5
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "ENGL-1500",
+      "name": "Crit Think & Com",
+      "minGrade": "C-",
+      "displayOrder": 6
+    },
+    {
+      "semester": 2,
+      "slotType": "DegreeClass",
+      "classId": "MATH-1660",
+      "name": "Calc II",
+      "minGrade": "C-",
+      "displayOrder": 1
+    },
+    {
+      "semester": 8,
+      "slotType": "ElectiveTech",
+      "requiredCredits": 3,
+      "displayOrder": 2
+    },
+    {
+      "semester": 8,
+      "slotType": "ElectiveGenEd",
+      "requiredCredits": 3,
+      "displayOrder": 3
+    }
+  ]
+}

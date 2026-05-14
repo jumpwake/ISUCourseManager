@@ -1,0 +1,91 @@
+{
+  "courses": [
+    {
+      "classId": "MATH-1650",
+      "code": "Math 1650",
+      "name": "Calc I",
+      "credits": 4,
+      "department": "Math",
+      "prereqs": null,
+      "coreqs": null,
+      "isActive": true
+    },
+    {
+      "classId": "ENGR-1010",
+      "code": "Engr 1010",
+      "name": "Engineering Orientation",
+      "credits": 0,
+      "department": "Engr",
+      "prereqs": null,
+      "coreqs": null,
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-1850",
+      "code": "CprE 1850",
+      "name": "CprE Prob Solv",
+      "credits": 3,
+      "department": "CprE",
+      "prereqs": null,
+      "coreqs": { "type": "Course", "classId": "MATH-1650" },
+      "isActive": true
+    },
+    {
+      "classId": "MATH-1660",
+      "code": "Math 1660",
+      "name": "Calc II",
+      "credits": 4,
+      "department": "Math",
+      "prereqs": { "type": "Course", "classId": "MATH-1650", "minGrade": "C-" },
+      "coreqs": null,
+      "isActive": true
+    },
+    {
+      "classId": "CHEM-1670",
+      "code": "Chem 1670",
+      "name": "Engr Chem",
+      "credits": 4,
+      "department": "Chem",
+      "prereqs": null,
+      "coreqs": null,
+      "isActive": true
+    },
+    {
+      "classId": "LIB-1600",
+      "code": "Lib 1600",
+      "name": "Lib Instruction",
+      "credits": 1,
+      "department": "Lib",
+      "prereqs": null,
+      "coreqs": null,
+      "isActive": true
+    },
+    {
+      "classId": "ENGL-1500",
+      "code": "Engl 1500",
+      "name": "Crit Think & Com",
+      "credits": 3,
+      "department": "Engl",
+      "prereqs": null,
+      "coreqs": null,
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4300",
+      "code": "CprE 430",
+      "name": "Network Protocols and Security",
+      "credits": 3,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          { "type": "Course", "classId": "CPRE-3080" },
+          { "type": "Course", "classId": "COMS-2520" },
+          { "type": "Course", "classId": "COMS-3520" }
+        ]
+      },
+      "coreqs": null,
+      "isActive": true
+    }
+  ]
+}

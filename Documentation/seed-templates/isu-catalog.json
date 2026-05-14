@@ -1,0 +1,1056 @@
+{
+  "_comment": "Catalog scraped from catalog.iastate.edu/azcourses/. Prereqs auto-converted to PrereqExpression trees where possible; complex strings remain as {\"_unparsed\": \"...\"} for human review.",
+  "courses": [
+    {
+      "classId": "CHEM-1670",
+      "code": "Chem 1670",
+      "name": "Engr Chem",
+      "officialName": "General Chemistry for Engineering Students",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Chem",
+      "prereqs": {
+        "_unparsed": "College of Engineering Students or Open Option Undergraduate Undeclared Students"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "COMS-2270",
+      "code": "Com S 2270",
+      "name": "Intro Program",
+      "officialName": "Object-oriented Programming",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "ComS",
+      "prereqs": {
+        "_unparsed": "Credit or concurrent enrollment in MATH 1430 or higher; (COMS 1270 or CPRE 1850 or SE 1850 or COMS 2070 or MIS 2070 or EE 2850 or MTEOR 2270 or ME 1600)"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "COMS-2280",
+      "code": "Com S 2280",
+      "name": "Data Structures",
+      "officialName": "Introduction to Data Structures",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "ComS",
+      "prereqs": {
+        "type": "And",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1650"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "COMS-3090",
+      "code": "Com S 3090",
+      "name": "Software Dev",
+      "officialName": "Software Development Practices",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "ComS",
+      "prereqs": {
+        "type": "And",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2280",
+            "minGrade": "C-"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1650",
+            "minGrade": "C-"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "SE-3090"
+      ],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "COMS-3110",
+      "code": "Com S 3110",
+      "name": "Algor Analys",
+      "officialName": "Introduction to the Design and Analysis of Algorithms",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "ComS",
+      "prereqs": {
+        "type": "And",
+        "children": [
+          {
+            "type": "Or",
+            "children": [
+              {
+                "type": "Course",
+                "classId": "COMS-2300"
+              },
+              {
+                "type": "Course",
+                "classId": "CPRE-3100"
+              }
+            ]
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2280",
+            "minGrade": "C-"
+          },
+          {
+            "type": "Course",
+            "classId": "ENGL-1500",
+            "minGrade": "C-"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660",
+            "minGrade": "C-"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-1660",
+      "code": "CprE 1660",
+      "name": "Professional Prog",
+      "officialName": "Professional Programs Orientation",
+      "credits": 0.0,
+      "creditNote": "R cr",
+      "department": "CprE",
+      "prereqs": null,
+      "coreqs": null,
+      "crossListedAs": [
+        "EE-1660"
+      ],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-1850",
+      "code": "CprE 1850",
+      "name": "CprE Prob Solv",
+      "officialName": "Introduction to Computer Engineering and Problem Solving I",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "_unparsed": "(MATH 1430 or satisfactory scores on mathematics placement examinations) or (MATH 1650 or satisfactory scores on mathematics placement examinations)"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-2810",
+      "code": "CprE 2810",
+      "name": "Digital Logic",
+      "officialName": "Digital Logic",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Classification",
+        "min": "Sophomore"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-2880",
+      "code": "CprE 2880",
+      "name": "Embedded Systems",
+      "officialName": "Embedded Systems I:  Introduction",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2810"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2070"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2850"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-3080",
+      "code": "CprE 3080",
+      "name": "Operating Sys",
+      "officialName": "Operating Systems: Principles and Practice",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-3810"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-3210"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-3100",
+      "code": "CprE 3100",
+      "name": "Foundtn CprE",
+      "officialName": "Theoretical Foundations of Computer Engineering",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Course",
+        "classId": "COMS-2280"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-3810",
+      "code": "CprE 3810",
+      "name": "Cpr Org & Design",
+      "officialName": "Computer Organization and Assembly Level Programming",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Course",
+        "classId": "CPRE-2880"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4300",
+      "code": "CprE 4300",
+      "name": "Network Protocols and Security",
+      "officialName": "Network Protocols and Security",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "_unparsed": "(CPRE 3080, COMS 2520, or COMS 3520) or CPRE 2880"
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CYBSC-4300"
+      ],
+      "typicallyOffered": [],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4360",
+      "code": "CprE 4360",
+      "name": "Digital Forensics",
+      "officialName": "Digital Forensics",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Course",
+        "classId": "CYBE-3310"
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CYBE-4360"
+      ],
+      "typicallyOffered": [],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4370",
+      "code": "CprE 4370",
+      "name": "Introduction to Wireless Secur",
+      "officialName": "Introduction to Wireless Security",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": null,
+      "coreqs": null,
+      "crossListedAs": [
+        "CYBE-4370"
+      ],
+      "typicallyOffered": [],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4910",
+      "code": "CprE 4910",
+      "name": "Senior Design I",
+      "officialName": "Senior Design Project I and Professionalism",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "_unparsed": "(ENGL 3090 OR ENGL 3140 OR ENGL 3140H) and [[(EE MAJOR) and (EE 3940 or EE 2320) and (Credit or enrollment in EE 3220 or EE 3022) and (Credit or enrollment in EE 3250)] or [(CPRE MAJOR) and (CPRE 3940 or CPRE 2320) and (Credit or enrollment in CPRE 3080) and (Credit or enrollment in CPRE 3250] or [(CYBE MAJOR) and (CPRE 3940 or CYBE 2340) and (Credit or enrollment in CYBE 3250) and CYBE 3310] or [(SE MAJOR) and (SE 3390 and SE 3170) and (Credit or enrollment in COMS 3520 or CPRE 3080)]]"
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "EE-4910",
+        "SE-4910",
+        "CYBE-4910"
+      ],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4920",
+      "code": "CprE 4920",
+      "name": "Senior Design II",
+      "officialName": "Senior Design Project II",
+      "credits": 2.0,
+      "creditNote": null,
+      "department": "CprE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-4910"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-4910"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "EE-4920",
+        "SE-4920",
+        "CYBE-4920"
+      ],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CPRE-4940",
+      "code": "CprE 4940",
+      "name": "Portfolio",
+      "officialName": "Portfolio Assessment",
+      "credits": 0.0,
+      "creditNote": "R cr",
+      "department": "CprE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2320"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2320"
+          },
+          {
+            "type": "Course",
+            "classId": "CYBE-2340"
+          },
+          {
+            "type": "Course",
+            "classId": "CPRE-4910"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-4910"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "EE-4940"
+      ],
+      "typicallyOffered": [],
+      "isActive": true
+    },
+    {
+      "classId": "CYBE-2300",
+      "code": "Cyb E 2300",
+      "name": "Cyber Secr. Infra",
+      "officialName": "Cyber Security Fundamentals",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CybE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2850"
+          },
+          {
+            "type": "Course",
+            "classId": "MIS-2070"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CPRE-2300"
+      ],
+      "typicallyOffered": [
+        "Fall"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CYBE-2310",
+      "code": "Cyb E 2310",
+      "name": "Cyber Sec. Concept/Tool",
+      "officialName": "Cyber Security Concepts and Tools",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CybE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2300"
+          },
+          {
+            "type": "Course",
+            "classId": "CYBE-2300"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CPRE-2310"
+      ],
+      "typicallyOffered": [
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CYBE-2340",
+      "code": "Cyb E 2340",
+      "name": "Ethics in Sec",
+      "officialName": "Legal, Professional, and Ethical Issues in Cyber Systems",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CybE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "COMS-2270"
+          },
+          {
+            "type": "Course",
+            "classId": "EE-2850"
+          },
+          {
+            "type": "Course",
+            "classId": "MIS-2070"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CPRE-2340"
+      ],
+      "typicallyOffered": [
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CYBE-3310",
+      "code": "Cyb E 3310",
+      "name": "Appl of Crypt",
+      "officialName": "Application of Cryptographic Concepts to Cyber Security",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CybE",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "CPRE-2310"
+          },
+          {
+            "type": "Course",
+            "classId": "CYBE-2310"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CPRE-3310"
+      ],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "CYBE-4400",
+      "code": "Cyb E 4400",
+      "name": "Operating System Security",
+      "officialName": "Operating System Security",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "CybE",
+      "prereqs": {
+        "_unparsed": "Graduate Classification or (COMS 3520 or CPRE 3080)"
+      },
+      "coreqs": null,
+      "crossListedAs": [
+        "CPRE-4400"
+      ],
+      "typicallyOffered": [
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "ENGL-1500",
+      "code": "Engl 1500",
+      "name": "Crit Think & Com",
+      "officialName": "Critical Thinking and Communication",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Engl",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-1500"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "ENGL-2500",
+      "code": "Engl 2500",
+      "name": "WOVE Comp",
+      "officialName": "Written, Oral, Visual, and Electronic Composition",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Engl",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-2500"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "ENGL-3090",
+      "code": "Engl 3090",
+      "name": "Proposal and Report Writing",
+      "officialName": "Proposal and Report Writing",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Engl",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-2500"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "ENGL-3140",
+      "code": "Engl 3140",
+      "name": "Technical Com",
+      "officialName": "Technical Communication",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Engl",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-2500"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "ENGR-1010",
+      "code": "Engr 1010",
+      "name": "Orientation",
+      "officialName": "Engineering Orientation",
+      "credits": 0.0,
+      "creditNote": "R cr",
+      "department": "Engr",
+      "prereqs": null,
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "LIB-1600",
+      "code": "Lib 1600",
+      "name": "Lib Instruction",
+      "officialName": "Introduction to College Level Research",
+      "credits": 1.0,
+      "creditNote": null,
+      "department": "Lib",
+      "prereqs": {
+        "type": "Course",
+        "classId": "ENGL-1010C"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-1650",
+      "code": "Math 1650",
+      "name": "Calc I",
+      "officialName": "Calculus I",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "type": "Course",
+        "classId": "MATH-1430",
+        "minGrade": "C-"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-1660",
+      "code": "Math 1660",
+      "name": "Calc II",
+      "officialName": "Calculus II",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "type": "Course",
+        "classId": "MATH-1650",
+        "minGrade": "C-"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-2070",
+      "code": "Math 2070",
+      "name": "Matrices and Linear Algebra",
+      "officialName": "Matrices and Linear Algebra",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1660"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660H"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-2650",
+      "code": "Math 2650",
+      "name": "Calculus III",
+      "officialName": "Calculus III",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1660"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660H"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-2670",
+      "code": "Math 2670",
+      "name": "Diff Eq/Lap",
+      "officialName": "Elementary Differential Equations and Laplace Transforms",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1660"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660H"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-3040",
+      "code": "Math 3040",
+      "name": "Combinatorics",
+      "officialName": "Combinatorics",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "_unparsed": "(MATH 1660 or MATH 1660H); (MATH 2010 or COMS 2300 or CPRE 3100)"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-3140",
+      "code": "Math 3140",
+      "name": "Graph Theory",
+      "officialName": "Graph Theory",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "_unparsed": "(MATH 1660 or MATH 1660H); (MATH 2010 or COMS 2300 or CPRE 3100)"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "MATH-3170",
+      "code": "Math 3170",
+      "name": "Theory of Linear Algebra",
+      "officialName": "Theory of Linear Algebra",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Math",
+      "prereqs": {
+        "type": "Or",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-2010"
+          },
+          {
+            "type": "Course",
+            "classId": "COMS-2300"
+          },
+          {
+            "type": "Course",
+            "classId": "CPRE-3100"
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "PHYS-2310",
+      "code": "Phys 2310",
+      "name": "Classical Phys I (lecture)",
+      "officialName": "Introduction to Classical Physics I",
+      "credits": 4.0,
+      "creditNote": null,
+      "department": "Phys",
+      "prereqs": {
+        "type": "And",
+        "children": [
+          {
+            "type": "Or",
+            "children": [
+              {
+                "type": "Course",
+                "classId": "MATH-1650"
+              },
+              {
+                "type": "And",
+                "children": [
+                  {
+                    "type": "Course",
+                    "classId": "MATH-1630X"
+                  },
+                  {
+                    "type": "Course",
+                    "classId": "MATH-1640X"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660",
+            "acceptConcurrent": true
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "PHYS-2310L",
+      "code": "Phys 2310L",
+      "name": "Classical Phys I (lab)",
+      "officialName": "Introduction to Classical Physics I Laboratory",
+      "credits": 1.0,
+      "creditNote": null,
+      "department": "Phys",
+      "prereqs": {
+        "type": "And",
+        "children": [
+          {
+            "type": "Course",
+            "classId": "MATH-1650"
+          },
+          {
+            "type": "Course",
+            "classId": "MATH-1660",
+            "acceptConcurrent": true
+          },
+          {
+            "type": "Or",
+            "children": [
+              {
+                "type": "Course",
+                "classId": "PHYS-2310",
+                "acceptConcurrent": true
+              },
+              {
+                "type": "Course",
+                "classId": "PHYS-2410",
+                "acceptConcurrent": true
+              }
+            ]
+          }
+        ]
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    },
+    {
+      "classId": "STAT-3030",
+      "code": "Stat 3030",
+      "name": "Stat for ComS",
+      "officialName": "Probability and Statistics for Computer Science",
+      "credits": 3.0,
+      "creditNote": null,
+      "department": "Stat",
+      "prereqs": {
+        "type": "Course",
+        "classId": "MATH-1660"
+      },
+      "coreqs": null,
+      "crossListedAs": [],
+      "typicallyOffered": [
+        "Fall",
+        "Spring",
+        "Summer"
+      ],
+      "isActive": true
+    }
+  ]
+}

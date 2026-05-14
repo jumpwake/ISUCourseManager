@@ -1,0 +1,351 @@
+{
+  "code": "CYBE",
+  "name": "Cyber Security Engineering",
+  "catalogYear": "2025-26",
+  "totalCreditsRequired": 125,
+  "notes": [
+    "This flowchart is only a guide. For more detailed information including prerequisites and co-requisites, see the ISU Catalog.",
+    "Check with Student Services for information on electives.",
+    "Course term offerings subject to change.",
+    "Lab and lecture must be passed in the same semester to receive credit for CprE/CybE/EE courses."
+  ],
+  "slots": [
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "MATH-1650",
+      "name": "Calc I",
+      "minGrade": "C-",
+      "displayOrder": 1
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "ENGR-1010",
+      "name": "Orientation",
+      "creditNote": "R cr",
+      "minGrade": null,
+      "displayOrder": 2
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-1850",
+      "name": "CprE Prob Solv",
+      "minGrade": null,
+      "displayOrder": 3,
+      "recommendedPairing": [
+        "MATH-1650"
+      ]
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "CHEM-1670",
+      "name": "Engr Chem",
+      "minGrade": null,
+      "displayOrder": 4
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "LIB-1600",
+      "name": "Lib Instruction",
+      "minGrade": null,
+      "displayOrder": 5
+    },
+    {
+      "semester": 1,
+      "slotType": "DegreeClass",
+      "classId": "ENGL-1500",
+      "name": "Crit Think & Com",
+      "minGrade": "C-",
+      "displayOrder": 6
+    },
+    {
+      "semester": 2,
+      "slotType": "DegreeClass",
+      "classId": "MATH-1660",
+      "name": "Calc II",
+      "minGrade": "C-",
+      "displayOrder": 1
+    },
+    {
+      "semester": 2,
+      "slotType": "DegreeClass",
+      "classId": "PHYS-2310",
+      "name": "Classical Phys I (lecture)",
+      "minGrade": null,
+      "displayOrder": 2,
+      "recommendedPairing": [
+        "PHYS-2310L"
+      ]
+    },
+    {
+      "semester": 2,
+      "slotType": "DegreeClass",
+      "classId": "PHYS-2310L",
+      "name": "Classical Phys I (lab)",
+      "minGrade": null,
+      "displayOrder": 3,
+      "recommendedPairing": [
+        "PHYS-2310"
+      ]
+    },
+    {
+      "semester": 2,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-1660",
+      "name": "Professional Prog",
+      "creditNote": "R cr",
+      "minGrade": null,
+      "displayOrder": 4
+    },
+    {
+      "semester": 2,
+      "slotType": "DegreeClass",
+      "classId": "COMS-2270",
+      "name": "Intro Program",
+      "minGrade": "C-",
+      "displayOrder": 5
+    },
+    {
+      "semester": 2,
+      "slotType": "ElectiveGenEd",
+      "requiredCredits": 3,
+      "displayOrder": 6
+    },
+    {
+      "semester": 3,
+      "slotType": "DegreeClass",
+      "classId": "MATH-2670",
+      "name": "Diff Eq/Lap",
+      "minGrade": null,
+      "displayOrder": 1
+    },
+    {
+      "semester": 3,
+      "slotType": "DegreeClass",
+      "classId": "CYBE-2300",
+      "name": "Cyber Secr. Infra",
+      "minGrade": null,
+      "displayOrder": 2
+    },
+    {
+      "semester": 3,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-2810",
+      "name": "Digital Logic",
+      "minGrade": null,
+      "classNote": "Soph Class",
+      "displayOrder": 3
+    },
+    {
+      "semester": 3,
+      "slotType": "DegreeClass",
+      "classId": "COMS-2280",
+      "name": "Data Structures",
+      "minGrade": "C-",
+      "displayOrder": 4
+    },
+    {
+      "semester": 4,
+      "slotType": "ElectiveMath",
+      "requiredCredits": 3,
+      "creditNote": "3/4cr",
+      "displayOrder": 1
+    },
+    {
+      "semester": 4,
+      "slotType": "DegreeClass",
+      "classId": "CYBE-2310",
+      "name": "Cyber Sec. Concept/Tool",
+      "minGrade": null,
+      "displayOrder": 2
+    },
+    {
+      "semester": 4,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-2880",
+      "name": "Embedded Systems",
+      "minGrade": null,
+      "displayOrder": 3
+    },
+    {
+      "semester": 4,
+      "slotType": "DegreeClass",
+      "classId": "CYBE-2340",
+      "name": "Ethics in Sec",
+      "minGrade": null,
+      "displayOrder": 4
+    },
+    {
+      "semester": 4,
+      "slotType": "DegreeClass",
+      "classId": "ENGL-2500",
+      "name": "WOVE Comp",
+      "minGrade": "C-",
+      "displayOrder": 5
+    },
+    {
+      "semester": 5,
+      "slotType": "ElectiveGenEd",
+      "requiredCredits": 3,
+      "displayOrder": 1
+    },
+    {
+      "semester": 5,
+      "slotType": "DegreeClass",
+      "classId": "CYBE-3310",
+      "name": "Appl of Crypt",
+      "minGrade": null,
+      "displayOrder": 2
+    },
+    {
+      "semester": 5,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-3810",
+      "name": "Cpr Org & Design",
+      "minGrade": null,
+      "displayOrder": 3
+    },
+    {
+      "semester": 5,
+      "slotType": "DegreeClass",
+      "classId": "COMS-3090",
+      "name": "Software Dev",
+      "minGrade": null,
+      "displayOrder": 4
+    },
+    {
+      "semester": 5,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-3100",
+      "name": "Foundtn CprE",
+      "minGrade": null,
+      "displayOrder": 5
+    },
+    {
+      "semester": 6,
+      "slotType": "ElectiveGenEd",
+      "requiredCredits": 3,
+      "displayOrder": 1
+    },
+    {
+      "semester": 6,
+      "slotType": "ElectiveCybE",
+      "requiredCredits": 3,
+      "displayOrder": 2
+    },
+    {
+      "semester": 6,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-3080",
+      "name": "Operating Sys",
+      "minGrade": null,
+      "displayOrder": 3
+    },
+    {
+      "semester": 6,
+      "slotType": "DegreeClass",
+      "classId": "COMS-3110",
+      "name": "Algor Analys",
+      "minGrade": null,
+      "displayOrder": 4
+    },
+    {
+      "semester": 6,
+      "slotType": "DegreeClass",
+      "classId": "ENGL-3140",
+      "name": "Technical Com",
+      "minGrade": "C-",
+      "classNote": "Junior Class",
+      "displayOrder": 5
+    },
+    {
+      "semester": 7,
+      "slotType": "ElectiveGenEd",
+      "requiredCredits": 3,
+      "displayOrder": 1
+    },
+    {
+      "semester": 7,
+      "slotType": "DegreeClass",
+      "classId": "STAT-3030",
+      "name": "Stat for ComS",
+      "minGrade": null,
+      "displayOrder": 2
+    },
+    {
+      "semester": 7,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-4910",
+      "name": "Senior Design I",
+      "minGrade": null,
+      "classNote": "Requires 29 Core Credits",
+      "displayOrder": 3
+    },
+    {
+      "semester": 7,
+      "slotType": "ElectiveCybE",
+      "requiredCredits": 3,
+      "displayOrder": 4
+    },
+    {
+      "semester": 7,
+      "slotType": "ElectiveCybE",
+      "requiredCredits": 3,
+      "displayOrder": 5
+    },
+    {
+      "semester": 7,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-4940",
+      "name": "Portfolio",
+      "creditNote": "R cr",
+      "minGrade": null,
+      "displayOrder": 6,
+      "recommendedPairing": [
+        "CPRE-4910"
+      ]
+    },
+    {
+      "semester": 8,
+      "slotType": "ElectiveGenEd",
+      "requiredCredits": 3,
+      "displayOrder": 1
+    },
+    {
+      "semester": 8,
+      "slotType": "ElectiveTech",
+      "requiredCredits": 3,
+      "displayOrder": 2
+    },
+    {
+      "semester": 8,
+      "slotType": "DegreeClass",
+      "classId": "CPRE-4920",
+      "name": "Senior Design II",
+      "minGrade": null,
+      "displayOrder": 3
+    },
+    {
+      "semester": 8,
+      "slotType": "ElectiveTech",
+      "requiredCredits": 3,
+      "displayOrder": 4
+    },
+    {
+      "semester": 8,
+      "slotType": "ElectiveCybE",
+      "requiredCredits": 3,
+      "displayOrder": 5
+    },
+    {
+      "semester": 8,
+      "slotType": "ElectiveCprE",
+      "requiredCredits": 3,
+      "displayOrder": 6
+    }
+  ]
+}

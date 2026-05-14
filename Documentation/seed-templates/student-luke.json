@@ -1,0 +1,117 @@
+{
+  "_comment": "Luke's actual ISU enrollment data, normalized to match the spec'd Student / StudentCourse / StudentDegreeFlow format (system spec §4 Tier 3). Source: registrar dumps in Schedule_2026_Spring.json + Schedule_2026_Fall.json (raw section/scheduling data discarded — only the fields the spec models are kept). All grades null because nothing is completed yet.",
+
+  "student": {
+    "displayName": "Luke"
+  },
+
+  "degreeFlows": [
+    {
+      "degreeFlowCode": "CYBE",
+      "catalogYear": "2025-26",
+      "status": "Active",
+      "_note": "Active CybE 2025-26 — Luke's primary major"
+    }
+  ],
+
+  "courses": [
+      {
+      "courseId": "CPRE-2810",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "PHYS-2310",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "MATH-1660",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "COMS-2270",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "PHYS-2310L",
+      "academicTerm": 202702,
+      "status": "Planned",
+      "grade": ""
+    },
+    {
+      "courseId": "CPRE-1850",
+      "academicTerm": 202604,
+      "status": "Complete",
+      "grade": "C"
+    },
+    {
+      "courseId": "CHEM-1670",
+      "academicTerm": 202604,
+      "status": "Complete",
+      "grade": "B"
+    },
+    {
+      "courseId": "MATH-1650",
+      "academicTerm": 202604,
+      "status": "Complete",
+      "grade": ""
+    },
+    {
+      "courseId": "CPRE-1660",
+      "academicTerm": 202604,
+      "status": "Complete",
+      "grade": "B"
+    },
+    {
+      "courseId": "ENGL-2500",
+      "academicTerm": 202604,
+      "status": "Complete",
+      "grade": "A"
+    },
+    {
+      "courseId": "MATH-1430",
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "B"
+    },
+    {
+      "courseId": "ENGR-1010",
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "A"
+    },
+    {
+      "courseId": "LIB-1600",
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "A"
+    },
+    {
+      "courseId": "ENGL-1500",
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "A"
+    },
+    {
+      "courseId": "HDFS-2390",
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "B",
+      "_sourceNote": ""
+    },
+    {
+      "courseId": "PHIL-2010",
+      "academicTerm": 202602,
+      "status": "Complete",
+      "grade": "B",
+      "_sourceNote": ""
+    }
+  ]
+}
