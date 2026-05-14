@@ -1,0 +1,19 @@
+.header {
+  background: var(--bg-app);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title {
+  font-size: 14px;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
