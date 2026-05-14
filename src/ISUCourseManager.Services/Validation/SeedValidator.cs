@@ -77,4 +77,87 @@ public static class SeedValidator
             // PrereqClassification and PrereqCoreCredits don't reference courses; nothing to check.
         }
     }
+
+    public static ValidationReport ValidateFlow(DegreeFlow flow, IEnumerable<Course> catalog)
+    {
+        var report = new ValidationReport();
+        var classIds = catalog.Select(c => c.ClassId).ToHashSet();
+        var slotClassIds = flow.Slots
+            .Where(s => s.ClassId is not null)
+            .Select(s => s.ClassId!)
+            .ToHashSet();
+
+        foreach (var slot in flow.Slots)
+        {
+            if (slot.SlotType == SlotType.DegreeClass)
+            {
+                if (slot.ClassId is null)
+                    report.Add(SeedIssueKind.MissingClassId, IssueSeverity.Error,
+                        $"Slot at semester {slot.Semester} order {slot.DisplayOrder} is DegreeClass but has no classId",
+                        location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+                else if (!classIds.Contains(slot.ClassId))
+                    report.Add(SeedIssueKind.OrphanFlowReference, IssueSeverity.Error,
+                        $"Slot references classId '{slot.ClassId}' not in catalog",
+                        location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+                if (slot.RequiredCredits is not null)
+                    report.Add(SeedIssueKind.RedundantSlotCredits, IssueSeverity.Warning,
+                        $"DegreeClass slot for {slot.ClassId} declares requiredCredits={slot.RequiredCredits} — should be null (use Course.Credits)",
+                        location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+            }
+            else  // Elective* slot
+            {
+                if (slot.RequiredCredits is null)
+                    report.Add(SeedIssueKind.MissingElectiveCredits, IssueSeverity.Error,
+                        $"Elective slot ({slot.SlotType}) at semester {slot.Semester} order {slot.DisplayOrder} has no requiredCredits",
+                        location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+                if (slot.ClassId is not null)
+                    report.Add(SeedIssueKind.UnexpectedClassIdOnElective, IssueSeverity.Warning,
+                        $"Elective slot ({slot.SlotType}) at semester {slot.Semester} order {slot.DisplayOrder} has classId='{slot.ClassId}' — should be null",
+                        location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}]");
+            }
+
+            foreach (var pairing in slot.RecommendedPairing)
+            {
+                if (!classIds.Contains(pairing))
+                    report.Add(SeedIssueKind.OrphanRecommendedPairingClass, IssueSeverity.Error,
+                        $"Slot {slot.ClassId} pairs with '{pairing}' which is not in the catalog",
+                        location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}].recommendedPairing");
+                else if (!slotClassIds.Contains(pairing))
+                    report.Add(SeedIssueKind.PairingClassNotInFlow, IssueSeverity.Warning,
+                        $"Slot {slot.ClassId} pairs with '{pairing}' which exists in catalog but not in this flow",
+                        location: $"flow:{flow.MajorCode}.slot[{slot.Semester},{slot.DisplayOrder}].recommendedPairing");
+            }
+        }
+
+        var dupePositions = flow.Slots
+            .GroupBy(s => (s.Semester, s.DisplayOrder))
+            .Where(g => g.Count() > 1);
+
+        foreach (var dupe in dupePositions)
+            report.Add(SeedIssueKind.DuplicateSlotPosition, IssueSeverity.Error,
+                $"{dupe.Count()} slots share semester {dupe.Key.Semester} displayOrder {dupe.Key.DisplayOrder}",
+                location: $"flow:{flow.MajorCode}.slot[{dupe.Key.Semester},{dupe.Key.DisplayOrder}]");
+
+        // Sum DegreeClass slots from Course.Credits + Elective* slots from slot.RequiredCredits.
+        var coursesByClassId = catalog.ToDictionary(c => c.ClassId);
+        decimal sum = 0m;
+        foreach (var slot in flow.Slots)
+        {
+            if (slot.SlotType == SlotType.DegreeClass && slot.ClassId is not null
+                && coursesByClassId.TryGetValue(slot.ClassId, out var course))
+            {
+                sum += course.Credits;
+            }
+            else if (slot.SlotType != SlotType.DegreeClass)
+            {
+                sum += slot.RequiredCredits ?? 0m;
+            }
+        }
+        if (sum != flow.TotalCreditsRequired)
+            report.Add(SeedIssueKind.CreditTotalMismatch, IssueSeverity.Warning,
+                $"Sum of slot credits ({sum}) does not match totalCreditsRequired ({flow.TotalCreditsRequired})",
+                location: $"flow:{flow.MajorCode}");
+
+        return report;
+    }
 }
