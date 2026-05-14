@@ -38,8 +38,11 @@ export type PlanTile =
       name: string;
       credits: number;
       dept: string;
+      deptDisplay: string;
       status: StudentCourseStatus;
       grade: string | null;
+      academicTerm: number;
+      semIdx: number;
     }
   | {
       kind: 'unfilledDegreeSlot';
@@ -62,3 +65,5 @@ export type PlanRow = {
   totalCredits: number;
   allCompleted: boolean;
 };
+
+export type StudentCoursePlanTile = Extract<PlanTile, { kind: 'studentCourse' }>;

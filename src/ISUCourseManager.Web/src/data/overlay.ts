@@ -41,8 +41,11 @@ export function buildOverlay(
         name: course.name,
         credits: course.credits,
         dept: departmentToCssClass(course.department),
+        deptDisplay: course.department,
         status: sc.status,
         grade: sc.grade,
+        academicTerm: sc.academicTerm,
+        semIdx,
       });
     }
 
