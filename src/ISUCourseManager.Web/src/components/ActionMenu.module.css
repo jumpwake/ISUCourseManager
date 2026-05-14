@@ -160,3 +160,11 @@
 .closeBtn:hover {
   background: #f8f9fa;
 }
+
+.emptyMessage {
+  text-align: center;
+  color: var(--text-label);
+  font-size: 12px;
+  font-style: italic;
+  margin: 24px 0;
+}

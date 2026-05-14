@@ -40,21 +40,29 @@ export function ActionMenu({ tile, onClose }: Props) {
       </div>
 
       <div className={styles.body}>
-        <Section title="Update status">
-          <ActionCard icon="✓" name="Mark Completed" meta="Set grade" />
-          <ActionCard icon="⏵" name="Mark In Progress" meta="Currently enrolled this term" />
-          <ActionCard icon="⚠" name="Mark Failed / Cancelled" meta="Will trigger cascade for downstream prereqs" danger />
-        </Section>
-        <Section title="Reschedule">
-          <ActionCard icon="→" name="Move to future term" meta="Pre-req not met / scheduling conflict" />
-          <ActionCard icon="←" name="Move to earlier term" meta="Take ahead of recommended schedule" />
-        </Section>
-        <Section title="Replace">
-          <ActionCard icon="⇄" name="Substitute another course" meta="Pick a course that satisfies this slot" />
-        </Section>
-        <Section title="Remove">
-          <ActionCard icon="×" name="Remove from plan" meta="Take the slot back to unfulfilled" danger />
-        </Section>
+        {tile.status === 'Completed' ? (
+          <p className={styles.emptyMessage}>
+            This course is complete — no actions available.
+          </p>
+        ) : (
+          <>
+            <Section title="Update status">
+              <ActionCard icon="✓" name="Mark Completed" meta="Set grade" />
+              <ActionCard icon="⏵" name="Mark In Progress" meta="Currently enrolled this term" />
+              <ActionCard icon="⚠" name="Mark Failed / Cancelled" meta="Will trigger cascade for downstream prereqs" danger />
+            </Section>
+            <Section title="Reschedule">
+              <ActionCard icon="→" name="Move to future term" meta="Pre-req not met / scheduling conflict" />
+              <ActionCard icon="←" name="Move to earlier term" meta="Take ahead of recommended schedule" />
+            </Section>
+            <Section title="Replace">
+              <ActionCard icon="⇄" name="Substitute another course" meta="Pick a course that satisfies this slot" />
+            </Section>
+            <Section title="Remove">
+              <ActionCard icon="×" name="Remove from plan" meta="Take the slot back to unfulfilled" danger />
+            </Section>
+          </>
+        )}
       </div>
 
       <div className={styles.footer}>
