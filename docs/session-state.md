@@ -5,83 +5,98 @@
 
 ## Where we are right now
 
-- **Branch:** `ui-v1/step-4-action-menu` (Step 4 commits stacked here; spec + plan + 6 implementation commits)
-- **HEAD:** `a683971` — `feat(ui): wire ActionMenu — tile clicks open right panel`
-- **UI v1 Steps 1+2 + Step 3** already merged to main (Step 3 was merged locally; origin/main may lag if not pushed). **Step 4** is on this branch awaiting PR/merge.
+- **Branch:** `ui-v1/step-5-slot-picker` (Step 5 commits stacked here; spec + plan + 6 implementation commits)
+- **HEAD:** `9a66c8f` — `feat(ui): wire SlotPicker — unfilled/elective clicks open right panel`
+- **UI v1 Steps 1+2 + Step 3** merged into local main. Step 4 also merged locally (origin/main lags by ~16 commits since the last push). Step 5 is on this branch awaiting PR/merge.
 - **Plan #1 (seed validation + loader)** fully merged to main.
 
 ## Project shape
 
 ```
 src/ISUCourseManager.Web/src/
-  App.tsx                            composes grid + selectedTile state
+  App.tsx                            composes grid + SelectedPanel state (actionMenu | slotPicker)
   App.module.css                     grid template + .noPanel modifier
   index.css                          palette tokens + body baseline
-  data/                              Step 3
+  data/                              Step 3 module
     types.ts / catalog.ts / flow.ts / student.ts
     academicTerm.ts / department.ts / overlay.ts / index.ts
     seed/  (three JSONs)
-  components/                        13 components
+  components/                        14 components
     Step 2 chrome:  TopBar, Sidebar, MainHeader, Main, RightPanel,
                     AiButton, AiMark, DesktopOnlyGate
     Step 3 plan:    CourseTile, SemRow, PlanView
-    Step 4:         ActionMenu  (NEW)
+    Step 4:         ActionMenu       (with Completed-trim from Step 5)
+    Step 5:         SlotPicker       (NEW)
 docs/
-  superpowers/specs/   system + UI v1 + 2 addenda + Step 2 + Step 3 + Step 4 specs
-  superpowers/plans/   Plan #1 (done), Step 2 plan (done), Step 3 plan (done),
-                       Step 4 plan (done), Plans #2/#3 (not started)
+  superpowers/specs/   system + UI v1 + 2 addenda + Step 2/3/4/5 specs
+  superpowers/plans/   Plan #1 done; Step 2/3/4/5 plans done; Plans #2/#3 not started
 ```
 
-## UI v1 — Step 4 (Action Menu) — what was just done
+## UI v1 — Step 5 (Slot Picker + Completed-Tile Trim) — what was just done
 
-Activated the right panel for the first time with real content. Clicking a `studentCourse` tile opens the Action menu keyed to that tile. The temporary debug `[panel]` toggle from Step 2 is replaced with real selection-driven mounting.
+The right-panel content matrix is now complete for all three tile kinds. Clicking a `studentCourse` opens the ActionMenu (Step 4 behavior preserved); clicking an `unfilledDegreeSlot` or `electiveSlot` opens the new **SlotPicker**. The Completed-tile UX trim (deferred from Step 4) now applies — Completed and gradePending tiles show only an info message, not the 4 stub action sections.
 
-**State plumbing:**
-- App holds `selectedTile: StudentCoursePlanTile | null` — a typed-narrow state that can only contain studentCourse tiles. Click handler ignores unfilled/elective tiles, toggles closed if re-clicking the active tile.
-- `<RightPanel />` was rewritten as a layout wrapper with `accent: 'ai' | 'action'` prop (default `'ai'`) and `children`. The `--panel-accent` CSS variable switches per accent: purple in AI mode, blue `#1976d2` in action mode. The old `hidden` prop and `.hidden` CSS rule are gone — App decides whether to render the panel at all.
+**New component `<SlotPicker />`:**
+- Header (blue chrome): breadcrumb (`Sem N · Term`), title `Fill this slot`, kind-specific context line, close `×`.
+- Body sections per UI spec §10.2:
+  - **Recommended** — hidden (overlay rule means Luke's current data has no Recommended candidates).
+  - **Pull from a later semester** — italic muted "No pull-forward candidates yet." message.
+  - **Add a new course from the catalog** — first 8 catalog entries as `<button>` cards (no filter, no search).
+  - **Leave this slot empty** — single muted card with credit-consequence text.
+- Footer: ghost `Cancel` (closes panel) + primary `Apply selection` (visible but `disabled`).
 
-**`<ActionMenu />` (new):**
-- Header: breadcrumb (`Sem N · Term`), H2 (`{classId} · {name}`), context line (department + credits), meta pills (Status, plus Grade when non-null).
-- Body: 4 sections (Update status / Reschedule / Replace / Remove) with 7 stub action cards (2 styled as danger). All buttons are no-op for Step 4.
-- Footer: outlined Close button.
-- Close also via `×` in the header.
+**State plumbing changes (App.tsx):**
+- `selected: SelectedPanel | null` — discriminated union over `actionMenu` and `slotPicker`. Replaces Step 4's `selectedTile: StudentCoursePlanTile | null`.
+- `handleTileClick` branches on `tile.kind`: studentCourse → toggle actionMenu; unfilled/elective → toggle slotPicker (via `isSameUnfilledTile`).
+- `selectedClassId` derived: only non-null when an action menu is open, so the `.selected` blue ring stays scoped to studentCourse tiles only.
 
-**Tile changes:**
-- `studentCourse` `<CourseTile />` variants now render as `<button>` (accessible, cursor: pointer). Other variants stay `<span>`.
-- `PlanTile.studentCourse` gained 3 fields: `deptDisplay` (catalog department string), `academicTerm` (YYYYSS), `semIdx` (1..8). Used by ActionMenu's header.
-- `.selected` ring (blue box-shadow + scale per UI spec §5) applies when the tile's classId matches `selectedClassId`.
+**Tile / row changes:**
+- `unfilledDegreeSlot` and `electiveSlot` PlanTile variants gained `semIdx` + `academicTerm` (for the slot-picker breadcrumb).
+- `CourseTile`'s non-studentCourse branches now render `<button>` when `onClick` is provided (else `<span>` for backwards-compat).
+- `SemRow` removed the `tile.kind === 'studentCourse'` gate on its `onClick` wiring — all three kinds get routed to App's handler.
 
-**Step 4 docs:**
-- `docs/superpowers/specs/2026-05-14-ui-v1-step-4-action-menu-design.md`
-- `docs/superpowers/plans/2026-05-14-ui-v1-step-4-action-menu.md`
+**ActionMenu Completed-trim:**
+- Body conditional: when `tile.status === 'Completed'` (which includes the gradePending case, `status='Completed' + grade=null`), the 4 sections collapse to a single centered italic message `This course is complete — no actions available.`
+- New `.emptyMessage` CSS rule.
 
-## Known follow-ups (carry to Step 5)
+**Step 5 docs:**
+- `docs/superpowers/specs/2026-05-14-ui-v1-step-5-slot-picker-design.md`
+- `docs/superpowers/plans/2026-05-14-ui-v1-step-5-slot-picker.md`
+
+## Known follow-ups (carry forward)
 
 User-flagged + reviewer-flagged items, deferred:
 
-- **Completed-status tiles should not show action cards.** When a user clicks a tile whose `status === 'Completed'` (including the gradePending sub-case), the action menu body should render an info message like "This course is complete — no actions available." instead of the 4 sections. Header stays as-is. Rationale: a completed course is immutable; showing stub action cards is misleading. Action: small conditional in `ActionMenu.tsx` + `.emptyMessage` CSS rule.
-- **Slot picker (the other half of the right panel).** Clicking `unfilledDegreeSlot` or `electiveSlot` tiles currently does nothing. Step 5 wires the slot picker per UI spec §10.2 / `interaction-fill-slot.html`.
-- **`selected` prop semantic looseness.** `SemRow.tsx` passes `selected={false}` to non-studentCourse tiles (instead of `undefined`). Harmless today since CourseTile's span branches don't read it. Tighten to `selected={tile.kind === 'studentCourse' ? ... : undefined}` when convenient.
-- **Action menu footer button styling.** Reviewer noted the `.closeBtn` uses outlined style (`border: 1px solid var(--border)`) rather than a true "ghost" style (borderless). Cosmetic; revisit when a shared button-system is needed.
-- **The action menu's buttons are no-op stubs.** Real mutations (move, mark completed, remove, substitute) land in a later step. Local state first, MSW-mediated later.
+- **Catalog search + AI conversation in the slot picker.** User suggestion at Step 5 sign-off: "Under Add a New Course From the Catalog. We need a way to search the catalog. Maybe open a chat and have a conversation with the user about what they like and maybe want to take." Maps to UI spec §10.2 ("Search input at top of body") + §10.3 (AI panel scoped to a slot). Natural Step 6+ direction. Would introduce the first AI-mediated UX in the app.
+- **Real mutations** — every action card (ActionMenu + SlotPicker) is still a no-op stub. Backend-free path: real local state mutations (e.g., "Mark Completed" actually flips the StudentCourse status). Backend path: MSW + real `/api/v1/me/courses` calls.
+- **Seed data sweep** — `isu-catalog.json` missing HDFS-2390, PHIL-2010; CYBE flow has only Sems 1/2/8. Captured in memory (`project-seed-data-incomplete`). Filling this in unblocks unfilledDegreeSlot tile rendering (currently no live test of that slot-picker branch).
+- **DRY refactors** flagged by reviewers:
+  - `electiveLabel(slotType)` duplicated in `CourseTile.tsx` and `SlotPicker.tsx` — extract to a shared helper.
+  - `Section` sub-component duplicated in `ActionMenu.tsx` and `SlotPicker.tsx` — same.
+- **Cosmetic nits:**
+  - SlotPicker `cancelBtn` color is grey (`var(--text-label)`); the AC text says "blue". Visual pass confirmed, but the spec wording vs. impl could be tightened on a polish pass.
+  - SlotPicker `.muted` card still has interactive hover styles (brightens bg, blue border) — could be made truly static.
+  - `selected` prop semantic looseness on non-studentCourse tiles (Step 4 reviewer note) — partially addressed in Step 5 (gate kept) but consider tightening to `undefined`.
+- **AI panel mode (purple accent)** — the existing `--panel-accent` CSS variable system supports adding a third accent (`accentAi`) when the AI panel lands.
 
-## Open Step 5 directions (user has not picked yet)
+## Open Step 6 directions (user has not picked yet)
 
-1. **Slot picker** (clicking unfilled slots + electives opens the 4-section picker per UI spec §10.2). Closes the click no-op for non-studentCourse tiles.
-2. **Completed-tile UX trim** (the deferred follow-up above). Small change.
-3. **MSW + data hook refactor** — swap `PLAN` constant for a `usePlan()` hook backed by MSW responses. Lays the groundwork for real mutations.
-4. **Real mutations (local state first)** — e.g., "Mark Completed" actually sets status to Completed in component state. No MSW yet.
-5. **Validation banner + tile flags** (cascade engine output rendering).
-6. **Catalog / flow data sweep** — fill the missing entries (HDFS-2390, PHIL-2010 in catalog; CYBE Sems 3-8 in flow).
-7. **Test framework** — Vitest + RTL.
+1. **Catalog search + AI conversation in slot picker** — directly addresses the user's Step-5 sign-off feedback. Introduces AI integration architecture (UI spec §11).
+2. **Real mutations (local state first)** — make the ActionMenu / SlotPicker buttons actually do something. Required before MSW because mutations need a target.
+3. **MSW + `usePlan()` hook refactor** — swap the static `PLAN` constant for a hook backed by MSW. Lays groundwork for cascade-engine validation responses too.
+4. **Validation banner + tile flags** — start surfacing cascade-engine output. Needs backend (or faked validation source).
+5. **Catalog / flow data sweep** — pure data-entry. Fills the seed gaps so all branches of the overlay + slot picker get real data.
+6. **Test framework** — Vitest + RTL + first render tests.
+7. **DRY refactors** — extract `electiveLabel` + `Section` helpers; minor cosmetic fixes.
 8. **Something else.**
 
 ## Key context flags
 
-- **Seed JSONs are intentionally incomplete.** Captured in memory (`project-seed-data-incomplete`). HDFS-2390, PHIL-2010 missing from catalog; flow has Sems 1/2/8 only.
-- **CSS approach is CSS Modules** + palette tokens as CSS custom properties in `src/index.css`. The `--panel-accent` variable is the canonical pattern for mode-dependent accents (now exercised by `accentAi` and `accentAction` in RightPanel.module.css).
-- **Stack-on-its-own-branch pattern for UI v1 work.** Each step gets its own branch from main; the Step N branch is merged into main before Step N+1 starts.
+- **Seed JSONs are intentionally incomplete.** Captured in memory (`project-seed-data-incomplete`).
+- **CSS approach is CSS Modules** + palette tokens as CSS custom properties in `src/index.css`. `--panel-accent` is the canonical pattern for mode-dependent panel accents.
+- **Stack-on-its-own-branch per step.** Each step gets its own branch from main and is merged before the next starts.
 - **Seed file `"Complete"` → spec `"Completed"`** adapter in `src/data/student.ts:normalizeStatus`.
+- **The right panel uses a layout wrapper pattern**: `<RightPanel accent="action">` (or `accent="ai"` for future AI mode) provides the chrome; content components (`<ActionMenu>` / `<SlotPicker>` / future `<AiPanel>`) render inside as children.
 
 ## What NOT to do
 
@@ -92,4 +107,4 @@ User-flagged + reviewer-flagged items, deferred:
 
 ## How to confirm the user is ready
 
-When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 4 complete on `ui-v1/step-4-action-menu`. Which direction for Step 5?" and wait for their pick.
+When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 5 complete on `ui-v1/step-5-slot-picker`. Which direction for Step 6?" and wait for their pick.
