@@ -27,7 +27,7 @@ public sealed class PrereqExpressionConverter : JsonConverter<PrereqExpression>
         {
             "Course" => new PrereqCourse
             {
-                ClassId = root.GetProperty("classId").GetString() ?? "",
+                ClassId = ReadRequiredString(root, "classId", "Course"),
                 MinGrade = root.TryGetProperty("minGrade", out var mg) && mg.ValueKind == JsonValueKind.String ? mg.GetString() : null,
                 AcceptConcurrent = root.TryGetProperty("acceptConcurrent", out var ac) && ac.ValueKind == JsonValueKind.True,
             },
@@ -35,14 +35,42 @@ public sealed class PrereqExpressionConverter : JsonConverter<PrereqExpression>
             "Or" => new PrereqOr { Children = ReadChildren(root, options) },
             "Classification" => new PrereqClassification
             {
-                Min = Enum.Parse<Classification>(root.GetProperty("min").GetString() ?? ""),
+                Min = ParseClassification(ReadRequiredString(root, "min", "Classification")),
             },
             "CoreCredits" => new PrereqCoreCredits
             {
-                MinCoreCredits = root.GetProperty("minCoreCredits").GetDecimal(),
+                MinCoreCredits = ReadRequiredNumber(root, "minCoreCredits", "CoreCredits"),
             },
             _ => throw new JsonException($"Unknown PrereqExpression type: '{type}'"),
         };
+    }
+
+    private static string ReadRequiredString(JsonElement root, string fieldName, string nodeType)
+    {
+        if (!root.TryGetProperty(fieldName, out var prop))
+            throw new JsonException($"{nodeType} node missing required '{fieldName}' field");
+        if (prop.ValueKind != JsonValueKind.String)
+            throw new JsonException($"{nodeType}.{fieldName} must be a string");
+        return prop.GetString() ?? throw new JsonException($"{nodeType}.{fieldName} must not be null");
+    }
+
+    private static decimal ReadRequiredNumber(JsonElement root, string fieldName, string nodeType)
+    {
+        if (!root.TryGetProperty(fieldName, out var prop))
+            throw new JsonException($"{nodeType} node missing required '{fieldName}' field");
+        if (prop.ValueKind != JsonValueKind.Number)
+            throw new JsonException($"{nodeType}.{fieldName} must be a number");
+        return prop.GetDecimal();
+    }
+
+    private static Classification ParseClassification(string minStr)
+    {
+        if (!Enum.TryParse<Classification>(minStr, ignoreCase: false, out var classification)
+            || !Enum.IsDefined(typeof(Classification), classification))
+        {
+            throw new JsonException($"Unknown classification value '{minStr}'");
+        }
+        return classification;
     }
 
     private List<PrereqExpression> ReadChildren(JsonElement root, JsonSerializerOptions options)
