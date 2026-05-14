@@ -1,0 +1,33 @@
+:root {
+  --brand-navy: #1f3b5d;
+  --brand-gold: #ffc555;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #1c1c1c;
+  background: #f7f8fa;
+}
+
+.placeholder {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.placeholder h1 {
+  color: var(--brand-navy);
+  font-size: 2.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.placeholder p {
+  color: #5a6573;
+  font-size: 1rem;
+  margin: 0;
+}
