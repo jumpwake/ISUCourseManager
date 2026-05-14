@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { DesktopOnlyGate } from './components/DesktopOnlyGate.tsx';
 import { TopBar } from './components/TopBar.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
@@ -7,7 +6,7 @@ import { RightPanel } from './components/RightPanel.tsx';
 import styles from './App.module.css';
 
 function App() {
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const isPanelOpen = false;
   const appClassName = isPanelOpen
     ? styles.app
     : `${styles.app} ${styles.noPanel}`;
@@ -15,10 +14,7 @@ function App() {
   return (
     <DesktopOnlyGate>
       <div className={appClassName}>
-        <TopBar
-          isPanelOpen={isPanelOpen}
-          onTogglePanel={() => setIsPanelOpen((open) => !open)}
-        />
+        <TopBar />
         <Sidebar />
         <Main />
         <RightPanel hidden={!isPanelOpen} />

@@ -17,21 +17,6 @@
   color: var(--gold);
 }
 
-.debugToggle {
-  background: transparent;
-  color: #cfd8dc;
-  border: 1px solid #5a6573;
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 11px;
-  cursor: pointer;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.debugToggle:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
 .student {
   margin-left: auto;
   display: flex;
