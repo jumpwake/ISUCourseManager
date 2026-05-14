@@ -5,3 +5,16 @@ dist/
 build/
 .env
 .env.local
+
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.dll
+*.pdb
+artifacts/
