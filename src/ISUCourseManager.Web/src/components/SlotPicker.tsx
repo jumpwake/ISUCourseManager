@@ -8,12 +8,13 @@ import styles from './SlotPicker.module.css';
 type Props = {
   tile: UnfilledTile;
   onClose: () => void;
+  onAskAi?: () => void;
 };
 
 const CATALOG_RESULT_CAP = 20;
 const CATALOG_DEFAULT_COUNT = 8;
 
-export function SlotPicker({ tile, onClose }: Props) {
+export function SlotPicker({ tile, onClose, onAskAi }: Props) {
   const [query, setQuery] = useState('');
 
   const trimmed = query.trim().toLowerCase();
@@ -50,6 +51,17 @@ export function SlotPicker({ tile, onClose }: Props) {
       </div>
 
       <div className={styles.body}>
+        {onAskAi !== undefined && (
+          <button
+            type="button"
+            className={styles.askAiButton}
+            onClick={onAskAi}
+          >
+            <span className={styles.askAiSparkle}>✦</span>
+            Ask AI for help
+          </button>
+        )}
+
         <input
           type="text"
           className={styles.searchInput}
