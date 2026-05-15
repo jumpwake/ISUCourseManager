@@ -1,13 +1,20 @@
 import type { ElectiveSlotType, PlanTile, StudentCourseStatus } from '../data/types.ts';
+import type { useDraggable } from '@dnd-kit/core';
 import styles from './CourseTile.module.css';
+
+type DraggableBindings = Pick<
+  ReturnType<typeof useDraggable>,
+  'setNodeRef' | 'attributes' | 'listeners' | 'isDragging'
+>;
 
 type Props = {
   tile: PlanTile;
   onClick?: () => void;
   selected?: boolean;
+  draggable?: DraggableBindings;
 };
 
-export function CourseTile({ tile, onClick, selected = false }: Props) {
+export function CourseTile({ tile, onClick, selected = false, draggable }: Props) {
   if (tile.kind === 'electiveSlot') {
     const className = `${styles.tile} ${styles.electiveEmpty}`;
     const inner = (
@@ -61,11 +68,15 @@ export function CourseTile({ tile, onClick, selected = false }: Props) {
   const deptClass = tile.status === 'Planned' ? ` ${styles[tile.dept]}` : '';
   const subtitle =
     tile.status === 'Completed' ? `${tile.grade} · ${tile.credits}cr` : `${tile.credits}cr`;
+  const draggingClass = draggable?.isDragging ? ` ${styles.dragging}` : '';
   return (
     <button
       type="button"
-      className={`${styles.tile} ${styles[statusClass]}${deptClass}${selectedClass}`}
+      ref={draggable?.setNodeRef}
+      className={`${styles.tile} ${styles[statusClass]}${deptClass}${selectedClass}${draggingClass}`}
       onClick={onClick}
+      {...draggable?.attributes}
+      {...draggable?.listeners}
     >
       {tile.code}
       <small>{subtitle}</small>

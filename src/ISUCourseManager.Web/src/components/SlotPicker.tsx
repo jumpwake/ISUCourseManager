@@ -18,10 +18,17 @@ const CATALOG_DEFAULT_COUNT = 8;
 export function SlotPicker({ target, onClose, onPickCourse, onAskAi }: Props) {
   const [query, setQuery] = useState('');
 
-  const isAddToSem = target.kind === 'addToSem';
+  const isSlot = target.kind === 'slot';
   const semIdx = target.kind === 'slot' ? target.tile.semIdx : target.semIdx;
   const academicTerm =
     target.kind === 'slot' ? target.tile.academicTerm : target.academicTerm;
+  const ctx = headerContext(target);
+  const title =
+    target.kind === 'addToSem'
+      ? 'Add a course'
+      : target.kind === 'substitute'
+        ? 'Substitute a course'
+        : 'Fill this slot';
 
   const trimmed = query.trim().toLowerCase();
   const isSearching = trimmed.length > 0;
@@ -50,10 +57,8 @@ export function SlotPicker({ target, onClose, onPickCourse, onAskAi }: Props) {
             ×
           </button>
         </div>
-        <h2 className={styles.title}>{isAddToSem ? 'Add a course' : 'Fill this slot'}</h2>
-        {target.kind === 'slot' && (
-          <div className={styles.ctx}>{contextLine(target.tile)}</div>
-        )}
+        <h2 className={styles.title}>{title}</h2>
+        {ctx !== null && <div className={styles.ctx}>{ctx}</div>}
       </div>
 
       <div className={styles.body}>
@@ -66,7 +71,7 @@ export function SlotPicker({ target, onClose, onPickCourse, onAskAi }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search catalog"
           />
-          {!isAddToSem && onAskAi !== undefined && (
+          {isSlot && onAskAi !== undefined && (
             <button
               type="button"
               className={styles.aiIconButton}
@@ -171,6 +176,19 @@ function matchesQuery(course: Course, q: string): boolean {
     course.name.toLowerCase().includes(q) ||
     course.department.toLowerCase().includes(q)
   );
+}
+
+function headerContext(target: SlotPickerTarget): string | null {
+  if (target.kind === 'slot') {
+    return contextLine(target.tile);
+  }
+  if (target.kind === 'substitute') {
+    const course = catalogById.get(target.classId);
+    return course
+      ? `Replacing: ${course.code} · ${course.name}`
+      : `Replacing: ${target.classId}`;
+  }
+  return null;
 }
 
 function contextLine(tile: UnfilledTile): string {

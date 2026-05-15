@@ -100,7 +100,7 @@
   font: inherit;
 }
 
-.card:hover {
+.card:not(:disabled):hover {
   background: #f8f9fa;
   border-color: #1976d2;
 }
@@ -167,4 +167,24 @@
   font-size: 12px;
   font-style: italic;
   margin: 24px 0;
+}
+
+.backLink {
+  background: transparent;
+  border: none;
+  color: var(--text-label);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.backLink:hover {
+  color: var(--text-default);
+}
+
+.card:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
