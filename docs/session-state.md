@@ -5,94 +5,102 @@
 
 ## Where we are right now
 
-- **Branch:** `ui-v1/step-6-catalog-search` (Step 6 commits: spec + plan + 1 implementation commit)
-- **HEAD:** `82ce36b` — `feat(ui): add catalog search input to SlotPicker`
-- **UI v1 Steps 1+2 + Step 3 + Step 4 + Step 5** merged into local main (25+ commits ahead of origin/main since the last push). Step 6 is on this branch awaiting PR/merge.
+- **Branch:** `ui-v1/step-7-ai-chat` (Step 7 commits: spec + plan + 7 implementation commits)
+- **HEAD:** `057f251` — `feat(ui): auto-scroll AI panel to newest message on send`
+- **UI v1 Steps 1–6** merged to main (origin/main published through Step 6). Step 7 is on this branch awaiting PR/merge.
 - **Plan #1 (seed validation + loader)** fully merged to main.
 
 ## Project shape
 
 ```
 src/ISUCourseManager.Web/src/
-  App.tsx                            composes grid + SelectedPanel state (actionMenu | slotPicker)
+  App.tsx                            grid + SelectedPanel state (actionMenu | slotPicker | aiPanel)
   App.module.css                     grid template + .noPanel modifier
   index.css                          palette tokens + body baseline
-  data/                              Step 3 module
-    types.ts / catalog.ts / flow.ts / student.ts
-    academicTerm.ts / department.ts / overlay.ts / index.ts
+  data/
+    types.ts                         all frontend types incl. AiMessage / AiSuggestion / AiScope
+    catalog.ts / flow.ts / student.ts / academicTerm.ts / department.ts / overlay.ts / index.ts
+    useAi.ts                         stubbed AI hook (Step 7)
     seed/  (three JSONs)
-  components/                        14 components
-    Step 2 chrome:  TopBar, Sidebar, MainHeader, Main, RightPanel,
-                    AiButton, AiMark, DesktopOnlyGate
+  components/                        15 components
+    Step 2 chrome:  TopBar, Sidebar, MainHeader, Main, RightPanel, AiButton, AiMark, DesktopOnlyGate
     Step 3 plan:    CourseTile, SemRow, PlanView
-    Step 4:         ActionMenu       (with Completed-trim from Step 5)
-    Step 5:         SlotPicker       (with catalog search from Step 6)
+    Step 4:         ActionMenu
+    Step 5:         SlotPicker
+    Step 7:         AiPanel
 docs/
-  superpowers/specs/   system + UI v1 + 2 addenda + Step 2/3/4/5/6 specs
-  superpowers/plans/   Plan #1 done; Step 2/3/4/5/6 plans done; Plans #2/#3 not started
+  superpowers/specs/   system + UI v1 + 2 addenda + Step 2–7 specs
+  superpowers/plans/   Plan #1 done; Step 2–7 plans done; Plans #2/#3 not started
 ```
 
-## UI v1 — Step 6 (Catalog Search) — what was just done
+## UI v1 — Step 7 (AI Chat — Slot Scope, Stubbed) — what was just done
 
-Added a single text-input search bar at the top of the SlotPicker body. Filters the "Add a new course from the catalog" section live as the user types — substring match across `classId`, display `code`, `name`, and `department`. Empty query keeps Step 5's first-8 default. Non-empty query shows up to 20 matches; section header gains a `{N} match(es)` count badge.
+Landed the first AI-mediated UX surface. A stubbed AI chat panel opens from the slot picker to help fill an open slot.
 
-The other half of the user's Step-5 sign-off feedback — an **AI chat to help fill the slot** — is still pending. Captured as a Step 7 candidate below.
+**New `<AiPanel />`** — purple-chrome right-panel content (third mode alongside ActionMenu and SlotPicker):
+- Header: `←` back arrow, `✦ AI` capsule, title, scope chip, close `×`.
+- Body: initial AI message, 3 suggestion cards (purple gradient, no-op Add/Why buttons), then the growing conversation. Auto-scrolls smoothly to the newest message on send.
+- Footer: text input + `Ask` button + 3 quick-ask chips.
+- `**bold**` segments in AI messages render bold-purple via a tiny inline split-on-`**` parser.
 
-**`<SlotPicker />` changes (single file):**
-- `useState('')` for the query value, updated on every keystroke (no debounce — 100-entry catalog × O(N) filter is ~0.1ms).
-- Search `<input>` at the top of `.body` (above the 3 existing sections). 1px grey border, blue `#1976d2` focus.
-- Helper `filterCatalog` with early-exit at 20 matches; `matchesQuery` does case-insensitive substring on 4 fields.
-- Catalog section renders the result list or an italic "No courses match {query}" message when empty.
-- Section helper extended with an optional `badge?: string` prop. When the search is active, the badge reads `{N} match` (singular) or `{N} matches` (plural).
-- Other sections ("Pull from a later semester", "Leave this slot empty") unaffected.
+**New stubbed `useAi(scope)` hook** (`src/data/useAi.ts`) — hardcoded initial message + suggestions + quick-asks; `send(text)` appends the user message + a canned reply to local state. No Anthropic calls.
 
-**Step 6 docs:**
-- `docs/superpowers/specs/2026-05-14-ui-v1-step-6-catalog-search-design.md`
-- `docs/superpowers/plans/2026-05-14-ui-v1-step-6-catalog-search.md`
+**Entry point** — a compact purple `✦` icon button inline to the right of the catalog search input in the slot picker (revised down from a full-width button during review). Clicking opens the AI panel.
+
+**App state** — `SelectedPanel` widened to a 3-branch discriminated union (`actionMenu | slotPicker | aiPanel`). `RightPanel`'s `accent` prop now exercises its `'ai'` (purple) branch, scaffolded back in Step 2.
+
+**Two review refinements + one fix** folded into the branch:
+- Compact `✦` icon instead of the full-width button (commit `0e7faa2`).
+- Back arrow `←` in the AI panel header → returns to the slot picker for the same tile; the `×` still closes entirely (commit `0e7faa2`).
+- Conversation body smooth-scrolls to the newest message on send (commit `057f251`).
+
+The Step 7 spec has a `§12 Post-implementation amendments` section recording the two reversed decisions (S7-D3, S7-D4).
+
+**Step 7 docs:**
+- `docs/superpowers/specs/2026-05-14-ui-v1-step-7-ai-chat-design.md`
+- `docs/superpowers/plans/2026-05-14-ui-v1-step-7-ai-chat.md`
 
 ## Known follow-ups (carry forward)
 
-User-flagged + reviewer-flagged items, deferred:
+- **Real AI integration** — `useAi()` is fully stubbed (hardcoded responses, canned reply ignores input). Real path per UI spec §11: server-mediated `/api/v1/ai/ask`, no direct browser→Anthropic. Needs MSW or a real backend first.
+- **Real mutations** — every action card (ActionMenu, SlotPicker, AiPanel suggestion cards) is a no-op stub. Need local state first, then MSW/backend.
+- **AI scope: global / flow / semester** — only `slot` scope is wired. The topbar `✦ Ask AI` and main-header `✦ Analyze flow` and sem-row `✦` are still no-op stubs. `useAi`'s `AiScope` union is ready to extend.
+- **Seed data sweep** — `isu-catalog.json` missing HDFS-2390, PHIL-2010; CYBE flow has only Sems 1/2/8. Captured in memory (`project-seed-data-incomplete`). Filling this in unblocks live testing of the `unfilledDegreeSlot` tile branch.
+- **DRY refactors** (reviewer-flagged across Steps 4–7):
+  - `electiveLabel(slotType)` is now **triplicated** — `CourseTile.tsx`, `SlotPicker.tsx`, `AiPanel.tsx`. Extract to a shared helper (e.g., `src/data/electiveLabel.ts`).
+  - `Section` sub-component duplicated in `ActionMenu.tsx` + `SlotPicker.tsx`.
+- **Cosmetic nits** from earlier reviews — SlotPicker `cancelBtn` grey-vs-blue; `.muted` card still has interactive hover.
 
-- **AI chat to help fill a slot.** User repeated this at Step 6 sign-off: "we need to add an item for an AI chat when trying to fill a slot and you need help." Natural placement: an AI suggestion section / quick-ask chips above (or below) the catalog list, OR a Chat-with-AI button that opens the AI panel mode (purple accent) scoped to the slot. Per UI spec §10.2 + §10.3 + §11. Pairs naturally with MSW + the `/api/v1/ai/ask` endpoint scaffold. **Top candidate for Step 7.**
-- **Real mutations** — every action card in ActionMenu + SlotPicker is still a no-op stub. Need either local state (next step backend-free) or MSW (mock backend) before "Mark Completed", "Move to future term", etc. actually do something.
-- **Seed data sweep** — `isu-catalog.json` missing HDFS-2390, PHIL-2010; CYBE flow has only Sems 1/2/8. Captured in memory (`project-seed-data-incomplete`). Filling this in unblocks unfilledDegreeSlot tile rendering (currently no live test of that slot-picker branch).
-- **DRY refactors** flagged by reviewers across steps 4–5:
-  - `electiveLabel(slotType)` duplicated in `CourseTile.tsx` and `SlotPicker.tsx` — extract to a shared helper.
-  - `Section` sub-component duplicated in `ActionMenu.tsx` and `SlotPicker.tsx` — same.
-- **Cosmetic nits** from Step 5 reviewer:
-  - SlotPicker `cancelBtn` color is grey (`var(--text-label)`); the AC text says "blue". Visual pass confirmed, but worth a polish pass.
-  - SlotPicker `.muted` card still has interactive hover styles (brightens bg, blue border) — could be made truly static.
-- **AI panel mode (purple accent)** — the existing `--panel-accent` CSS variable system supports adding a third accent (`accentAi`) when the AI panel lands. The `RightPanel.tsx` already takes `accent: 'ai' | 'action'`; the `'ai'` branch was scaffolded in Step 4 but not yet exercised.
+## Open Step 8 directions (user has not picked yet)
 
-## Open Step 7 directions (user has not picked yet)
-
-1. **AI chat in slot picker** (top candidate) — addresses the deferred half of Step 5 + Step 6 user feedback. Introduces AI integration architecture (UI spec §11 — server-mediated `/api/v1/ai/ask` endpoint). Likely requires landing MSW first OR using a faked `useAi()` hook with hardcoded sample responses. Could be split: Step 7a = MSW + faked AI responses; Step 7b = real Anthropic integration.
-2. **Real mutations (local state first)** — make existing ActionMenu / SlotPicker buttons actually do something. Required before MSW because mutations need a target.
-3. **MSW + `usePlan()` hook refactor** — swap the static `PLAN` constant for a hook backed by MSW. Lays groundwork for both AI integration and real mutations.
-4. **Validation banner + tile flags** — surface cascade-engine output. Needs backend (or faked validation source).
-5. **Catalog / flow data sweep** — pure data-entry. Fills the seed gaps so all branches of the overlay + slot picker get real data.
-6. **Test framework** — Vitest + RTL + first render tests.
-7. **DRY refactors** — extract `electiveLabel` + `Section` helpers; polish cosmetic nits.
-8. **Something else.**
+1. **MSW + real `useAi()` wiring** — swap the stubbed hook for `fetch('/api/v1/ai/ask')` against a mock service worker returning structured `AiResponseDto`s. Closer to the eventual architecture; still no Anthropic.
+2. **Real Anthropic integration** — needs a server-side proxy/endpoint (bigger lift; touches the .NET API).
+3. **Real mutations (local state first)** — make ActionMenu / SlotPicker / AiPanel action buttons actually change the plan.
+4. **AI scope expansion** — wire the global / flow / semester `✦` entry points to `useAi`.
+5. **Validation banner + tile flags** — surface cascade-engine output.
+6. **Catalog / flow data sweep** — pure data-entry; fills seed gaps.
+7. **Test framework** — Vitest + RTL.
+8. **DRY refactors** — extract `electiveLabel` + `Section` helpers; cosmetic polish.
+9. **Something else.**
 
 ## Key context flags
 
-- **Seed JSONs are intentionally incomplete.** Captured in memory (`project-seed-data-incomplete`).
-- **CSS approach is CSS Modules** + palette tokens as CSS custom properties in `src/index.css`. `--panel-accent` is the canonical pattern for mode-dependent panel accents.
-- **Stack-on-its-own-branch per step.** Each step gets its own branch from main and is merged before the next starts.
-- **Seed file `"Complete"` → spec `"Completed"`** adapter in `src/data/student.ts:normalizeStatus`.
-- **The right panel uses a layout wrapper pattern**: `<RightPanel accent="action">` (or `accent="ai"` for future AI mode) provides the chrome; content components (`<ActionMenu>` / `<SlotPicker>` / future `<AiPanel>`) render inside as children.
-- **No AI integration yet.** Per UI spec §11, AI calls must be server-mediated — Anthropic API never called directly from the browser. Step 7+ has to introduce either MSW or a real backend endpoint.
+- **Seed JSONs are intentionally incomplete.** Memory: `project-seed-data-incomplete`.
+- **Single dev server reused across verification cycles** — memory: `feedback-dev-server-reuse`. Don't spawn a new `npm run dev` each cycle; rely on Vite HMR + browser refresh. The session's dev server runs at `http://localhost:5173`.
+- **CSS approach is CSS Modules** + palette tokens as CSS custom properties in `src/index.css`. `--panel-accent` switches the right-panel border per mode (`accentAction` blue / `accentAi` purple).
+- **Stack-on-its-own-branch per step.** Each step gets its own branch from main, merged before the next starts.
+- **AI must be server-mediated** (UI spec §11) — never call Anthropic directly from the browser.
+- **`eslint.config.js`** has `argsIgnorePattern`/`varsIgnorePattern: '^_'` — underscore-prefixed unused params/vars are intentionally allowed.
 
 ## What NOT to do
 
 - Don't start Plan #2 (EF persistence) or Plan #3 (cascade engine) — user is staying UI-first.
 - Don't try to "fix" `ActualSeedFileTests.Catalog_passes_validation_with_no_errors` — intentional punch list.
 - Don't auto-add missing courses/slots to the seed JSONs — deferred per project memory.
-- Don't re-litigate the dept-tint-wins CSS cascade — that's the locked v4 behavior.
-- Don't call Anthropic API directly from the browser — UI spec §11 requires server-mediation.
+- Don't re-litigate the dept-tint-wins CSS cascade — locked v4 behavior.
+- Don't call Anthropic directly from the browser.
+- Don't spawn a second dev server — reuse the running one.
 
 ## How to confirm the user is ready
 
-When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 6 complete on `ui-v1/step-6-catalog-search`. Which direction for Step 7?" and wait for their pick.
+When you start, **don't re-explain everything above** — assume they read this with you. Just confirm: "Reading session-state.md. Step 7 complete on `ui-v1/step-7-ai-chat`. Which direction for Step 8?" and wait for their pick.
