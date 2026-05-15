@@ -1,17 +1,17 @@
-import type { PlanTile } from '../data/types.ts';
-import { PLAN } from '../data/index.ts';
+import type { PlanRow, PlanTile } from '../data/types.ts';
 import { SemRow } from './SemRow.tsx';
 import styles from './PlanView.module.css';
 
 type Props = {
+  rows: PlanRow[];
   onTileClick?: (tile: PlanTile) => void;
   selectedClassId?: string | null;
 };
 
-export function PlanView({ onTileClick, selectedClassId }: Props) {
+export function PlanView({ rows, onTileClick, selectedClassId }: Props) {
   return (
     <div className={styles.view}>
-      {PLAN.map((row) => (
+      {rows.map((row) => (
         <SemRow
           key={row.semIdx}
           row={row}

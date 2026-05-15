@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type {
+  CourseAction,
   PlanTile,
+  StudentCourse,
   StudentCoursePlanTile,
+  StudentCourseStatus,
   UnfilledTile,
 } from './data/types.ts';
+import { studentCourses as seedStudentCourses } from './data/student.ts';
+import { flow } from './data/flow.ts';
+import { catalogById } from './data/catalog.ts';
+import { buildOverlay } from './data/overlay.ts';
 import { DesktopOnlyGate } from './components/DesktopOnlyGate.tsx';
 import { TopBar } from './components/TopBar.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
@@ -20,7 +27,13 @@ type SelectedPanel =
   | { kind: 'aiPanel'; tile: UnfilledTile };
 
 function App() {
+  const [studentCourses, setStudentCourses] = useState<StudentCourse[]>(seedStudentCourses);
   const [selected, setSelected] = useState<SelectedPanel | null>(null);
+
+  const rows = useMemo(
+    () => buildOverlay(flow, studentCourses, catalogById),
+    [studentCourses],
+  );
 
   const isPanelOpen = selected !== null;
   const appClassName = isPanelOpen
@@ -49,6 +62,23 @@ function App() {
 
   const handleClose = () => setSelected(null);
 
+  const applyAction = (action: CourseAction, classId: string) => {
+    if (action === 'remove') {
+      setStudentCourses((prev) => prev.filter((sc) => sc.courseId !== classId));
+    } else {
+      const status: StudentCourseStatus =
+        action === 'markCompleted'
+          ? 'Completed'
+          : action === 'markInProgress'
+            ? 'InProgress'
+            : 'Failed';
+      setStudentCourses((prev) =>
+        prev.map((sc) => (sc.courseId === classId ? { ...sc, status } : sc)),
+      );
+    }
+    setSelected(null);
+  };
+
   const selectedClassId =
     selected?.kind === 'actionMenu' ? selected.tile.classId : null;
 
@@ -59,11 +89,15 @@ function App() {
       <div className={appClassName}>
         <TopBar />
         <Sidebar />
-        <Main onTileClick={handleTileClick} selectedClassId={selectedClassId} />
+        <Main rows={rows} onTileClick={handleTileClick} selectedClassId={selectedClassId} />
         {selected && (
           <RightPanel accent={panelAccent}>
             {selected.kind === 'actionMenu' && (
-              <ActionMenu tile={selected.tile} onClose={handleClose} />
+              <ActionMenu
+                tile={selected.tile}
+                onClose={handleClose}
+                onAction={(action) => applyAction(action, selected.tile.classId)}
+              />
             )}
             {selected.kind === 'slotPicker' && (
               <SlotPicker
