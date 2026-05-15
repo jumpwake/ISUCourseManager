@@ -12,9 +12,10 @@ import styles from './AiPanel.module.css';
 type Props = {
   tile: UnfilledTile;
   onClose: () => void;
+  onBack: () => void;
 };
 
-export function AiPanel({ tile, onClose }: Props) {
+export function AiPanel({ tile, onClose, onBack }: Props) {
   const { messages, suggestions, quickAsks, send } = useAi({ kind: 'slot', tile });
   const [inputValue, setInputValue] = useState('');
 
@@ -31,6 +32,14 @@ export function AiPanel({ tile, onClose }: Props) {
     <div className={styles.panel}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
+          <button
+            type="button"
+            className={styles.back}
+            onClick={onBack}
+            aria-label="Back to slot options"
+          >
+            ←
+          </button>
           <span className={styles.aiCapsule}>AI</span>
           <span className={styles.title}>Help filling this slot</span>
           <span className={styles.scopeChip}>{scopeLabel(tile)}</span>

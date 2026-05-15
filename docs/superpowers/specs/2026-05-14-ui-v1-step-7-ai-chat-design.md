@@ -417,3 +417,12 @@ CSS:
   - **Real Anthropic integration** (needs server-side proxy; bigger lift).
   - **AI scope: global / flow / semester** — wire up the existing no-op `✦ Ask AI` / `✦ Analyze flow` / `✦` sem-row buttons.
   - **Real mutations** — make ActionMenu and SlotPicker action cards actually do something (local state first).
+
+## 12. Post-implementation amendments (from Step 7 review)
+
+Two design changes made during the user's visual review of the implemented Step 7, both reversing earlier decisions:
+
+- **Reverses S7-D3** — the `Ask AI for help` entry point is NOT a full-width button at the top of the slot-picker body. The user found it too heavy. It is now a **compact purple `✦` icon button (32px) sitting inline to the right of the search input**, in a shared `.searchRow` flex container. Same `onAskAi` wiring; only the visual treatment changed.
+- **Reverses S7-D4** — the AI panel is no longer a dead end. It gains a **back arrow `←` in the header** (left of the `[✦ AI]` capsule) that returns to the slot picker for the same tile. `AiPanel` takes a new `onBack: () => void` prop; App supplies `onBack={() => setSelected({ kind: 'slotPicker', tile })}`. The close `×` still closes the panel entirely; the back arrow is the "return to slot options" path.
+
+Acceptance criteria S7-1 (full-width button) and S7-9 (close behavior) are superseded accordingly: S7-1's button is now the inline icon; S7-9 still holds for `×`, and a back-arrow path is added. The implementation commits reflect the amended behavior.

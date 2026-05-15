@@ -68,6 +68,21 @@
   color: #4c1d95;
 }
 
+.back {
+  color: #5b21b6;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 1;
+}
+
+.back:hover {
+  color: #4c1d95;
+}
+
 .body {
   padding: 12px 16px;
   flex-grow: 1;

@@ -73,7 +73,11 @@ function App() {
               />
             )}
             {selected.kind === 'aiPanel' && (
-              <AiPanel tile={selected.tile} onClose={handleClose} />
+              <AiPanel
+                tile={selected.tile}
+                onClose={handleClose}
+                onBack={() => setSelected({ kind: 'slotPicker', tile: selected.tile })}
+              />
             )}
           </RightPanel>
         )}

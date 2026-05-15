@@ -51,25 +51,27 @@ export function SlotPicker({ tile, onClose, onAskAi }: Props) {
       </div>
 
       <div className={styles.body}>
-        {onAskAi !== undefined && (
-          <button
-            type="button"
-            className={styles.askAiButton}
-            onClick={onAskAi}
-          >
-            <span className={styles.askAiSparkle}>✦</span>
-            Ask AI for help
-          </button>
-        )}
-
-        <input
-          type="text"
-          className={styles.searchInput}
-          placeholder="Search catalog…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search catalog"
-        />
+        <div className={styles.searchRow}>
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search catalog…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search catalog"
+          />
+          {onAskAi !== undefined && (
+            <button
+              type="button"
+              className={styles.aiIconButton}
+              onClick={onAskAi}
+              aria-label="Ask AI for help"
+              title="Ask AI for help"
+            >
+              ✦
+            </button>
+          )}
+        </div>
 
         <Section title="Pull from a later semester">
           <p className={styles.emptyMessage}>No pull-forward candidates yet.</p>
