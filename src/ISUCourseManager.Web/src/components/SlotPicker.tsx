@@ -1,21 +1,27 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import type { Course, ElectiveSlotType, UnfilledTile } from '../data/types.ts';
+import type { Course, ElectiveSlotType, SlotPickerTarget, UnfilledTile } from '../data/types.ts';
 import { academicTermToLabel } from '../data/academicTerm.ts';
 import { catalogById } from '../data/catalog.ts';
 import styles from './SlotPicker.module.css';
 
 type Props = {
-  tile: UnfilledTile;
+  target: SlotPickerTarget;
   onClose: () => void;
+  onPickCourse: (classId: string) => void;
   onAskAi?: () => void;
 };
 
 const CATALOG_RESULT_CAP = 20;
 const CATALOG_DEFAULT_COUNT = 8;
 
-export function SlotPicker({ tile, onClose, onAskAi }: Props) {
+export function SlotPicker({ target, onClose, onPickCourse, onAskAi }: Props) {
   const [query, setQuery] = useState('');
+
+  const isAddToSem = target.kind === 'addToSem';
+  const semIdx = target.kind === 'slot' ? target.tile.semIdx : target.semIdx;
+  const academicTerm =
+    target.kind === 'slot' ? target.tile.academicTerm : target.academicTerm;
 
   const trimmed = query.trim().toLowerCase();
   const isSearching = trimmed.length > 0;
@@ -28,14 +34,12 @@ export function SlotPicker({ tile, onClose, onAskAi }: Props) {
     ? `${catalogResults.length} match${catalogResults.length === 1 ? '' : 'es'}`
     : undefined;
 
-  const ctx = contextLine(tile);
-
   return (
     <div className={styles.picker}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
           <div className={styles.breadcrumb}>
-            Sem {tile.semIdx} · {academicTermToLabel(tile.academicTerm)}
+            Sem {semIdx} · {academicTermToLabel(academicTerm)}
           </div>
           <button
             type="button"
@@ -46,8 +50,10 @@ export function SlotPicker({ tile, onClose, onAskAi }: Props) {
             ×
           </button>
         </div>
-        <h2 className={styles.title}>Fill this slot</h2>
-        <div className={styles.ctx}>{ctx}</div>
+        <h2 className={styles.title}>{isAddToSem ? 'Add a course' : 'Fill this slot'}</h2>
+        {target.kind === 'slot' && (
+          <div className={styles.ctx}>{contextLine(target.tile)}</div>
+        )}
       </div>
 
       <div className={styles.body}>
@@ -60,7 +66,7 @@ export function SlotPicker({ tile, onClose, onAskAi }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search catalog"
           />
-          {onAskAi !== undefined && (
+          {!isAddToSem && onAskAi !== undefined && (
             <button
               type="button"
               className={styles.aiIconButton}
@@ -80,7 +86,12 @@ export function SlotPicker({ tile, onClose, onAskAi }: Props) {
         <Section title="Add a new course from the catalog" badge={catalogBadge}>
           {catalogResults.length > 0 ? (
             catalogResults.map((course) => (
-              <button key={course.classId} type="button" className={styles.card}>
+              <button
+                key={course.classId}
+                type="button"
+                className={styles.card}
+                onClick={() => onPickCourse(course.classId)}
+              >
                 <span className={styles.cardContent}>
                   <span className={styles.cardName}>{course.code}</span>
                   <span className={styles.cardMeta}>
@@ -96,16 +107,18 @@ export function SlotPicker({ tile, onClose, onAskAi }: Props) {
           )}
         </Section>
 
-        <Section title="Leave this slot empty">
-          <button type="button" className={`${styles.card} ${styles.muted}`}>
-            <span className={styles.cardContent}>
-              <span className={styles.cardName}>Leave this slot empty</span>
-              <span className={styles.cardMeta}>
-                Sem {tile.semIdx} will fall short of its credit target.
+        {target.kind === 'slot' && (
+          <Section title="Leave this slot empty">
+            <button type="button" className={`${styles.card} ${styles.muted}`}>
+              <span className={styles.cardContent}>
+                <span className={styles.cardName}>Leave this slot empty</span>
+                <span className={styles.cardMeta}>
+                  Sem {semIdx} will fall short of its credit target.
+                </span>
               </span>
-            </span>
-          </button>
-        </Section>
+            </button>
+          </Section>
+        )}
       </div>
 
       <div className={styles.footer}>

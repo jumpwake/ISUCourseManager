@@ -38,3 +38,28 @@
 .creditsOver   { color: #c62828; }
 .creditsUnder  { color: #ef6c00; }
 .creditsDone   { color: #2e7d32; }
+
+.addClassTile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  margin: 3px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 78px;
+  min-height: 44px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-label);
+  cursor: pointer;
+  font: inherit;
+  transition: transform 100ms, border-color 100ms, color 100ms;
+}
+
+.addClassTile:hover {
+  border-color: #1976d2;
+  color: #1976d2;
+  transform: translateY(-1px);
+}

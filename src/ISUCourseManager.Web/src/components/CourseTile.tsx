@@ -55,12 +55,16 @@ export function CourseTile({ tile, onClick, selected = false }: Props) {
   }
 
   const statusClass = statusToClass(tile.status);
+  // Department tint applies only to Planned tiles (scanning future courses by
+  // dept aids planning). Completed / InProgress / Failed show their status
+  // color so a status change is visible.
+  const deptClass = tile.status === 'Planned' ? ` ${styles[tile.dept]}` : '';
   const subtitle =
     tile.status === 'Completed' ? `${tile.grade} · ${tile.credits}cr` : `${tile.credits}cr`;
   return (
     <button
       type="button"
-      className={`${styles.tile} ${styles[statusClass]} ${styles[tile.dept]}${selectedClass}`}
+      className={`${styles.tile} ${styles[statusClass]}${deptClass}${selectedClass}`}
       onClick={onClick}
     >
       {tile.code}

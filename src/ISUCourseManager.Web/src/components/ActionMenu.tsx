@@ -1,14 +1,15 @@
 import type { ReactNode } from 'react';
-import type { StudentCoursePlanTile } from '../data/types.ts';
+import type { CourseAction, StudentCoursePlanTile } from '../data/types.ts';
 import { academicTermToLabel } from '../data/academicTerm.ts';
 import styles from './ActionMenu.module.css';
 
 type Props = {
   tile: StudentCoursePlanTile;
   onClose: () => void;
+  onAction: (action: CourseAction) => void;
 };
 
-export function ActionMenu({ tile, onClose }: Props) {
+export function ActionMenu({ tile, onClose, onAction }: Props) {
   return (
     <div className={styles.menu}>
       <div className={styles.header}>
@@ -47,9 +48,25 @@ export function ActionMenu({ tile, onClose }: Props) {
         ) : (
           <>
             <Section title="Update status">
-              <ActionCard icon="✓" name="Mark Completed" meta="Set grade" />
-              <ActionCard icon="⏵" name="Mark In Progress" meta="Currently enrolled this term" />
-              <ActionCard icon="⚠" name="Mark Failed / Cancelled" meta="Will trigger cascade for downstream prereqs" danger />
+              <ActionCard
+                icon="✓"
+                name="Mark Completed"
+                meta="Set grade"
+                onClick={() => onAction('markCompleted')}
+              />
+              <ActionCard
+                icon="⏵"
+                name="Mark In Progress"
+                meta="Currently enrolled this term"
+                onClick={() => onAction('markInProgress')}
+              />
+              <ActionCard
+                icon="⚠"
+                name="Mark Failed / Cancelled"
+                meta="Will trigger cascade for downstream prereqs"
+                danger
+                onClick={() => onAction('markFailed')}
+              />
             </Section>
             <Section title="Reschedule">
               <ActionCard icon="→" name="Move to future term" meta="Pre-req not met / scheduling conflict" />
@@ -59,7 +76,13 @@ export function ActionMenu({ tile, onClose }: Props) {
               <ActionCard icon="⇄" name="Substitute another course" meta="Pick a course that satisfies this slot" />
             </Section>
             <Section title="Remove">
-              <ActionCard icon="×" name="Remove from plan" meta="Take the slot back to unfulfilled" danger />
+              <ActionCard
+                icon="×"
+                name="Remove from plan"
+                meta="Take the slot back to unfulfilled"
+                danger
+                onClick={() => onAction('remove')}
+              />
             </Section>
           </>
         )}
@@ -88,12 +111,13 @@ type ActionCardProps = {
   name: string;
   meta: string;
   danger?: boolean;
+  onClick?: () => void;
 };
 
-function ActionCard({ icon, name, meta, danger = false }: ActionCardProps) {
+function ActionCard({ icon, name, meta, danger = false, onClick }: ActionCardProps) {
   const className = danger ? `${styles.card} ${styles.danger}` : styles.card;
   return (
-    <button type="button" className={className}>
+    <button type="button" className={className} onClick={onClick}>
       <span className={styles.icon}>{icon}</span>
       <span className={styles.content}>
         <span className={styles.name}>{name}</span>
