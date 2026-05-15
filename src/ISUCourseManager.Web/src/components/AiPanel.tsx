@@ -1,25 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type {
-  AiMessage,
-  AiSuggestion,
-  ElectiveSlotType,
-  UnfilledTile,
-} from '../data/types.ts';
+import type { AiMessage, AiScope, AiSuggestion, ElectiveSlotType } from '../data/types.ts';
+import { academicTermToLabel } from '../data/academicTerm.ts';
 import { useAi } from '../data/useAi.ts';
 import styles from './AiPanel.module.css';
 
 type Props = {
-  tile: UnfilledTile;
+  scope: AiScope;
   onClose: () => void;
   onBack: () => void;
 };
 
-export function AiPanel({ tile, onClose, onBack }: Props) {
-  const { messages, suggestions, quickAsks, loading, error, send, retry } = useAi({
-    kind: 'slot',
-    tile,
-  });
+export function AiPanel({ scope, onClose, onBack }: Props) {
+  const { messages, suggestions, quickAsks, loading, error, send, retry } = useAi(scope);
+  const panelTitle =
+    scope.kind === 'semester' ? 'Help planning this semester' : 'Help filling this slot';
   const [inputValue, setInputValue] = useState('');
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -54,8 +49,8 @@ export function AiPanel({ tile, onClose, onBack }: Props) {
             ←
           </button>
           <span className={styles.aiCapsule}>AI</span>
-          <span className={styles.title}>Help filling this slot</span>
-          <span className={styles.scopeChip}>{scopeLabel(tile)}</span>
+          <span className={styles.title}>{panelTitle}</span>
+          <span className={styles.scopeChip}>{scopeLabel(scope)}</span>
           <button
             type="button"
             className={styles.close}
@@ -194,7 +189,11 @@ function renderMessageContent(text: string): ReactNode {
   );
 }
 
-function scopeLabel(tile: UnfilledTile): string {
+function scopeLabel(scope: AiScope): string {
+  if (scope.kind === 'semester') {
+    return `Sem ${scope.semIdx} · ${academicTermToLabel(scope.academicTerm)}`;
+  }
+  const tile = scope.tile;
   if (tile.kind === 'electiveSlot') {
     return `Sem ${tile.semIdx} · ${electiveLabel(tile.slotType)} · ${tile.requiredCredits}cr`;
   }

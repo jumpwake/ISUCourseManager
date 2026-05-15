@@ -6,7 +6,7 @@ type Props = {
   rows: PlanRow[];
   flaggedKeys: ReadonlySet<string>;
   onTileClick?: (tile: PlanTile) => void;
-  selectedClassId?: string | null;
+  selectedKey?: string | null;
   onAddClass?: (semIdx: number, academicTerm: number) => void;
 };
 
@@ -14,7 +14,7 @@ export function PlanView({
   rows,
   flaggedKeys,
   onTileClick,
-  selectedClassId,
+  selectedKey,
   onAddClass,
 }: Props) {
   return (
@@ -25,7 +25,7 @@ export function PlanView({
           row={row}
           flaggedKeys={flaggedKeys}
           onTileClick={onTileClick}
-          selectedClassId={selectedClassId}
+          selectedKey={selectedKey}
           onAddClass={onAddClass}
         />
       ))}

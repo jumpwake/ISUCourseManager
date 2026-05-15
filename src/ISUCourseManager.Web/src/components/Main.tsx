@@ -10,7 +10,7 @@ type Props = {
   validation: PlanValidation;
   flaggedKeys: ReadonlySet<string>;
   onTileClick?: (tile: PlanTile) => void;
-  selectedClassId?: string | null;
+  selectedKey?: string | null;
   onAddClass?: (semIdx: number, academicTerm: number) => void;
 };
 
@@ -19,7 +19,7 @@ export function Main({
   validation,
   flaggedKeys,
   onTileClick,
-  selectedClassId,
+  selectedKey,
   onAddClass,
 }: Props) {
   return (
@@ -30,7 +30,7 @@ export function Main({
         rows={rows}
         flaggedKeys={flaggedKeys}
         onTileClick={onTileClick}
-        selectedClassId={selectedClassId}
+        selectedKey={selectedKey}
         onAddClass={onAddClass}
       />
     </main>

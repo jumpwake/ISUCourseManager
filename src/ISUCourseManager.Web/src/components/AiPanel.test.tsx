@@ -17,7 +17,7 @@ const tile: UnfilledTile = {
 
 describe('AiPanel', () => {
   it('loads the scoped initial message from the AI endpoint', async () => {
-    render(<AiPanel tile={tile} onClose={() => {}} onBack={() => {}} />);
+    render(<AiPanel scope={{ kind: 'slot', tile }} onClose={() => {}} onBack={() => {}} />);
     expect(
       await screen.findByText(/compare what other CybE students did/i),
     ).toBeInTheDocument();
@@ -25,7 +25,7 @@ describe('AiPanel', () => {
 
   it('sends a question and shows the AI reply', async () => {
     const user = userEvent.setup();
-    render(<AiPanel tile={tile} onClose={() => {}} onBack={() => {}} />);
+    render(<AiPanel scope={{ kind: 'slot', tile }} onClose={() => {}} onBack={() => {}} />);
     await screen.findByText(/compare what other CybE students did/i);
 
     const input = screen.getByLabelText('Ask AI about this slot');
@@ -34,5 +34,18 @@ describe('AiPanel', () => {
 
     expect(await screen.findByText('You')).toBeInTheDocument();
     expect(await screen.findByText(/let me pull a few angles/i)).toBeInTheDocument();
+  });
+
+  it('loads a semester-scoped initial message', async () => {
+    render(
+      <AiPanel
+        scope={{ kind: 'semester', semIdx: 4, academicTerm: 202704 }}
+        onClose={() => {}}
+        onBack={() => {}}
+      />,
+    );
+    expect(
+      await screen.findByText(/tell me what you're after/i),
+    ).toBeInTheDocument();
   });
 });

@@ -89,7 +89,8 @@ export type AiSuggestion = {
 };
 
 export type AiScope =
-  | { kind: 'slot'; tile: UnfilledTile };
+  | { kind: 'slot'; tile: UnfilledTile }
+  | { kind: 'semester'; semIdx: number; academicTerm: number };
 
 export type CourseAction = 'markCompleted' | 'markInProgress' | 'markFailed' | 'remove';
 

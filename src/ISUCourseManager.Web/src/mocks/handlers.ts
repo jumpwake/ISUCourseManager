@@ -30,6 +30,9 @@ function buildResponse(req: AiAskRequest): AiAskResponse {
 }
 
 function initialContent(scope: AiScope): string {
+  if (scope.kind === 'semester') {
+    return `Looking at **Sem ${scope.semIdx}** — tell me what you're after and I can suggest courses that fit the term and your major. Below are a few popular picks; ask me anything.`;
+  }
   const tile = scope.tile;
   if (tile.kind === 'electiveSlot') {
     return `Looking at your plan, this **${electiveLabelLong(tile.slotType)}** slot in Sem ${tile.semIdx} is open. Below are a few candidates that fit your major and term workload. I can also pull alternatives — ask me anything.`;
