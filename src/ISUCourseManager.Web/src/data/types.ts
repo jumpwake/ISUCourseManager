@@ -93,4 +93,5 @@ export type CourseAction = 'markCompleted' | 'markInProgress' | 'markFailed' | '
 
 export type SlotPickerTarget =
   | { kind: 'slot'; tile: UnfilledTile }
-  | { kind: 'addToSem'; semIdx: number; academicTerm: number };
+  | { kind: 'addToSem'; semIdx: number; academicTerm: number }
+  | { kind: 'substitute'; classId: string; semIdx: number; academicTerm: number };
