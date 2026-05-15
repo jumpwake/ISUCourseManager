@@ -17,7 +17,7 @@ Addresses the user's repeated sign-off feedback from Steps 5 and 6 ("we need a w
 ## 2. Scope
 
 ### In scope
-- **New `<AiPanel />` component** rendering the locked v4 AI panel chrome (mockup lines 252–409). Header with `[✦ AI]` capsule + title + scope chip + close `×`; flat-typography message blocks; purple-gradient suggestion cards; optional tip card; footer with text input + `Ask` send button + 3 quick-ask chips.
+- **New `<AiPanel />` component** rendering the locked v4 AI panel chrome (mockup lines 252–409). Header with `[✦ AI]` capsule + title + scope chip + close `×`; flat-typography message blocks; purple-gradient suggestion cards; footer with text input + `Ask` send button + 3 quick-ask chips.
 - **New stubbed `useAi(scope)` hook** at `src/data/useAi.ts`:
   - Signature: `useAi(scope: AiScope): { messages: AiMessage[]; suggestions: AiSuggestion[]; quickAsks: string[]; send: (userText: string) => void; }`.
   - `messages` initialized from a per-scope-kind seed (different copy for `unfilledDegreeSlot` vs. `electiveSlot`); held in local `useState` so `send` can append.
@@ -36,7 +36,6 @@ Addresses the user's repeated sign-off feedback from Steps 5 and 6 ("we need a w
 - Other AI scope levels (global from topbar `Ask AI`, flow from main-header `Analyze flow`, semester from sem-row `✦`). Those buttons stay no-op stubs until a later step adds those scopes.
 - AI suggestion section INSIDE the slot picker (per spec §10.2). The user explicitly asked for "chat", so we go straight to the panel mode. The inline section is deferred.
 - Streaming / loading states / 3-dot pulsing indicator / error block with retry.
-- Real tip card batch action (renders, Apply is no-op).
 - Token usage / latency display.
 - Persisting conversation across panel close/reopen (intentional — fresh start each session per spec §10.3).
 - Markdown rendering in messages (plain text + JSX bold via a small heuristic — see §5.2).
