@@ -88,3 +88,5 @@ export type AiSuggestion = {
 
 export type AiScope =
   | { kind: 'slot'; tile: UnfilledTile };
+
+export type CourseAction = 'markCompleted' | 'markInProgress' | 'markFailed' | 'remove';
