@@ -25,7 +25,7 @@ export function AiPanel({ tile, onClose, onBack }: Props) {
 
   useEffect(() => {
     const el = bodyRef.current;
-    if (el) {
+    if (el && typeof el.scrollTo === 'function') {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }, [messages, loading, error]);
