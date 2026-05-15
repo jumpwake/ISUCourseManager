@@ -7,6 +7,7 @@ export type Course = {
   name: string;
   credits: number;
   department: string;
+  typicallyOffered: string[];
 };
 
 export type ElectiveSlotType =
@@ -21,6 +22,7 @@ export type DegreeFlow = {
   catalogYear: string;
   slots: FlowSlot[];
   catalogStartYear: number;
+  totalCreditsRequired: number;
 };
 
 export type StudentCourse = {
@@ -95,3 +97,14 @@ export type SlotPickerTarget =
   | { kind: 'slot'; tile: UnfilledTile }
   | { kind: 'addToSem'; semIdx: number; academicTerm: number }
   | { kind: 'substitute'; classId: string; semIdx: number; academicTerm: number };
+
+export type AiAskRequest = {
+  scope: AiScope;
+  message: string | null;
+};
+
+export type AiAskResponse = {
+  messages: AiMessage[];
+  suggestions: AiSuggestion[];
+  quickAsks: string[];
+};

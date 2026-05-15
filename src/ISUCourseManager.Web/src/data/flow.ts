@@ -38,4 +38,5 @@ export const flow: DegreeFlow = {
   catalogYear: flowRaw.catalogYear,
   slots,
   catalogStartYear,
+  totalCreditsRequired: flowRaw.totalCreditsRequired,
 };
