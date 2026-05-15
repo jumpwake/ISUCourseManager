@@ -90,3 +90,7 @@ export type AiScope =
   | { kind: 'slot'; tile: UnfilledTile };
 
 export type CourseAction = 'markCompleted' | 'markInProgress' | 'markFailed' | 'remove';
+
+export type SlotPickerTarget =
+  | { kind: 'slot'; tile: UnfilledTile }
+  | { kind: 'addToSem'; semIdx: number; academicTerm: number };
