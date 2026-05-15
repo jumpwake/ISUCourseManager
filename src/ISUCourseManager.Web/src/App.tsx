@@ -25,7 +25,8 @@ type SelectedPanel =
   | { kind: 'actionMenu'; tile: StudentCoursePlanTile }
   | { kind: 'slotPicker'; tile: UnfilledTile }
   | { kind: 'aiPanel'; tile: UnfilledTile }
-  | { kind: 'addClass'; semIdx: number; academicTerm: number };
+  | { kind: 'addClass'; semIdx: number; academicTerm: number }
+  | { kind: 'substitute'; tile: StudentCoursePlanTile };
 
 function App() {
   const [studentCourses, setStudentCourses] = useState<StudentCourse[]>(seedStudentCourses);
@@ -35,6 +36,8 @@ function App() {
     () => buildOverlay(flow, studentCourses, catalogById),
     [studentCourses],
   );
+
+  const semesters = rows.map((r) => ({ semIdx: r.semIdx, academicTerm: r.academicTerm }));
 
   const isPanelOpen = selected !== null;
   const appClassName = isPanelOpen
@@ -68,9 +71,6 @@ function App() {
   const handleClose = () => setSelected(null);
 
   const applyAction = (action: CourseAction, classId: string, academicTerm: number) => {
-    // Key on courseId + academicTerm: the same course can legitimately appear in
-    // two terms (a retake, or a duplicate add), and a mutation must hit only the
-    // selected term's entry — not every entry sharing the courseId.
     const isTarget = (sc: StudentCourse) =>
       sc.courseId === classId && sc.academicTerm === academicTerm;
     if (action === 'remove') {
@@ -97,6 +97,25 @@ function App() {
     setSelected(null);
   };
 
+  const moveCourse = (classId: string, fromTerm: number, toTerm: number) => {
+    setStudentCourses((prev) =>
+      prev.map((sc) =>
+        sc.courseId === classId && sc.academicTerm === fromTerm
+          ? { ...sc, academicTerm: toTerm }
+          : sc,
+      ),
+    );
+    setSelected(null);
+  };
+
+  const substituteCourse = (oldClassId: string, term: number, newClassId: string) => {
+    setStudentCourses((prev) => [
+      ...prev.filter((sc) => !(sc.courseId === oldClassId && sc.academicTerm === term)),
+      { courseId: newClassId, academicTerm: term, status: 'Planned', grade: null },
+    ]);
+    setSelected(null);
+  };
+
   const selectedClassId =
     selected?.kind === 'actionMenu' ? selected.tile.classId : null;
 
@@ -118,10 +137,15 @@ function App() {
             {selected.kind === 'actionMenu' && (
               <ActionMenu
                 tile={selected.tile}
+                semesters={semesters}
                 onClose={handleClose}
                 onAction={(action) =>
                   applyAction(action, selected.tile.classId, selected.tile.academicTerm)
                 }
+                onMove={(toTerm) =>
+                  moveCourse(selected.tile.classId, selected.tile.academicTerm, toTerm)
+                }
+                onSubstitute={() => setSelected({ kind: 'substitute', tile: selected.tile })}
               />
             )}
             {selected.kind === 'slotPicker' && (
@@ -141,6 +165,24 @@ function App() {
                 }}
                 onClose={handleClose}
                 onPickCourse={(classId) => addCourse(classId, selected.academicTerm)}
+              />
+            )}
+            {selected.kind === 'substitute' && (
+              <SlotPicker
+                target={{
+                  kind: 'substitute',
+                  classId: selected.tile.classId,
+                  semIdx: selected.tile.semIdx,
+                  academicTerm: selected.tile.academicTerm,
+                }}
+                onClose={handleClose}
+                onPickCourse={(newClassId) =>
+                  substituteCourse(
+                    selected.tile.classId,
+                    selected.tile.academicTerm,
+                    newClassId,
+                  )
+                }
               />
             )}
             {selected.kind === 'aiPanel' && (
