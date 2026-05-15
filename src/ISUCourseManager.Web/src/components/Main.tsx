@@ -7,13 +7,19 @@ type Props = {
   rows: PlanRow[];
   onTileClick?: (tile: PlanTile) => void;
   selectedClassId?: string | null;
+  onAddClass?: (semIdx: number, academicTerm: number) => void;
 };
 
-export function Main({ rows, onTileClick, selectedClassId }: Props) {
+export function Main({ rows, onTileClick, selectedClassId, onAddClass }: Props) {
   return (
     <main className={styles.main}>
       <MainHeader />
-      <PlanView rows={rows} onTileClick={onTileClick} selectedClassId={selectedClassId} />
+      <PlanView
+        rows={rows}
+        onTileClick={onTileClick}
+        selectedClassId={selectedClassId}
+        onAddClass={onAddClass}
+      />
     </main>
   );
 }

@@ -6,9 +6,10 @@ type Props = {
   rows: PlanRow[];
   onTileClick?: (tile: PlanTile) => void;
   selectedClassId?: string | null;
+  onAddClass?: (semIdx: number, academicTerm: number) => void;
 };
 
-export function PlanView({ rows, onTileClick, selectedClassId }: Props) {
+export function PlanView({ rows, onTileClick, selectedClassId, onAddClass }: Props) {
   return (
     <div className={styles.view}>
       {rows.map((row) => (
@@ -17,6 +18,7 @@ export function PlanView({ rows, onTileClick, selectedClassId }: Props) {
           row={row}
           onTileClick={onTileClick}
           selectedClassId={selectedClassId}
+          onAddClass={onAddClass}
         />
       ))}
     </div>

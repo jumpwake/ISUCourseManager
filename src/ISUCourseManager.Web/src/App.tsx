@@ -24,7 +24,8 @@ import styles from './App.module.css';
 type SelectedPanel =
   | { kind: 'actionMenu'; tile: StudentCoursePlanTile }
   | { kind: 'slotPicker'; tile: UnfilledTile }
-  | { kind: 'aiPanel'; tile: UnfilledTile };
+  | { kind: 'aiPanel'; tile: UnfilledTile }
+  | { kind: 'addClass'; semIdx: number; academicTerm: number };
 
 function App() {
   const [studentCourses, setStudentCourses] = useState<StudentCourse[]>(seedStudentCourses);
@@ -60,6 +61,10 @@ function App() {
     setSelected({ kind: 'aiPanel', tile });
   };
 
+  const handleAddClass = (semIdx: number, academicTerm: number) => {
+    setSelected({ kind: 'addClass', semIdx, academicTerm });
+  };
+
   const handleClose = () => setSelected(null);
 
   const applyAction = (action: CourseAction, classId: string) => {
@@ -79,6 +84,14 @@ function App() {
     setSelected(null);
   };
 
+  const addCourse = (classId: string, academicTerm: number) => {
+    setStudentCourses((prev) => [
+      ...prev,
+      { courseId: classId, academicTerm, status: 'Planned', grade: null },
+    ]);
+    setSelected(null);
+  };
+
   const selectedClassId =
     selected?.kind === 'actionMenu' ? selected.tile.classId : null;
 
@@ -89,7 +102,12 @@ function App() {
       <div className={appClassName}>
         <TopBar />
         <Sidebar />
-        <Main rows={rows} onTileClick={handleTileClick} selectedClassId={selectedClassId} />
+        <Main
+          rows={rows}
+          onTileClick={handleTileClick}
+          selectedClassId={selectedClassId}
+          onAddClass={handleAddClass}
+        />
         {selected && (
           <RightPanel accent={panelAccent}>
             {selected.kind === 'actionMenu' && (
@@ -101,9 +119,21 @@ function App() {
             )}
             {selected.kind === 'slotPicker' && (
               <SlotPicker
-                tile={selected.tile}
+                target={{ kind: 'slot', tile: selected.tile }}
                 onClose={handleClose}
+                onPickCourse={(classId) => addCourse(classId, selected.tile.academicTerm)}
                 onAskAi={() => handleAskAi(selected.tile)}
+              />
+            )}
+            {selected.kind === 'addClass' && (
+              <SlotPicker
+                target={{
+                  kind: 'addToSem',
+                  semIdx: selected.semIdx,
+                  academicTerm: selected.academicTerm,
+                }}
+                onClose={handleClose}
+                onPickCourse={(classId) => addCourse(classId, selected.academicTerm)}
               />
             )}
             {selected.kind === 'aiPanel' && (
