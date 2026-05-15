@@ -72,3 +72,19 @@ export type PlanRow = {
 
 export type StudentCoursePlanTile = Extract<PlanTile, { kind: 'studentCourse' }>;
 export type UnfilledTile = Extract<PlanTile, { kind: 'unfilledDegreeSlot' | 'electiveSlot' }>;
+
+export type AiMessage =
+  | { role: 'ai'; lead?: string; content: string }
+  | { role: 'user'; content: string };
+
+export type AiSuggestion = {
+  id: string;
+  name: string;
+  meta: string;
+  rationale: string;
+  isRecommended?: boolean;
+  primaryActionLabel: string;
+};
+
+export type AiScope =
+  | { kind: 'slot'; tile: UnfilledTile };
