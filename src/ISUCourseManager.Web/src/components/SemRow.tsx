@@ -7,9 +7,10 @@ type Props = {
   row: PlanRow;
   onTileClick?: (tile: PlanTile) => void;
   selectedClassId?: string | null;
+  onAddClass?: (semIdx: number, academicTerm: number) => void;
 };
 
-export function SemRow({ row, onTileClick, selectedClassId }: Props) {
+export function SemRow({ row, onTileClick, selectedClassId, onAddClass }: Props) {
   const creditClass = creditColorClass(row);
   return (
     <div className={styles.row}>
@@ -28,6 +29,15 @@ export function SemRow({ row, onTileClick, selectedClassId }: Props) {
           selected={tile.kind === 'studentCourse' && selectedClassId === tile.classId}
         />
       ))}
+      {onAddClass && !row.allCompleted && (
+        <button
+          type="button"
+          className={styles.addClassTile}
+          onClick={() => onAddClass(row.semIdx, row.academicTerm)}
+        >
+          + Add Class
+        </button>
+      )}
     </div>
   );
 }
