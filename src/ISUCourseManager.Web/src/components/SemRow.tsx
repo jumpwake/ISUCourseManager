@@ -7,12 +7,13 @@ import styles from './SemRow.module.css';
 
 type Props = {
   row: PlanRow;
+  flaggedKeys: ReadonlySet<string>;
   onTileClick?: (tile: PlanTile) => void;
   selectedClassId?: string | null;
   onAddClass?: (semIdx: number, academicTerm: number) => void;
 };
 
-export function SemRow({ row, onTileClick, selectedClassId, onAddClass }: Props) {
+export function SemRow({ row, flaggedKeys, onTileClick, selectedClassId, onAddClass }: Props) {
   const creditClass = creditColorClass(row);
   const { setNodeRef, isOver } = useDroppable({
     id: `sem-${row.academicTerm}`,
@@ -35,6 +36,7 @@ export function SemRow({ row, onTileClick, selectedClassId, onAddClass }: Props)
             tile={tile}
             onClick={onTileClick ? () => onTileClick(tile) : undefined}
             selected={selectedClassId === tile.classId}
+            flagged={flaggedKeys.has(`${tile.classId}-${tile.academicTerm}`)}
           />
         ) : (
           <CourseTile

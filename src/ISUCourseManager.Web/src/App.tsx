@@ -20,6 +20,7 @@ import { studentCourses as seedStudentCourses } from './data/student.ts';
 import { flow } from './data/flow.ts';
 import { catalogById } from './data/catalog.ts';
 import { buildOverlay } from './data/overlay.ts';
+import { validatePlan } from './data/validation.ts';
 import { DesktopOnlyGate } from './components/DesktopOnlyGate.tsx';
 import { TopBar } from './components/TopBar.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
@@ -52,6 +53,21 @@ function App() {
     () => rows.map((r) => ({ semIdx: r.semIdx, academicTerm: r.academicTerm })),
     [rows],
   );
+
+  const validation = useMemo(
+    () => validatePlan(rows, flow.totalCreditsRequired, catalogById),
+    [rows],
+  );
+
+  const flaggedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const issue of validation.issues) {
+      if (issue.kind === 'termUnavailable') {
+        keys.add(`${issue.classId}-${issue.academicTerm}`);
+      }
+    }
+    return keys;
+  }, [validation]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -166,6 +182,8 @@ function App() {
           <Sidebar />
           <Main
             rows={rows}
+            validation={validation}
+            flaggedKeys={flaggedKeys}
             onTileClick={handleTileClick}
             selectedClassId={selectedClassId}
             onAddClass={handleAddClass}
