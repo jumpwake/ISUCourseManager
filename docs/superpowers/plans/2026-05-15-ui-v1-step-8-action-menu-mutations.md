@@ -614,3 +614,632 @@ All 14 criteria covered.
 - `useMemo` dependency array is `[studentCourses]` only — `flow` and `catalogById` are module constants.
 
 No drift found.
+
+---
+
+# Add Class — additional tasks (amendment)
+
+> Folded into Step 8 per user request during review. Spec amendment: §10 of the design doc. Tasks 5-7 below implement the Add Class feature; **Task 8 supersedes Task 4** (it re-runs Task 4's verification plus the Add Class criteria S8-15..S8-20). Tasks 1-3 + the color fix (`df93e57`) are already committed.
+
+## Add Class — file structure
+
+**Modify:**
+- `src/ISUCourseManager.Web/src/data/types.ts` — add `SlotPickerTarget` type.
+- `src/ISUCourseManager.Web/src/components/SemRow.tsx` — render a trailing `+ Add Class` tile; add `onAddClass` prop.
+- `src/ISUCourseManager.Web/src/components/SemRow.module.css` — add `.addClassTile` style.
+- `src/ISUCourseManager.Web/src/components/SlotPicker.tsx` — replace `tile` prop with discriminated `target`; add `onPickCourse`; adapt header/sections for add-to-sem mode.
+- `src/ISUCourseManager.Web/src/App.tsx` — add `addClass` panel kind, `handleAddClass`, `addCourse`; wire `onAddClass` + `onPickCourse` + `target`.
+- `src/ISUCourseManager.Web/src/components/Main.tsx` — thread `onAddClass`.
+- `src/ISUCourseManager.Web/src/components/PlanView.tsx` — thread `onAddClass`.
+
+---
+
+## Task 5: Add the `SlotPickerTarget` type
+
+**Files:**
+- Modify: `src/ISUCourseManager.Web/src/data/types.ts`
+
+- [ ] **Step 1: Append the `SlotPickerTarget` export to the end of `types.ts`** (after `CourseAction`):
+
+```ts
+export type SlotPickerTarget =
+  | { kind: 'slot'; tile: UnfilledTile }
+  | { kind: 'addToSem'; semIdx: number; academicTerm: number };
+```
+
+- [ ] **Step 2: Verify build** — `npm --prefix src/ISUCourseManager.Web run build` — exit 0.
+
+- [ ] **Step 3: Commit** — `feat(ui): add SlotPickerTarget type for Add Class`, staging only `types.ts`, with the standard `Co-Authored-By` trailer.
+
+---
+
+## Task 6: Render the `+ Add Class` tile in `<SemRow />`
+
+**Files:**
+- Modify: `src/ISUCourseManager.Web/src/components/SemRow.tsx`
+- Modify: `src/ISUCourseManager.Web/src/components/SemRow.module.css`
+
+`SemRow` gets an optional `onAddClass` prop. When provided AND the row is not all-completed, a trailing dashed `+ Add Class` tile renders after the course tiles. `onAddClass` is optional so PlanView (which doesn't pass it until Task 7) still compiles — until then the tile does not render.
+
+- [ ] **Step 1: Replace `SemRow.tsx` with**:
+
+```tsx
+import type { PlanRow, PlanTile } from '../data/types.ts';
+import { academicTermToLabel } from '../data/academicTerm.ts';
+import { CourseTile } from './CourseTile.tsx';
+import styles from './SemRow.module.css';
+
+type Props = {
+  row: PlanRow;
+  onTileClick?: (tile: PlanTile) => void;
+  selectedClassId?: string | null;
+  onAddClass?: (semIdx: number, academicTerm: number) => void;
+};
+
+export function SemRow({ row, onTileClick, selectedClassId, onAddClass }: Props) {
+  const creditClass = creditColorClass(row);
+  return (
+    <div className={styles.row}>
+      <div className={styles.label}>
+        <span>Sem {row.semIdx}</span>
+        <small>{academicTermToLabel(row.academicTerm)}</small>
+        <span className={`${styles.credits} ${styles[creditClass]}`}>
+          {row.totalCredits} cr
+        </span>
+      </div>
+      {row.tiles.map((tile, i) => (
+        <CourseTile
+          key={tileKey(tile, i)}
+          tile={tile}
+          onClick={onTileClick ? () => onTileClick(tile) : undefined}
+          selected={tile.kind === 'studentCourse' && selectedClassId === tile.classId}
+        />
+      ))}
+      {onAddClass && !row.allCompleted && (
+        <button
+          type="button"
+          className={styles.addClassTile}
+          onClick={() => onAddClass(row.semIdx, row.academicTerm)}
+        >
+          + Add Class
+        </button>
+      )}
+    </div>
+  );
+}
+
+function creditColorClass(row: PlanRow): string {
+  if (row.allCompleted) return 'creditsDone';
+  if (row.totalCredits > 18) return 'creditsOver';
+  if (row.totalCredits < 12) return 'creditsUnder';
+  return 'creditsNormal';
+}
+
+function tileKey(tile: PlanTile, index: number): string {
+  if (tile.kind === 'electiveSlot') return `elec-${tile.slotType}-${index}`;
+  return tile.classId;
+}
+```
+
+- [ ] **Step 2: Append `.addClassTile` to the end of `SemRow.module.css`**:
+
+```css
+.addClassTile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  margin: 3px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 78px;
+  min-height: 44px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-label);
+  cursor: pointer;
+  font: inherit;
+  transition: transform 100ms, border-color 100ms, color 100ms;
+}
+
+.addClassTile:hover {
+  border-color: #1976d2;
+  color: #1976d2;
+  transform: translateY(-1px);
+}
+```
+
+- [ ] **Step 3: Verify build** — `npm --prefix src/ISUCourseManager.Web run build` — exit 0. The `+ Add Class` tile does NOT render yet (PlanView doesn't pass `onAddClass` until Task 7).
+
+- [ ] **Step 4: Commit** — `feat(ui): render + Add Class tile in non-completed sem-rows`, staging `SemRow.tsx` + `SemRow.module.css`, standard trailer.
+
+---
+
+## Task 7: Generalize `<SlotPicker />` + wire Add Class in App
+
+**Files:**
+- Modify: `src/ISUCourseManager.Web/src/components/SlotPicker.tsx`
+- Modify: `src/ISUCourseManager.Web/src/App.tsx`
+- Modify: `src/ISUCourseManager.Web/src/components/Main.tsx`
+- Modify: `src/ISUCourseManager.Web/src/components/PlanView.tsx`
+
+Atomic integration task — `SlotPicker`'s prop changes from `tile` to `target`, which breaks App's call site until App is updated; the four files land together. `Main`/`PlanView` thread the new `onAddClass` callback through to `SemRow`.
+
+- [ ] **Step 1: Replace `SlotPicker.tsx` with**:
+
+```tsx
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import type { Course, ElectiveSlotType, SlotPickerTarget, UnfilledTile } from '../data/types.ts';
+import { academicTermToLabel } from '../data/academicTerm.ts';
+import { catalogById } from '../data/catalog.ts';
+import styles from './SlotPicker.module.css';
+
+type Props = {
+  target: SlotPickerTarget;
+  onClose: () => void;
+  onPickCourse: (classId: string) => void;
+  onAskAi?: () => void;
+};
+
+const CATALOG_RESULT_CAP = 20;
+const CATALOG_DEFAULT_COUNT = 8;
+
+export function SlotPicker({ target, onClose, onPickCourse, onAskAi }: Props) {
+  const [query, setQuery] = useState('');
+
+  const isAddToSem = target.kind === 'addToSem';
+  const semIdx = target.kind === 'slot' ? target.tile.semIdx : target.semIdx;
+  const academicTerm =
+    target.kind === 'slot' ? target.tile.academicTerm : target.academicTerm;
+
+  const trimmed = query.trim().toLowerCase();
+  const isSearching = trimmed.length > 0;
+
+  const catalogResults: Course[] = isSearching
+    ? filterCatalog(trimmed)
+    : Array.from(catalogById.values()).slice(0, CATALOG_DEFAULT_COUNT);
+
+  const catalogBadge = isSearching
+    ? `${catalogResults.length} match${catalogResults.length === 1 ? '' : 'es'}`
+    : undefined;
+
+  return (
+    <div className={styles.picker}>
+      <div className={styles.header}>
+        <div className={styles.headerTop}>
+          <div className={styles.breadcrumb}>
+            Sem {semIdx} · {academicTermToLabel(academicTerm)}
+          </div>
+          <button
+            type="button"
+            className={styles.close}
+            onClick={onClose}
+            aria-label="Close slot picker"
+          >
+            ×
+          </button>
+        </div>
+        <h2 className={styles.title}>{isAddToSem ? 'Add a course' : 'Fill this slot'}</h2>
+        {target.kind === 'slot' && (
+          <div className={styles.ctx}>{contextLine(target.tile)}</div>
+        )}
+      </div>
+
+      <div className={styles.body}>
+        <div className={styles.searchRow}>
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search catalog…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search catalog"
+          />
+          {!isAddToSem && onAskAi !== undefined && (
+            <button
+              type="button"
+              className={styles.aiIconButton}
+              onClick={onAskAi}
+              aria-label="Ask AI for help"
+              title="Ask AI for help"
+            >
+              ✦
+            </button>
+          )}
+        </div>
+
+        <Section title="Pull from a later semester">
+          <p className={styles.emptyMessage}>No pull-forward candidates yet.</p>
+        </Section>
+
+        <Section title="Add a new course from the catalog" badge={catalogBadge}>
+          {catalogResults.length > 0 ? (
+            catalogResults.map((course) => (
+              <button
+                key={course.classId}
+                type="button"
+                className={styles.card}
+                onClick={() => onPickCourse(course.classId)}
+              >
+                <span className={styles.cardContent}>
+                  <span className={styles.cardName}>{course.code}</span>
+                  <span className={styles.cardMeta}>
+                    {course.name} · {course.credits}cr · {course.department}
+                  </span>
+                </span>
+              </button>
+            ))
+          ) : (
+            <p className={styles.emptyMessage}>
+              No courses match "{query.trim()}".
+            </p>
+          )}
+        </Section>
+
+        {target.kind === 'slot' && (
+          <Section title="Leave this slot empty">
+            <button type="button" className={`${styles.card} ${styles.muted}`}>
+              <span className={styles.cardContent}>
+                <span className={styles.cardName}>Leave this slot empty</span>
+                <span className={styles.cardMeta}>
+                  Sem {semIdx} will fall short of its credit target.
+                </span>
+              </span>
+            </button>
+          </Section>
+        )}
+      </div>
+
+      <div className={styles.footer}>
+        <button type="button" className={styles.cancelBtn} onClick={onClose}>
+          Cancel
+        </button>
+        <button type="button" className={styles.applyBtn} disabled>
+          Apply selection
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  badge,
+  children,
+}: {
+  title: string;
+  badge?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={styles.section}>
+      <h3 className={styles.sectionTitle}>
+        {title}
+        {badge !== undefined && <span className={styles.sectionBadge}>{badge}</span>}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+function filterCatalog(query: string): Course[] {
+  const matches: Course[] = [];
+  for (const course of catalogById.values()) {
+    if (matchesQuery(course, query)) {
+      matches.push(course);
+      if (matches.length >= CATALOG_RESULT_CAP) break;
+    }
+  }
+  return matches;
+}
+
+function matchesQuery(course: Course, q: string): boolean {
+  return (
+    course.classId.toLowerCase().includes(q) ||
+    course.code.toLowerCase().includes(q) ||
+    course.name.toLowerCase().includes(q) ||
+    course.department.toLowerCase().includes(q)
+  );
+}
+
+function contextLine(tile: UnfilledTile): string {
+  if (tile.kind === 'unfilledDegreeSlot') {
+    return `Originally: ${tile.code} · ${tile.name}`;
+  }
+  return `Originally: ${electiveLabel(tile.slotType)} (${tile.requiredCredits}cr)`;
+}
+
+function electiveLabel(slotType: ElectiveSlotType): string {
+  switch (slotType) {
+    case 'ElectiveGenEd':
+      return 'Gen Ed';
+    case 'ElectiveMath':
+      return 'Math Elec';
+    case 'ElectiveTech':
+      return 'Tech Elec';
+    case 'ElectiveCybE':
+      return 'CybE Elec';
+    case 'ElectiveCprE':
+      return 'CprE Elec';
+  }
+}
+```
+
+- [ ] **Step 2: Replace `App.tsx` with**:
+
+```tsx
+import { useMemo, useState } from 'react';
+import type {
+  CourseAction,
+  PlanTile,
+  StudentCourse,
+  StudentCoursePlanTile,
+  StudentCourseStatus,
+  UnfilledTile,
+} from './data/types.ts';
+import { studentCourses as seedStudentCourses } from './data/student.ts';
+import { flow } from './data/flow.ts';
+import { catalogById } from './data/catalog.ts';
+import { buildOverlay } from './data/overlay.ts';
+import { DesktopOnlyGate } from './components/DesktopOnlyGate.tsx';
+import { TopBar } from './components/TopBar.tsx';
+import { Sidebar } from './components/Sidebar.tsx';
+import { Main } from './components/Main.tsx';
+import { RightPanel } from './components/RightPanel.tsx';
+import { ActionMenu } from './components/ActionMenu.tsx';
+import { SlotPicker } from './components/SlotPicker.tsx';
+import { AiPanel } from './components/AiPanel.tsx';
+import styles from './App.module.css';
+
+type SelectedPanel =
+  | { kind: 'actionMenu'; tile: StudentCoursePlanTile }
+  | { kind: 'slotPicker'; tile: UnfilledTile }
+  | { kind: 'aiPanel'; tile: UnfilledTile }
+  | { kind: 'addClass'; semIdx: number; academicTerm: number };
+
+function App() {
+  const [studentCourses, setStudentCourses] = useState<StudentCourse[]>(seedStudentCourses);
+  const [selected, setSelected] = useState<SelectedPanel | null>(null);
+
+  const rows = useMemo(
+    () => buildOverlay(flow, studentCourses, catalogById),
+    [studentCourses],
+  );
+
+  const isPanelOpen = selected !== null;
+  const appClassName = isPanelOpen
+    ? styles.app
+    : `${styles.app} ${styles.noPanel}`;
+
+  const handleTileClick = (tile: PlanTile) => {
+    if (tile.kind === 'studentCourse') {
+      if (selected?.kind === 'actionMenu' && selected.tile.classId === tile.classId) {
+        setSelected(null);
+      } else {
+        setSelected({ kind: 'actionMenu', tile });
+      }
+      return;
+    }
+    if (selected?.kind === 'slotPicker' && isSameUnfilledTile(selected.tile, tile)) {
+      setSelected(null);
+    } else {
+      setSelected({ kind: 'slotPicker', tile });
+    }
+  };
+
+  const handleAskAi = (tile: UnfilledTile) => {
+    setSelected({ kind: 'aiPanel', tile });
+  };
+
+  const handleAddClass = (semIdx: number, academicTerm: number) => {
+    setSelected({ kind: 'addClass', semIdx, academicTerm });
+  };
+
+  const handleClose = () => setSelected(null);
+
+  const applyAction = (action: CourseAction, classId: string) => {
+    if (action === 'remove') {
+      setStudentCourses((prev) => prev.filter((sc) => sc.courseId !== classId));
+    } else {
+      const status: StudentCourseStatus =
+        action === 'markCompleted'
+          ? 'Completed'
+          : action === 'markInProgress'
+            ? 'InProgress'
+            : 'Failed';
+      setStudentCourses((prev) =>
+        prev.map((sc) => (sc.courseId === classId ? { ...sc, status } : sc)),
+      );
+    }
+    setSelected(null);
+  };
+
+  const addCourse = (classId: string, academicTerm: number) => {
+    setStudentCourses((prev) => [
+      ...prev,
+      { courseId: classId, academicTerm, status: 'Planned', grade: null },
+    ]);
+    setSelected(null);
+  };
+
+  const selectedClassId =
+    selected?.kind === 'actionMenu' ? selected.tile.classId : null;
+
+  const panelAccent = selected?.kind === 'aiPanel' ? 'ai' : 'action';
+
+  return (
+    <DesktopOnlyGate>
+      <div className={appClassName}>
+        <TopBar />
+        <Sidebar />
+        <Main
+          rows={rows}
+          onTileClick={handleTileClick}
+          selectedClassId={selectedClassId}
+          onAddClass={handleAddClass}
+        />
+        {selected && (
+          <RightPanel accent={panelAccent}>
+            {selected.kind === 'actionMenu' && (
+              <ActionMenu
+                tile={selected.tile}
+                onClose={handleClose}
+                onAction={(action) => applyAction(action, selected.tile.classId)}
+              />
+            )}
+            {selected.kind === 'slotPicker' && (
+              <SlotPicker
+                target={{ kind: 'slot', tile: selected.tile }}
+                onClose={handleClose}
+                onPickCourse={(classId) => addCourse(classId, selected.tile.academicTerm)}
+                onAskAi={() => handleAskAi(selected.tile)}
+              />
+            )}
+            {selected.kind === 'addClass' && (
+              <SlotPicker
+                target={{
+                  kind: 'addToSem',
+                  semIdx: selected.semIdx,
+                  academicTerm: selected.academicTerm,
+                }}
+                onClose={handleClose}
+                onPickCourse={(classId) => addCourse(classId, selected.academicTerm)}
+              />
+            )}
+            {selected.kind === 'aiPanel' && (
+              <AiPanel
+                tile={selected.tile}
+                onClose={handleClose}
+                onBack={() => setSelected({ kind: 'slotPicker', tile: selected.tile })}
+              />
+            )}
+          </RightPanel>
+        )}
+      </div>
+    </DesktopOnlyGate>
+  );
+}
+
+function isSameUnfilledTile(a: UnfilledTile, b: UnfilledTile): boolean {
+  if (a.kind === 'unfilledDegreeSlot' && b.kind === 'unfilledDegreeSlot') {
+    return a.classId === b.classId && a.semIdx === b.semIdx;
+  }
+  if (a.kind === 'electiveSlot' && b.kind === 'electiveSlot') {
+    return a.slotType === b.slotType && a.semIdx === b.semIdx;
+  }
+  return false;
+}
+
+export default App;
+```
+
+- [ ] **Step 3: Replace `Main.tsx` with**:
+
+```tsx
+import type { PlanRow, PlanTile } from '../data/types.ts';
+import { MainHeader } from './MainHeader.tsx';
+import { PlanView } from './PlanView.tsx';
+import styles from './Main.module.css';
+
+type Props = {
+  rows: PlanRow[];
+  onTileClick?: (tile: PlanTile) => void;
+  selectedClassId?: string | null;
+  onAddClass?: (semIdx: number, academicTerm: number) => void;
+};
+
+export function Main({ rows, onTileClick, selectedClassId, onAddClass }: Props) {
+  return (
+    <main className={styles.main}>
+      <MainHeader />
+      <PlanView
+        rows={rows}
+        onTileClick={onTileClick}
+        selectedClassId={selectedClassId}
+        onAddClass={onAddClass}
+      />
+    </main>
+  );
+}
+```
+
+- [ ] **Step 4: Replace `PlanView.tsx` with**:
+
+```tsx
+import type { PlanRow, PlanTile } from '../data/types.ts';
+import { SemRow } from './SemRow.tsx';
+import styles from './PlanView.module.css';
+
+type Props = {
+  rows: PlanRow[];
+  onTileClick?: (tile: PlanTile) => void;
+  selectedClassId?: string | null;
+  onAddClass?: (semIdx: number, academicTerm: number) => void;
+};
+
+export function PlanView({ rows, onTileClick, selectedClassId, onAddClass }: Props) {
+  return (
+    <div className={styles.view}>
+      {rows.map((row) => (
+        <SemRow
+          key={row.semIdx}
+          row={row}
+          onTileClick={onTileClick}
+          selectedClassId={selectedClassId}
+          onAddClass={onAddClass}
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 5: Verify build + lint** — `npm --prefix src/ISUCourseManager.Web run build` and `npm --prefix src/ISUCourseManager.Web run lint` — both exit 0.
+
+- [ ] **Step 6: Commit** — `feat(ui): wire Add Class — slot picker add-to-semester mode`, staging `SlotPicker.tsx`, `App.tsx`, `Main.tsx`, `PlanView.tsx`, standard trailer.
+
+---
+
+## Task 8: Full manual acceptance verification (supersedes Task 4)
+
+Re-run Task 4's checks plus the Add Class criteria. Dev server already running at `http://localhost:5173` — refresh, don't restart.
+
+- [ ] **Step 1: Refresh the browser** at `http://localhost:5173`.
+- [ ] **Step 2: Action-menu mutations (S8-1..S8-10)** — Mark In Progress recolors yellow, Mark Completed → gradePending, Mark Failed recolors red, Remove drops the tile, re-open shows Completed-trim, Move/Substitute still no-op, credit pill turns green on an all-completed row.
+- [ ] **Step 3: Status color fix (S8-D12)** — Sem 1 (all completed) tiles render green; a freshly Marked-In-Progress tile is yellow, a Marked-Failed tile is red; Planned tiles still show their dept tint.
+- [ ] **Step 4: Add Class tile presence (S8-15)** — Sem 3-8 show a trailing dashed `+ Add Class` tile; Sem 1-2 (all completed) do NOT.
+- [ ] **Step 5: Add Class panel (S8-16)** — click `+ Add Class` on Sem 4: picker titled "Add a course", breadcrumb "Sem 4 · …", search input present, NO "Originally:" line, NO "Leave this slot empty" section, NO `✦` Ask AI icon, 8 default catalog cards.
+- [ ] **Step 6: Add via search (S8-17, S8-19)** — type to filter the catalog; click a card; panel closes; the course appears as a Planned tile in Sem 4; click the new tile → action menu opens for it.
+- [ ] **Step 7: Catalog card adds in slot-fill mode (S8-18)** — open the normal slot picker from an unfilled/elective tile; click a catalog card; the course is added at that slot's semester and the panel closes.
+- [ ] **Step 8: Emptied semester keeps Add Class (S8-20)** — remove every course from a planned semester; the row still shows `+ Add Class`.
+- [ ] **Step 9: Steps 3-7 preserved (S8-11)** — 8 sem-rows; elective tile → slot picker with `✦`; `✦` → AiPanel with working `←`; Completed tiles show the trim.
+- [ ] **Step 10: Refresh resets (S8-9)** — after mutations + adds, refresh resets to seed.
+- [ ] **Step 11: Final build + lint (S8-12, S8-13)** — both exit 0.
+- [ ] **Step 12: Report** — Tasks 5-7 cover all Add Class code; no further commits. Report pass/fail per criterion; the controller runs the final whole-branch review and finishing flow.
+
+---
+
+## Add Class — self-review (writer's checklist)
+
+**Spec coverage (§10 amendment):**
+
+| Spec criterion | Implemented in |
+|---|---|
+| S8-15 (`+ Add Class` tile, non-completed rows only) | Task 6 (`onAddClass && !row.allCompleted`); verified Task 8 step 4 |
+| S8-16 (add-to-sem picker chrome) | Task 7 (SlotPicker `addToSem` branch — title, no ctx, no Leave-empty, no Ask AI); verified Task 8 step 5 |
+| S8-17 (search + add in add-to-sem mode) | Task 7 (`onPickCourse` → `addCourse`); verified Task 8 step 6 |
+| S8-18 (catalog card adds in slot-fill mode) | Task 7 (`onPickCourse` wired in the `slotPicker` render); verified Task 8 step 7 |
+| S8-19 (new tile is a clickable student tile) | Task 7 (`addCourse` inserts `status: 'Planned'` → overlay emits a `studentCourse` tile); verified Task 8 step 6 |
+| S8-20 (emptied sem keeps Add Class) | Task 6 (empty row → `allCompleted` false → tile shown); verified Task 8 step 8 |
+| S8-D12 (status color fix) | Already committed `df93e57`; verified Task 8 step 3 |
+
+**Type / name consistency:**
+- `SlotPickerTarget` defined Task 5, consumed by `SlotPicker` (Task 7 prop) and constructed inline in App (Task 7).
+- `onAddClass: (semIdx: number, academicTerm: number) => void` — identical signature in SemRow (Task 6), Main, PlanView, App's `handleAddClass`.
+- `onPickCourse: (classId: string) => void` — SlotPicker prop; App passes `(classId) => addCourse(classId, <term>)`.
+- `addCourse` inserts `{ courseId, academicTerm, status: 'Planned', grade: null }` — matches the `StudentCourse` type.
+- `SelectedPanel.addClass` carries `semIdx` + `academicTerm` (numbers) — matches `handleAddClass` args and the `addToSem` target.
+
+**Placeholder scan:** none. Every step has complete code or a verifiable command.

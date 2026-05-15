@@ -168,3 +168,66 @@ The four wired cards pass `onClick`; Move-future, Move-earlier, and Substitute p
 ## 9. Open items
 
 - None blocking Step 8. After this step the action menu's status & removal cards are live. Next steps: Move/Substitute (with destination picker + slot-picker-as-source), slot-picker mutations, then MSW/backend persistence so changes survive a refresh.
+
+## 10. Amendment — Add Class (folded into Step 8 during review)
+
+During Step 8 review the user flagged a real gap: there is no way to add a brand-new course to a semester. The slot picker only opens from an existing placeholder tile, and its catalog cards were no-op stubs through Steps 5–7. This amendment adds the **Add Class** flow. Also folded in: a status-color fix (see §10.6).
+
+### 10.1 Scope (added)
+- A `+ Add Class` tile is appended to every sem-row that is **not** all-completed (`!row.allCompleted`). Completed/past semesters (Luke's Sem 1–2) don't get it; planned/upcoming ones (Sem 3–8) do — including a row emptied by removing courses.
+- Clicking it opens the slot picker in a new **"add to semester"** mode.
+- The slot picker's "Add a new course from the catalog" cards become a real mutation in **both** modes (fill-slot and add-to-sem): clicking a course inserts a `StudentCourse` and closes the panel.
+
+### 10.2 SlotPicker generalization
+`SlotPicker`'s `tile: UnfilledTile` prop is replaced by a discriminated `target`:
+
+```ts
+export type SlotPickerTarget =
+  | { kind: 'slot'; tile: UnfilledTile }
+  | { kind: 'addToSem'; semIdx: number; academicTerm: number };
+```
+
+Exported from `data/types.ts`. SlotPicker derives `semIdx` / `academicTerm` from either variant. Behavior by mode:
+- **`slot`** — unchanged: title "Fill this slot", `Originally: …` context line, "Leave this slot empty" section shown, Ask AI icon shown.
+- **`addToSem`** — title "Add a course", no context line, "Leave this slot empty" section HIDDEN (you're adding, not leaving empty), Ask AI icon HIDDEN.
+- Both modes show: breadcrumb (`Sem N · Term`), search input, "Pull from a later semester" (stub), "Add a new course from the catalog".
+
+### 10.3 `onPickCourse` mutation
+SlotPicker gains a required `onPickCourse: (classId: string) => void`. Each catalog course card calls it. App resolves it to:
+
+```ts
+const addCourse = (classId: string, academicTerm: number) => {
+  setStudentCourses((prev) => [
+    ...prev,
+    { courseId: classId, academicTerm, status: 'Planned', grade: null },
+  ]);
+  setSelected(null);
+};
+```
+
+Target term: the slot's `academicTerm` (slot mode) or the row's `academicTerm` (add-to-sem mode). Duplicates are allowed (adding a course already in the plan yields a second Planned tile — removable via the action menu); a duplicate-guard is deferred.
+
+### 10.4 App state
+`SelectedPanel` gains `{ kind: 'addClass'; semIdx: number; academicTerm: number }`. The existing `slotPicker`/`tile` branch and `handleTileClick` / `isSameUnfilledTile` are UNCHANGED — the `addClass` branch is purely additive. App renders `<SlotPicker>` for both the `slotPicker` and `addClass` selected kinds, constructing the `target` prop at each render site. `+ Add Class` clicks thread App → Main → PlanView → SemRow via an `onAddClass(semIdx, academicTerm)` callback.
+
+### 10.5 Acceptance criteria (added)
+| # | Criterion |
+|---|---|
+| S8-15 | Every non-all-completed sem-row (Sem 3–8 for Luke) shows a trailing dashed `+ Add Class` tile. Sem 1–2 (all completed) do NOT. |
+| S8-16 | Clicking `+ Add Class` opens the slot picker titled "Add a course", with NO "Originally:" line, NO "Leave this slot empty" section, NO Ask AI icon. Breadcrumb + search input + catalog list present. |
+| S8-17 | In the add-to-sem picker, typing in the search filters the catalog (Step 6 behavior intact). Clicking a catalog course card adds it to that semester as a Planned tile and closes the panel. |
+| S8-18 | Clicking a catalog card in the normal slot-fill picker (opened from an unfilled/elective tile) also adds the course — at the slot's term — and closes the panel. Catalog cards are no longer no-op. |
+| S8-19 | After an add, the new Planned tile appears in the target semester and is itself clickable (opens the action menu) like any other student tile. |
+| S8-20 | Emptying a semester (removing all its courses) still leaves the `+ Add Class` tile — the semester is never a dead end. |
+
+### 10.6 Status-color fix
+Also folded in: Mark In Progress / Mark Failed appeared inert because Step 3's dept-tint-wins cascade (S3-D4) made the department tint override the status background. Fixed in `CourseTile.tsx` — the department tint is now applied **only to Planned tiles**; Completed / InProgress / Failed render in their status color (green / yellow / red). Reverses the non-Planned half of S3-D4. Side effect (intended): Luke's all-completed Sem 1 tiles now render green.
+
+### 10.7 Amended decisions
+
+| # | Decision | Rationale |
+|---|---|---|
+| S8-D9 | `SlotPicker` takes a discriminated `target` (`slot` \| `addToSem`) rather than two optional context props | A discriminated union avoids non-null assertions and models the real intent: the picker places a course for a destination, which is either a specific slot or a whole semester. |
+| S8-D10 | Add Class reuses `SlotPicker` rather than a new component | The catalog-search + result-card UI is exactly what's needed; a separate component would duplicate it. The two modes differ only in framing. |
+| S8-D11 | Duplicate-add allowed (no guard) | Minimal scope. A second Planned tile is removable via the action menu. A duplicate-guard can land later. |
+| S8-D12 | Status color wins over dept tint for non-Planned tiles | A status mutation must be visible. Dept tint stays on Planned tiles where dept-coding aids planning. |
