@@ -48,7 +48,10 @@ function App() {
     [studentCourses],
   );
 
-  const semesters = rows.map((r) => ({ semIdx: r.semIdx, academicTerm: r.academicTerm }));
+  const semesters = useMemo(
+    () => rows.map((r) => ({ semIdx: r.semIdx, academicTerm: r.academicTerm })),
+    [rows],
+  );
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
