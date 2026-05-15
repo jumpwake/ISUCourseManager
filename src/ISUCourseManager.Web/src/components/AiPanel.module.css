@@ -1,0 +1,257 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #c4b5fd;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aiCapsule {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.aiCapsule::before {
+  content: "✦";
+  font-size: 10px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2328;
+}
+
+.scopeChip {
+  margin-left: auto;
+  font-size: 10px;
+  color: #5b21b6;
+  background: white;
+  border: 1px solid #c4b5fd;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.close {
+  color: #5b21b6;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 400;
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  margin-left: 4px;
+}
+
+.close:hover {
+  color: #4c1d95;
+}
+
+.body {
+  padding: 12px 16px;
+  flex-grow: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.msg {
+  padding: 10px 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #1f2328;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 12px;
+}
+
+.lead {
+  font-size: 11px;
+  color: #5a6573;
+  margin-bottom: 6px;
+}
+
+.userLead {
+  color: #5b21b6;
+}
+
+.msg strong {
+  color: #5b21b6;
+  font-weight: 700;
+}
+
+.suggestionList {
+  margin-bottom: 12px;
+}
+
+.suggestion {
+  border: 1px solid #e0e0e0;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #fff;
+  cursor: default;
+  transition: all 0.12s;
+}
+
+.suggestion:hover {
+  border-left-color: #7c3aed;
+  background: #faf5ff;
+}
+
+.suggestion.recommended {
+  border-left-color: #7c3aed;
+  background: #faf5ff;
+}
+
+.sgHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.sgName {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #1f2328;
+}
+
+.sgMeta {
+  font-size: 10px;
+  color: #8895a4;
+  margin-left: auto;
+}
+
+.sgRationale {
+  font-size: 11px;
+  color: #455a64;
+  line-height: 1.45;
+  margin: 4px 0 8px;
+}
+
+.sgActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sgPrimary {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0.1px;
+}
+
+.sgPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
+}
+
+.sgGhost {
+  background: transparent;
+  color: #5b21b6;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sgGhost:hover {
+  background: #faf5ff;
+}
+
+.footer {
+  padding: 10px 12px;
+  border-top: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+.inputRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  padding: 4px 6px 4px 10px;
+  background: #fff;
+}
+
+.inputRow:focus-within {
+  border-color: #7c3aed;
+}
+
+.input {
+  flex-grow: 1;
+  padding: 4px 0;
+  border: none;
+  font-size: 12px;
+  outline: none;
+  background: transparent;
+  font: inherit;
+}
+
+.sendBtn {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  font: inherit;
+}
+
+.quickAsks {
+  margin-top: 8px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.quickAsk {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #5a6573;
+  cursor: pointer;
+  font: inherit;
+}
+
+.quickAsk:hover {
+  background: #faf5ff;
+  border-color: #c4b5fd;
+  color: #5b21b6;
+}
