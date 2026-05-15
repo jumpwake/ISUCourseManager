@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   AiMessage,
@@ -18,6 +18,14 @@ type Props = {
 export function AiPanel({ tile, onClose, onBack }: Props) {
   const { messages, suggestions, quickAsks, send } = useAi({ kind: 'slot', tile });
   const [inputValue, setInputValue] = useState('');
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const handleSend = () => {
     const trimmed = inputValue.trim();
@@ -54,7 +62,7 @@ export function AiPanel({ tile, onClose, onBack }: Props) {
         </div>
       </div>
 
-      <div className={styles.body}>
+      <div className={styles.body} ref={bodyRef}>
         {initialMessage && <MessageBlock msg={initialMessage} />}
 
         <div className={styles.suggestionList}>
