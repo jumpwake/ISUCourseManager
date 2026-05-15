@@ -35,7 +35,7 @@ export function SemRow({ row, onTileClick, selectedClassId, onAddClass }: Props)
           className={styles.addClassTile}
           onClick={() => onAddClass(row.semIdx, row.academicTerm)}
         >
-          + Add Class
+          + Add Course
         </button>
       )}
     </div>
