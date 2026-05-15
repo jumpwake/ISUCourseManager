@@ -68,3 +68,7 @@ button.tile {
   transform: scale(1.04);
   z-index: 1;
 }
+
+.dragging {
+  opacity: 0.4;
+}
