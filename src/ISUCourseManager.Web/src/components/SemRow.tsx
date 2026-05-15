@@ -1,6 +1,8 @@
+import { useDroppable } from '@dnd-kit/core';
 import type { PlanRow, PlanTile } from '../data/types.ts';
 import { academicTermToLabel } from '../data/academicTerm.ts';
 import { CourseTile } from './CourseTile.tsx';
+import { DraggableCourseTile } from './DraggableCourseTile.tsx';
 import styles from './SemRow.module.css';
 
 type Props = {
@@ -12,8 +14,13 @@ type Props = {
 
 export function SemRow({ row, onTileClick, selectedClassId, onAddClass }: Props) {
   const creditClass = creditColorClass(row);
+  const { setNodeRef, isOver } = useDroppable({
+    id: `sem-${row.academicTerm}`,
+    data: { academicTerm: row.academicTerm },
+  });
+  const rowClassName = isOver ? `${styles.row} ${styles.dropTarget}` : styles.row;
   return (
-    <div className={styles.row}>
+    <div className={rowClassName} ref={setNodeRef}>
       <div className={styles.label}>
         <span>Sem {row.semIdx}</span>
         <small>{academicTermToLabel(row.academicTerm)}</small>
@@ -21,14 +28,23 @@ export function SemRow({ row, onTileClick, selectedClassId, onAddClass }: Props)
           {row.totalCredits} cr
         </span>
       </div>
-      {row.tiles.map((tile, i) => (
-        <CourseTile
-          key={tileKey(tile, i)}
-          tile={tile}
-          onClick={onTileClick ? () => onTileClick(tile) : undefined}
-          selected={tile.kind === 'studentCourse' && selectedClassId === tile.classId}
-        />
-      ))}
+      {row.tiles.map((tile, i) =>
+        tile.kind === 'studentCourse' && tile.status !== 'Completed' ? (
+          <DraggableCourseTile
+            key={tileKey(tile, i)}
+            tile={tile}
+            onClick={onTileClick ? () => onTileClick(tile) : undefined}
+            selected={selectedClassId === tile.classId}
+          />
+        ) : (
+          <CourseTile
+            key={tileKey(tile, i)}
+            tile={tile}
+            onClick={onTileClick ? () => onTileClick(tile) : undefined}
+            selected={tile.kind === 'studentCourse' && selectedClassId === tile.classId}
+          />
+        ),
+      )}
       {onAddClass && !row.allCompleted && (
         <button
           type="button"

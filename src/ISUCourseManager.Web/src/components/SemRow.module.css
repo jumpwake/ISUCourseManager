@@ -63,3 +63,9 @@
   color: #1976d2;
   transform: translateY(-1px);
 }
+
+.dropTarget {
+  background: #e3f2fd;
+  outline: 2px dashed #1976d2;
+  outline-offset: -2px;
+}
