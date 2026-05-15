@@ -4,20 +4,28 @@ import styles from './PlanView.module.css';
 
 type Props = {
   rows: PlanRow[];
+  flaggedKeys: ReadonlySet<string>;
   onTileClick?: (tile: PlanTile) => void;
-  selectedClassId?: string | null;
+  selectedKey?: string | null;
   onAddClass?: (semIdx: number, academicTerm: number) => void;
 };
 
-export function PlanView({ rows, onTileClick, selectedClassId, onAddClass }: Props) {
+export function PlanView({
+  rows,
+  flaggedKeys,
+  onTileClick,
+  selectedKey,
+  onAddClass,
+}: Props) {
   return (
     <div className={styles.view}>
       {rows.map((row) => (
         <SemRow
           key={row.semIdx}
           row={row}
+          flaggedKeys={flaggedKeys}
           onTileClick={onTileClick}
-          selectedClassId={selectedClassId}
+          selectedKey={selectedKey}
           onAddClass={onAddClass}
         />
       ))}

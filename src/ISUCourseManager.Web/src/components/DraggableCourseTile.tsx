@@ -6,9 +6,10 @@ type Props = {
   tile: StudentCoursePlanTile;
   onClick?: () => void;
   selected?: boolean;
+  flagged?: boolean;
 };
 
-export function DraggableCourseTile({ tile, onClick, selected }: Props) {
+export function DraggableCourseTile({ tile, onClick, selected, flagged }: Props) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: `${tile.classId}-${tile.academicTerm}`,
     data: { tile },
@@ -18,6 +19,7 @@ export function DraggableCourseTile({ tile, onClick, selected }: Props) {
       tile={tile}
       onClick={onClick}
       selected={selected}
+      flagged={flagged}
       draggable={{ setNodeRef, attributes, listeners, isDragging }}
     />
   );

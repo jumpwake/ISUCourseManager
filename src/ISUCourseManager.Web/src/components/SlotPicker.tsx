@@ -18,7 +18,6 @@ const CATALOG_DEFAULT_COUNT = 8;
 export function SlotPicker({ target, onClose, onPickCourse, onAskAi }: Props) {
   const [query, setQuery] = useState('');
 
-  const isSlot = target.kind === 'slot';
   const semIdx = target.kind === 'slot' ? target.tile.semIdx : target.semIdx;
   const academicTerm =
     target.kind === 'slot' ? target.tile.academicTerm : target.academicTerm;
@@ -71,7 +70,7 @@ export function SlotPicker({ target, onClose, onPickCourse, onAskAi }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search catalog"
           />
-          {isSlot && onAskAi !== undefined && (
+          {onAskAi !== undefined && (
             <button
               type="button"
               className={styles.aiIconButton}

@@ -7,6 +7,7 @@ type RawCatalogCourse = {
   name: string;
   credits: number;
   department: string;
+  typicallyOffered?: string[] | null;
 };
 
 const courses: Course[] = (catalogRaw.courses as RawCatalogCourse[]).map((c) => ({
@@ -15,6 +16,7 @@ const courses: Course[] = (catalogRaw.courses as RawCatalogCourse[]).map((c) => 
   name: c.name,
   credits: c.credits,
   department: c.department,
+  typicallyOffered: c.typicallyOffered ?? [],
 }));
 
 export const catalogById: ReadonlyMap<string, Course> = new Map(

@@ -9,6 +9,7 @@ import {
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type {
+  AiScope,
   CourseAction,
   PlanTile,
   StudentCourse,
@@ -20,6 +21,7 @@ import { studentCourses as seedStudentCourses } from './data/student.ts';
 import { flow } from './data/flow.ts';
 import { catalogById } from './data/catalog.ts';
 import { buildOverlay } from './data/overlay.ts';
+import { validatePlan } from './data/validation.ts';
 import { DesktopOnlyGate } from './components/DesktopOnlyGate.tsx';
 import { TopBar } from './components/TopBar.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
@@ -34,7 +36,7 @@ import styles from './App.module.css';
 type SelectedPanel =
   | { kind: 'actionMenu'; tile: StudentCoursePlanTile }
   | { kind: 'slotPicker'; tile: UnfilledTile }
-  | { kind: 'aiPanel'; tile: UnfilledTile }
+  | { kind: 'aiPanel'; scope: AiScope }
   | { kind: 'addClass'; semIdx: number; academicTerm: number }
   | { kind: 'substitute'; tile: StudentCoursePlanTile };
 
@@ -52,6 +54,21 @@ function App() {
     () => rows.map((r) => ({ semIdx: r.semIdx, academicTerm: r.academicTerm })),
     [rows],
   );
+
+  const validation = useMemo(
+    () => validatePlan(rows, flow.totalCreditsRequired, catalogById),
+    [rows],
+  );
+
+  const flaggedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const issue of validation.issues) {
+      if (issue.kind === 'termUnavailable') {
+        keys.add(`${issue.classId}-${issue.academicTerm}`);
+      }
+    }
+    return keys;
+  }, [validation]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -79,8 +96,8 @@ function App() {
     }
   };
 
-  const handleAskAi = (tile: UnfilledTile) => {
-    setSelected({ kind: 'aiPanel', tile });
+  const handleAskAi = (scope: AiScope) => {
+    setSelected({ kind: 'aiPanel', scope });
   };
 
   const handleAddClass = (semIdx: number, academicTerm: number) => {
@@ -109,29 +126,48 @@ function App() {
   };
 
   const addCourse = (classId: string, academicTerm: number) => {
-    setStudentCourses((prev) => [
-      ...prev,
-      { courseId: classId, academicTerm, status: 'Planned', grade: null },
-    ]);
+    setStudentCourses((prev) => {
+      // No duplicate course within one semester (cross-semester retakes are fine).
+      if (prev.some((sc) => sc.courseId === classId && sc.academicTerm === academicTerm)) {
+        return prev;
+      }
+      return [
+        ...prev,
+        { courseId: classId, academicTerm, status: 'Planned', grade: null },
+      ];
+    });
     setSelected(null);
   };
 
   const moveCourse = (classId: string, fromTerm: number, toTerm: number) => {
-    setStudentCourses((prev) =>
-      prev.map((sc) =>
+    setStudentCourses((prev) => {
+      // Don't move into a semester that already holds this course.
+      if (prev.some((sc) => sc.courseId === classId && sc.academicTerm === toTerm)) {
+        return prev;
+      }
+      return prev.map((sc) =>
         sc.courseId === classId && sc.academicTerm === fromTerm
           ? { ...sc, academicTerm: toTerm }
           : sc,
-      ),
-    );
+      );
+    });
     setSelected(null);
   };
 
   const substituteCourse = (oldClassId: string, term: number, newClassId: string) => {
-    setStudentCourses((prev) => [
-      ...prev.filter((sc) => !(sc.courseId === oldClassId && sc.academicTerm === term)),
-      { courseId: newClassId, academicTerm: term, status: 'Planned', grade: null },
-    ]);
+    setStudentCourses((prev) => {
+      const withoutOld = prev.filter(
+        (sc) => !(sc.courseId === oldClassId && sc.academicTerm === term),
+      );
+      // Skip the add if the replacement is already in this semester.
+      if (withoutOld.some((sc) => sc.courseId === newClassId && sc.academicTerm === term)) {
+        return withoutOld;
+      }
+      return [
+        ...withoutOld,
+        { courseId: newClassId, academicTerm: term, status: 'Planned', grade: null },
+      ];
+    });
     setSelected(null);
   };
 
@@ -149,8 +185,10 @@ function App() {
     }
   };
 
-  const selectedClassId =
-    selected?.kind === 'actionMenu' ? selected.tile.classId : null;
+  const selectedKey =
+    selected?.kind === 'actionMenu'
+      ? `${selected.tile.classId}-${selected.tile.academicTerm}`
+      : null;
 
   const panelAccent = selected?.kind === 'aiPanel' ? 'ai' : 'action';
 
@@ -166,8 +204,10 @@ function App() {
           <Sidebar />
           <Main
             rows={rows}
+            validation={validation}
+            flaggedKeys={flaggedKeys}
             onTileClick={handleTileClick}
-            selectedClassId={selectedClassId}
+            selectedKey={selectedKey}
             onAddClass={handleAddClass}
           />
           {selected && (
@@ -191,7 +231,7 @@ function App() {
                   target={{ kind: 'slot', tile: selected.tile }}
                   onClose={handleClose}
                   onPickCourse={(classId) => addCourse(classId, selected.tile.academicTerm)}
-                  onAskAi={() => handleAskAi(selected.tile)}
+                  onAskAi={() => handleAskAi({ kind: 'slot', tile: selected.tile })}
                 />
               )}
               {selected.kind === 'addClass' && (
@@ -203,6 +243,13 @@ function App() {
                   }}
                   onClose={handleClose}
                   onPickCourse={(classId) => addCourse(classId, selected.academicTerm)}
+                  onAskAi={() =>
+                    handleAskAi({
+                      kind: 'semester',
+                      semIdx: selected.semIdx,
+                      academicTerm: selected.academicTerm,
+                    })
+                  }
                 />
               )}
               {selected.kind === 'substitute' && (
@@ -225,9 +272,19 @@ function App() {
               )}
               {selected.kind === 'aiPanel' && (
                 <AiPanel
-                  tile={selected.tile}
+                  scope={selected.scope}
                   onClose={handleClose}
-                  onBack={() => setSelected({ kind: 'slotPicker', tile: selected.tile })}
+                  onBack={() =>
+                    setSelected(
+                      selected.scope.kind === 'slot'
+                        ? { kind: 'slotPicker', tile: selected.scope.tile }
+                        : {
+                            kind: 'addClass',
+                            semIdx: selected.scope.semIdx,
+                            academicTerm: selected.scope.academicTerm,
+                          },
+                    )
+                  }
                 />
               )}
             </RightPanel>

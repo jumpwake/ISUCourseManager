@@ -11,3 +11,7 @@ export function flowSemToAcademicTerm(semIdx: number, catalogStartYear: number):
   const season = semIdx % 2 === 1 ? 2 : 4;
   return academicYear * 100 + season;
 }
+
+export function academicTermToSeason(term: number): 'Fall' | 'Spring' {
+  return term % 100 === 2 ? 'Fall' : 'Spring';
+}
