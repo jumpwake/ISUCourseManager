@@ -72,3 +72,19 @@ button.tile {
 .dragging {
   opacity: 0.4;
 }
+
+.flagBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 11px;
+  line-height: 1;
+  background: #fff8e1;
+  border: 1px solid #ffb300;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

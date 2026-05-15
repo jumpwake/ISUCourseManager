@@ -12,9 +12,10 @@ type Props = {
   onClick?: () => void;
   selected?: boolean;
   draggable?: DraggableBindings;
+  flagged?: boolean;
 };
 
-export function CourseTile({ tile, onClick, selected = false, draggable }: Props) {
+export function CourseTile({ tile, onClick, selected = false, draggable, flagged = false }: Props) {
   if (tile.kind === 'electiveSlot') {
     const className = `${styles.tile} ${styles.electiveEmpty}`;
     const inner = (
@@ -78,6 +79,7 @@ export function CourseTile({ tile, onClick, selected = false, draggable }: Props
       {...draggable?.attributes}
       {...draggable?.listeners}
     >
+      {flagged && <span className={styles.flagBadge} aria-label="Plan issue">⚠</span>}
       {tile.code}
       <small>{subtitle}</small>
     </button>
