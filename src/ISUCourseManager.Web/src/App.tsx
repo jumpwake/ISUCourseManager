@@ -67,9 +67,14 @@ function App() {
 
   const handleClose = () => setSelected(null);
 
-  const applyAction = (action: CourseAction, classId: string) => {
+  const applyAction = (action: CourseAction, classId: string, academicTerm: number) => {
+    // Key on courseId + academicTerm: the same course can legitimately appear in
+    // two terms (a retake, or a duplicate add), and a mutation must hit only the
+    // selected term's entry — not every entry sharing the courseId.
+    const isTarget = (sc: StudentCourse) =>
+      sc.courseId === classId && sc.academicTerm === academicTerm;
     if (action === 'remove') {
-      setStudentCourses((prev) => prev.filter((sc) => sc.courseId !== classId));
+      setStudentCourses((prev) => prev.filter((sc) => !isTarget(sc)));
     } else {
       const status: StudentCourseStatus =
         action === 'markCompleted'
@@ -78,7 +83,7 @@ function App() {
             ? 'InProgress'
             : 'Failed';
       setStudentCourses((prev) =>
-        prev.map((sc) => (sc.courseId === classId ? { ...sc, status } : sc)),
+        prev.map((sc) => (isTarget(sc) ? { ...sc, status } : sc)),
       );
     }
     setSelected(null);
@@ -114,7 +119,9 @@ function App() {
               <ActionMenu
                 tile={selected.tile}
                 onClose={handleClose}
-                onAction={(action) => applyAction(action, selected.tile.classId)}
+                onAction={(action) =>
+                  applyAction(action, selected.tile.classId, selected.tile.academicTerm)
+                }
               />
             )}
             {selected.kind === 'slotPicker' && (

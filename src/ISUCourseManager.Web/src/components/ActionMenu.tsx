@@ -6,7 +6,7 @@ import styles from './ActionMenu.module.css';
 type Props = {
   tile: StudentCoursePlanTile;
   onClose: () => void;
-  onAction?: (action: CourseAction) => void;
+  onAction: (action: CourseAction) => void;
 };
 
 export function ActionMenu({ tile, onClose, onAction }: Props) {
@@ -52,20 +52,20 @@ export function ActionMenu({ tile, onClose, onAction }: Props) {
                 icon="✓"
                 name="Mark Completed"
                 meta="Set grade"
-                onClick={() => onAction?.('markCompleted')}
+                onClick={() => onAction('markCompleted')}
               />
               <ActionCard
                 icon="⏵"
                 name="Mark In Progress"
                 meta="Currently enrolled this term"
-                onClick={() => onAction?.('markInProgress')}
+                onClick={() => onAction('markInProgress')}
               />
               <ActionCard
                 icon="⚠"
                 name="Mark Failed / Cancelled"
                 meta="Will trigger cascade for downstream prereqs"
                 danger
-                onClick={() => onAction?.('markFailed')}
+                onClick={() => onAction('markFailed')}
               />
             </Section>
             <Section title="Reschedule">
@@ -81,7 +81,7 @@ export function ActionMenu({ tile, onClose, onAction }: Props) {
                 name="Remove from plan"
                 meta="Take the slot back to unfulfilled"
                 danger
-                onClick={() => onAction?.('remove')}
+                onClick={() => onAction('remove')}
               />
             </Section>
           </>
